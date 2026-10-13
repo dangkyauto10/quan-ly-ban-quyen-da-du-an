@@ -49,7 +49,6 @@ vai_tro = st.sidebar.radio("Nghiệp vụ thực hiện:", ["1. KTV Tiền Kích
 if vai_tro == "1. KTV Tiền Kích Hoạt":
     st.subheader(f"⚡ GIAI ĐOẠN 1: TIỀN KÍCH HOẠT TẠI CÔNG TY - {selected_du_an}")
     
-    # Hướng dẫn sử dụng ẩn/hiện theo yêu cầu
     with st.expander("📖 Xem Hướng Dẫn Sử Dụng Chi Tiết (Bước 1)"):
         st.markdown("""
         1. **Chọn Đơn Vị/Xã**: Lựa chọn đúng xã nhận thiết bị tương ứng trên danh sách.
@@ -61,13 +60,17 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
 
     col1, col2 = st.columns(2)
     with col1:
-        list_xa = [
-            "Phường Minh Xuân", "Phường Nông Tiến", "Phường Bình Thuận", "Phường An Tường", "Phường Mỹ Lâm",
-            "Xã Nhữ Khê", "Xã Yên Sơn", "Xã Tân Long", "Xã Lực Hành", "Xã Xuân Vân",
-            "Xã Thái Bình", "Xã Hùng Lợi", "Xã Trung Sơn", "Xã Kiến Thiết", "Xã Đông Thọ",
-            "Xã Hồng Sơn", "Xã Trường Sinh", "Xã Phú Lương", "Xã Sơn Thủy", "Xã Minh Thanh",
-            "Xã Tân Trào", "Xã Tân Thanh", "Xã Bình Ca", "Xã Sơn Dương", "Xã Văn Phú"
-        ]
+        # Lấy danh sách Xã động từ API thay vì gõ cứng
+        list_xa = ["Đang tải danh sách..."]
+        try:
+            res_data = requests.post(WEB_APP_URL, json={"action": "GET_DANH_SACH_XA", "maDuAn": selected_du_an}).json()
+            if res_data.get("status") == "success" and len(res_data.get("data")) > 0:
+                list_xa = res_data["data"]
+            else:
+                 list_xa = ["Không có dữ liệu đơn vị cho dự án này"]
+        except Exception as e:
+             list_xa = ["Lỗi kết nối cơ sở dữ liệu"]
+
         ma_xa = st.selectbox("Đơn vị / Xã nhận thiết bị:", list_xa)
         ktv_name = st.text_input("KTV Thực hiện:", placeholder="Ví dụ: Vỹ")
     
