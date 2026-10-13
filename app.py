@@ -49,9 +49,26 @@ vai_tro = st.sidebar.radio("Nghiệp vụ thực hiện:", ["1. KTV Tiền Kích
 if vai_tro == "1. KTV Tiền Kích Hoạt":
     st.subheader(f"⚡ GIAI ĐOẠN 1: TIỀN KÍCH HOẠT TẠI CÔNG TY - {selected_du_an}")
     
+    # Hướng dẫn sử dụng ẩn/hiện theo yêu cầu
+    with st.expander("📖 Xem Hướng Dẫn Sử Dụng Chi Tiết (Bước 1)"):
+        st.markdown("""
+        1. **Chọn Đơn Vị/Xã**: Lựa chọn đúng xã nhận thiết bị tương ứng trên danh sách.
+        2. **Lấy Serial**: Hệ thống tự động quét Serial Mainboard phần cứng.
+        3. **Cấp Key**: Bấm **Xác nhận cấp key**, hệ thống sẽ tự động ghép nối bản quyền trống từ kho.
+        4. **Redeem**: Bấm nút mở trang Microsoft để nhập thủ công, bảo vệ tài khoản khỏi khóa spam.
+        5. **In Tem**: Tải mã QR in nhiệt dán vỏ hộp và thân máy.
+        """)
+
     col1, col2 = st.columns(2)
     with col1:
-        ma_xa = st.selectbox("Đơn vị / Xã nhận thiết bị:", ["Xã Minh Xuân", "Xã Nông Tiến", "Xã Bình Thuận", "Xã An Tường"])
+        list_xa = [
+            "Phường Minh Xuân", "Phường Nông Tiến", "Phường Bình Thuận", "Phường An Tường", "Phường Mỹ Lâm",
+            "Xã Nhữ Khê", "Xã Yên Sơn", "Xã Tân Long", "Xã Lực Hành", "Xã Xuân Vân",
+            "Xã Thái Bình", "Xã Hùng Lợi", "Xã Trung Sơn", "Xã Kiến Thiết", "Xã Đông Thọ",
+            "Xã Hồng Sơn", "Xã Trường Sinh", "Xã Phú Lương", "Xã Sơn Thủy", "Xã Minh Thanh",
+            "Xã Tân Trào", "Xã Tân Thanh", "Xã Bình Ca", "Xã Sơn Dương", "Xã Văn Phú"
+        ]
+        ma_xa = st.selectbox("Đơn vị / Xã nhận thiết bị:", list_xa)
         ktv_name = st.text_input("KTV Thực hiện:", placeholder="Ví dụ: Vỹ")
     
     with col2:
@@ -73,7 +90,6 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
                 if res["status"] == "success":
                     st.success("✅ Đã cấp Key thành công! KTV sử dụng thông tin dưới đây để đăng nhập máy PC:")
                     
-                    # Tính năng Copy nhanh vào Clipboard
                     c1, c2, c3 = st.columns(3)
                     with c1: 
                         st.caption("Tài Khoản Microsoft")
@@ -106,8 +122,13 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
 # ----------------- MODULE 2: QC ĐỐI SOÁT -----------------
 elif vai_tro == "2. QC Đối Soát Đóng Gói":
     st.subheader(f"📦 GIAI ĐOẠN 2: QC ĐỐI SOÁT & NIÊM PHONG - {selected_du_an}")
-    st.info("KTV quét mã QR trên vỏ hộp và trên thân máy để đối chiếu trước khi đóng thùng xuất xưởng.")
     
+    with st.expander("📖 Xem Hướng Dẫn Sử Dụng Chi Tiết (Bước 2)"):
+        st.markdown("""
+        1. Quét mã vạch/QR trên vỏ hộp và thân máy trước khi niêm phong.
+        2. Hệ thống đối chiếu tự động, nếu khớp sẽ ghi nhận `QC Passed` lên Google Sheets.
+        """)
+
     col_hop, col_may = st.columns(2)
     with col_hop: qr_hop = st.text_input("Mã quét từ VỎ HỘP:", key="hop")
     with col_may: qr_may = st.text_input("Mã quét từ THÂN MÁY PC:", key="may")
@@ -132,8 +153,13 @@ elif vai_tro == "2. QC Đối Soát Đóng Gói":
 # ----------------- MODULE 3: BẢO HÀNH -----------------
 elif vai_tro == "3. Bảo Hành / Quản Trị":
     st.subheader("🔧 CẬP NHẬT BẢO HÀNH (THAY MAINBOARD)")
-    st.info("Sử dụng khi máy bị hỏng Mainboard thực tế tại Xã cần thay mới để không mất dấu Bản quyền.")
     
+    with st.expander("📖 Xem Hướng Dẫn Sử Dụng Chi Tiết (Bước 3)"):
+        st.markdown("""
+        1. Nhập Serial Mainboard cũ bị hỏng tại xã.
+        2. Nhập Serial Mainboard mới thay thế để cập nhật lại liên kết bản quyền Office.
+        """)
+
     old_serial = st.text_input("Nhập Serial Mainboard CŨ (Bị hỏng):")
     new_serial = st.text_input("Nhập Serial Mainboard MỚI (Thay thế):")
     
