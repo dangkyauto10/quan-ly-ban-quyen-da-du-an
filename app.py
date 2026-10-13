@@ -7,7 +7,7 @@ from io import BytesIO
 st.set_page_config(page_title="Hệ Thống Bản Quyền Đa Dự Án", page_icon="🛡️", layout="wide")
 
 # ================= CẤU HÌNH API =================
-# Anh Vỹ kiểm tra lại link này, nếu có link Deploy mới thì dán đè vào đây:
+# Đường link API chuẩn đã được cấp quyền Anyone
 WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwuxyhEFQxehHPguOAPJhm-og8VVYcDOuicEpjxmbiKO1rrt86gGCdZ89Vw7Tezs_iSdQ/exec"
 # ================================================
 
@@ -43,8 +43,8 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
         list_xa = ["Đang tải danh sách..."]
         list_ktv = ["Đang tải danh sách..."]
         try:
-            # THÊM TIMEOUT 10 GIÂY CHỐNG TREO
-            response = requests.post(WEB_APP_URL, json={"action": "GET_DANH_SACH_XA", "maDuAn": selected_du_an}, timeout=10)
+            # Tăng timeout lấy danh sách
+            response = requests.post(WEB_APP_URL, json={"action": "GET_DANH_SACH_XA", "maDuAn": selected_du_an}, timeout=15)
             res_data = response.json()
             if res_data.get("status") == "success":
                 list_xa = res_data.get("data") if len(res_data.get("data")) > 0 else ["Không có dữ liệu đơn vị"]
@@ -53,7 +53,7 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
                  list_xa, list_ktv = ["Lỗi lấy dữ liệu xã"], ["Lỗi lấy dữ liệu KTV"]
         except Exception as e:
              list_xa, list_ktv = ["Lỗi kết nối API"], ["Lỗi kết nối API"]
-             st.error(f"Máy chủ Google đang từ chối truy cập. Vui lòng kiểm tra lại quyền Anyone của API.")
+             st.error("Máy chủ Google đang xử lý quá chậm hoặc bị chặn. Vui lòng tải lại trang.")
 
         ma_xa = st.selectbox("Đơn vị / Xã nhận thiết bị:", list_xa)
         ktv_name = st.selectbox("KTV Thực hiện:", list_ktv)
@@ -67,14 +67,14 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
         if not serial_input or ktv_name in ["Đang tải danh sách...", "Không có dữ liệu KTV", "Lỗi kết nối API"]:
             st.error("Vui lòng đảm bảo Serial Mainboard và Tên KTV hợp lệ!")
         else:
-            with st.spinner("Đang kết nối kho dữ liệu (Tối đa 15s)..."):
+            with st.spinner("Đang kết nối kho dữ liệu (Vui lòng chờ, tối đa 30s)..."):
                 try:
                     payload = {
                         "action": "TIEN_KICH_HOAT", "maDuAn": selected_du_an,
                         "maXa": ma_xa, "serialMainboard": serial_input, "ktv": ktv_name
                     }
-                    # THÊM TIMEOUT 15 GIÂY CHỐNG TREO
-                    response = requests.post(WEB_APP_URL, json=payload, timeout=15)
+                    # ĐÃ TĂNG TIMEOUT LÊN 30 GIÂY
+                    response = requests.post(WEB_APP_URL, json=payload, timeout=30)
                     res = response.json()
                     
                     if res.get("status") == "success":
@@ -128,7 +128,7 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
                     else:
                         st.error(f"❌ LỖI TỪ DỮ LIỆU: {res.get('message', 'Lỗi không xác định')}")
                 except Exception as e:
-                    st.error(f"❌ Mất kết nối đến Google (Timeout). Vui lòng thử lại!")
+                    st.error(f"❌ Mất kết nối đến Google (Timeout). Máy chủ đang phản hồi chậm, vui lòng thử lại sau vài giây!")
 
 # ----------------- MODULE 2: QC ĐỐI SOÁT -----------------
 elif vai_tro == "2. QC Đối Soát Đóng Gói":
@@ -143,7 +143,7 @@ elif vai_tro == "2. QC Đối Soát Đóng Gói":
                 serial_extracted = qr_hop.split(" | ")[-1].strip()
                 try:
                     payload = {"action": "QC_PASSED", "serial": serial_extracted}
-                    res = requests.post(WEB_APP_URL, json=payload, timeout=10).json()
+                    res = requests.post(WEB_APP_URL, json=payload, timeout=15).json()
                     if res.get("status") == "success":
                         st.success("✅ KHỚP CHÍNH XÁC! Đã ghi nhận QC Passed.")
                     else:
@@ -165,7 +165,7 @@ elif vai_tro == "3. Bảo Hành / Quản Trị":
         if old_serial and new_serial:
             try:
                 payload = {"action": "DOI_BAO_HANH", "oldSerial": old_serial.strip(), "newSerial": new_serial.strip()}
-                res = requests.post(WEB_APP_URL, json=payload, timeout=10).json()
+                res = requests.post(WEB_APP_URL, json=payload, timeout=15).json()
                 if res.get("status") == "success":
                     st.success("✅ Đã cập nhật Serial mới thành công!")
                 else:
