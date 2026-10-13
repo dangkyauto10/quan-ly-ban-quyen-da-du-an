@@ -9,7 +9,7 @@ from io import BytesIO
 st.set_page_config(page_title="Hệ Thống Bản Quyền Đa Dự Án", page_icon="🛡️", layout="wide")
 
 # ================= CẤU HÌNH API =================
-WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxzVyyyV1Fsswbv5fWXPyqasm2N_BZxiAuZEHX-EvNt7xBMFqmN8QJavuVqpNBIgTw/exec"
+WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxzVyyyV1Fsswbv5fWXPyqasm2N_BZxiAuZEHX-EvNt7xBMFqmN8QJavuVqpNBigTw/exec"
 # ================================================
 
 # Hàm tạo QR Code để in tem
