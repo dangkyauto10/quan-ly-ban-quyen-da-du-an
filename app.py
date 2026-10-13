@@ -84,7 +84,13 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
                     with c3: 
                         st.caption("Key Office")
                         st.code(res["key"], language="text")
-                    
+                    st.markdown("---")
+st.markdown("### 🌐 THỰC HIỆN REDEEM BẢN QUYỀN")
+st.markdown("""
+<a href="https://setup.office.com/" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #0078D4; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+    👉 Mở trang Redeem Microsoft (setup.office.com)
+</a>
+""", unsafe_allow_html=True)
                     st.markdown("---")
                     st.markdown("### 🖨️ IN TEM NHÃN MÃ QR")
                     qr_data = f"{selected_du_an} | {ma_xa} | {serial_input}"
