@@ -7,7 +7,7 @@ from io import BytesIO
 st.set_page_config(page_title="Hệ Thống Bản Quyền Đa Dự Án", page_icon="🛡️", layout="wide")
 
 # ================= CẤU HÌNH API =================
-WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzexUEBTjUj1FW4sg3MyLm5ukFgoTGX4RF0nMbyNTP1m5dnnHqy-3eLoovOZ8S2MdyD_w/exec"
+WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyR21PWTVF9HDKYtmglsdlGYi7IWNFWviOE1fUFQ06ANu3d3XQBjEcbTuAvHtzP-uhlFQ/exec"
 # ================================================
 
 def generate_qr(data_str):
@@ -33,10 +33,8 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
     with st.expander("📖 Xem Hướng Dẫn Sử Dụng Chi Tiết (Bước 1)"):
         st.markdown("""
         1. **Chọn Đơn Vị/Xã**: Lựa chọn đúng xã nhận thiết bị.
-        2. **Lấy Serial**: Cắm USB và chạy file TOOL_KICH_HOAT.bat để tự động mở web và điền Serial.
-        3. **Cấp Key**: Bấm **Xác nhận cấp key**, hệ thống sẽ ghép nối bản quyền trống.
-        4. **Redeem**: Bấm nút mở trang Microsoft để nhập thủ công.
-        5. **In Tem**: Tải mã QR in nhiệt dán vỏ hộp và thân máy.
+        2. **Lấy Serial**: Chạy file TOOL_KICH_HOAT.bat để tự động mở web và điền Serial.
+        3. **Cấp Key**: Bấm **Xác nhận cấp key**, hệ thống trả về trọn bộ Key Windows, Office và Diệt Virus.
         """)
 
     col1, col2 = st.columns(2)
@@ -61,7 +59,7 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
         auto_serial = query_params.get("serial", "")
         serial_input = st.text_input("Serial Mainboard:", value=auto_serial)
             
-    if st.button("🚀 XÁC NHẬN CẤP KEY & KÍCH HOẠT", type="primary", use_container_width=True):
+    if st.button("🚀 XÁC NHẬN CẤP TRỌN BỘ KEY & KÍCH HOẠT", type="primary", use_container_width=True):
         if not serial_input or ktv_name in ["Đang tải danh sách...", "Không có dữ liệu KTV", "Lỗi kết nối API"]:
             st.error("Vui lòng đảm bảo Serial Mainboard và Tên KTV hợp lệ!")
         else:
@@ -72,28 +70,41 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
                 }
                 res = requests.post(WEB_APP_URL, json=payload).json()
                 
-                if res["status"] == "success":
-                    st.success("✅ Đã cấp Key thành công! KTV sử dụng thông tin dưới đây để đăng nhập máy PC:")
+                if res.get("status") == "success":
+                    st.success("✅ Đã cấp trọn bộ bản quyền thành công!")
                     
+                    st.markdown("### 🪟 1. BẢN QUYỀN WINDOWS")
+                    st.code(res.get("keyWin", "Chưa có Key Windows trong kho"), language="text")
+                    
+                    st.markdown("### 📦 2. BẢN QUYỀN OFFICE")
                     c1, c2, c3 = st.columns(3)
                     with c1: 
                         st.caption("Tài Khoản Microsoft")
-                        st.code(res["tkMS"], language="text")
+                        st.code(res.get("tkMS", ""), language="text")
                     with c2: 
                         st.caption("Mật Khẩu")
-                        st.code(res["passMS"], language="text")
+                        st.code(res.get("passMS", ""), language="text")
                     with c3: 
                         st.caption("Key Office")
-                        st.code(res["key"], language="text")
+                        st.code(res.get("keyOffice", ""), language="text")
+                    
+                    st.markdown("### 🛡️ 3. PHẦN MỀM DIỆT VIRUS & HẠN SỬ DỤNG")
+                    v1, v2 = st.columns(2)
+                    with v1:
+                        st.caption("TK / Key Diệt Virus")
+                        st.code(res.get("keyAnti", "Không có"), language="text")
+                    with v2:
+                        st.caption("⏰ Hạn Sử Dụng Diệt Virus")
+                        st.error(f"📅 **{res.get('expAnti', 'Chưa cập nhật')}**" if res.get("expAnti") else "Chưa cập nhật hạn")
                     
                     st.markdown("---")
-                    st.markdown("### 🌐 THỰC HIỆN REDEEM BẢN QUYỀN")
+                    st.markdown("### 🌐 THỰC HIỆN REDEEM OFFICE")
                     
-                    redeem_url = f"https://setup.office.com/?msokey={res['key']}"
+                    redeem_url = f"https://setup.office.com/?msokey={res.get('keyOffice', '')}"
                     
                     st.markdown(f"""
                     <a href="{redeem_url}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #0078D4; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
-                        👉 Mở trang Redeem (Tự động điền sẵn Key)
+                        👉 Mở trang Redeem (Tự động điền sẵn Key Office)
                     </a>
                     <p style="margin-top: 10px; font-size: 14px; color: #d83b01;"><b>💡 MẸO TỐI ƯU CHO DA880 (6 máy / 1 TK):</b><br>
                     - Máy 1: Bấm nút trên, đăng nhập TK Microsoft và ấn Next.<br>
@@ -101,25 +112,18 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
                     """, unsafe_allow_html=True)
                     
                     st.markdown("---")
-                    st.markdown("### 🖨️ IN TEM NHÃN M mã QR")
+                    st.markdown("### 🖨️ IN TEM NHÃN MÃ QR")
                     qr_data = f"{selected_du_an} | {ma_xa} | {serial_input}"
                     qr_img = generate_qr(qr_data)
                     
-                    st.image(qr_img, width=200, caption="Mã đối soát QR (In 2 bản: Dán vỏ PC và Vỏ hộp)")
+                    st.image(qr_img, width=200, caption="Mã đối soát QR")
                     st.download_button(label="📥 Tải Tem QR (In Nhiệt)", data=qr_img, file_name=f"Tem_{serial_input}.png", mime="image/png")
                 else:
-                    st.error(f"❌ LỖI: {res['message']}")
+                    st.error(f"❌ LỖI: {res.get('message', 'Lỗi không xác định')}")
 
 # ----------------- MODULE 2: QC ĐỐI SOÁT -----------------
 elif vai_tro == "2. QC Đối Soát Đóng Gói":
     st.subheader(f"📦 GIAI ĐOẠN 2: QC ĐỐI SOÁT & NIÊM PHONG - {selected_du_an}")
-    
-    with st.expander("📖 Xem Hướng Dẫn Sử Dụng Chi Tiết (Bước 2)"):
-        st.markdown("""
-        1. Quét mã vạch/QR trên vỏ hộp và thân máy trước khi niêm phong.
-        2. Hệ thống đối chiếu tự động, nếu khớp sẽ ghi nhận `QC Passed` lên Google Sheets.
-        """)
-
     col_hop, col_may = st.columns(2)
     with col_hop: qr_hop = st.text_input("Mã quét từ VỎ HỘP:", key="hop")
     with col_may: qr_may = st.text_input("Mã quét từ THÂN MÁY PC:", key="may")
@@ -128,37 +132,28 @@ elif vai_tro == "2. QC Đối Soát Đóng Gói":
         if qr_hop and qr_may:
             if qr_hop.strip() == qr_may.strip():
                 serial_extracted = qr_hop.split(" | ")[-1].strip()
-                
                 payload = {"action": "QC_PASSED", "serial": serial_extracted}
                 res = requests.post(WEB_APP_URL, json=payload).json()
-                
-                if res["status"] == "success":
-                    st.success("✅ KHỚP CHÍNH XÁC! Hệ thống đã ghi nhận QC Passed. Cho phép dán tem niêm phong.")
+                if res.get("status") == "success":
+                    st.success("✅ KHỚP CHÍNH XÁC! Đã ghi nhận QC Passed.")
                 else:
-                    st.error(res["message"])
+                    st.error(res.get("message"))
             else:
-                st.error("❌ CẢNH BÁO ĐỎ: VỎ HỘP VÀ THÂN MÁY KHÔNG KHỚP NHAU! Yêu cầu sắp xếp lại.")
+                st.error("❌ CẢNH BÁO ĐỎ: VỎ HỘP VÀ THÂN MÁY KHÔNG KHỚP NHAU!")
         else:
-            st.warning("Vui lòng quét đủ mã của cả Vỏ hộp và Thân máy.")
+            st.warning("Vui lòng quét đủ mã.")
 
 # ----------------- MODULE 3: BẢO HÀNH -----------------
 elif vai_tro == "3. Bảo Hành / Quản Trị":
     st.subheader("🔧 CẬP NHẬT BẢO HÀNH (THAY MAINBOARD)")
-    
-    with st.expander("📖 Xem Hướng Dẫn Sử Dụng Chi Tiết (Bước 3)"):
-        st.markdown("""
-        1. Nhập Serial Mainboard cũ bị hỏng tại xã.
-        2. Nhập Serial Mainboard mới thay thế để cập nhật lại liên kết bản quyền Office.
-        """)
-
-    old_serial = st.text_input("Nhập Serial Mainboard CŨ (Bị hỏng):")
-    new_serial = st.text_input("Nhập Serial Mainboard MỚI (Thay thế):")
+    old_serial = st.text_input("Nhập Serial Mainboard CŨ:")
+    new_serial = st.text_input("Nhập Serial Mainboard MỚI:")
     
     if st.button("Cập Nhật Liên Kết Bản Quyền", use_container_width=True):
         if old_serial and new_serial:
             payload = {"action": "DOI_BAO_HANH", "oldSerial": old_serial.strip(), "newSerial": new_serial.strip()}
             res = requests.post(WEB_APP_URL, json=payload).json()
-            if res["status"] == "success":
-                st.success("✅ Đã ghi đè Serial mới thành công. Bản quyền đã được liên kết lại với mainboard mới!")
+            if res.get("status") == "success":
+                st.success("✅ Đã cập nhật Serial mới thành công!")
             else:
-                st.error(res["message"])
+                st.error(res.get("message"))
