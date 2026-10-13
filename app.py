@@ -1,15 +1,13 @@
 import streamlit as st
 import pandas as pd
 import requests
-import platform
-import subprocess
 import qrcode
 from io import BytesIO
 
 st.set_page_config(page_title="Hệ Thống Bản Quyền Đa Dự Án", page_icon="🛡️", layout="wide")
 
 # ================= CẤU HÌNH API =================
-WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzexUEBTjUj1FW4sg3MyLm5ukFgoTGX4RF0nMbyNTP1m5dnnHqy-3eLoovOZ8S2MdyD_w/exec"
+WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxzVyyyV1Fsswbv5fWXPyqasm2N_BZxiAuZEHX-EvNt7xBMFqmN8QJavuVqpNBIgTw/exec"
 # ================================================
 
 # Hàm tạo QR Code để in tem
@@ -21,21 +19,6 @@ def generate_qr(data_str):
     buf = BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()
-
-# Hàm lấy Serial Mainboard tự động
-def get_serial_mainboard():
-    try:
-        os_name = platform.system()
-        if os_name == "Windows":
-            cmd = "wmic baseboard get serialnumber"
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-            stdout, _ = process.communicate()
-            lines = stdout.decode('utf-8', errors='ignore').split('\n')
-            serial = [line.strip() for line in lines if line.strip() and "SerialNumber" not in line]
-            if serial: return serial[0]
-    except:
-        pass
-    return ""
 
 st.title("🛡️ HỆ THỐNG QUẢN TRỊ BẢN QUYỀN ĐA DỰ ÁN")
 st.markdown("---")
@@ -51,45 +34,35 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
     
     with st.expander("📖 Xem Hướng Dẫn Sử Dụng Chi Tiết (Bước 1)"):
         st.markdown("""
-        1. **Chọn Đơn Vị/Xã**: Lựa chọn đúng xã nhận thiết bị tương ứng trên danh sách.
-        2. **Lấy Serial**: Hệ thống tự động quét Serial Mainboard phần cứng.
-        3. **Cấp Key**: Bấm **Xác nhận cấp key**, hệ thống sẽ tự động ghép nối bản quyền trống từ kho.
-        4. **Redeem**: Bấm nút mở trang Microsoft để nhập thủ công, bảo vệ tài khoản khỏi khóa spam.
+        1. **Chọn Đơn Vị/Xã**: Lựa chọn đúng xã nhận thiết bị.
+        2. **Lấy Serial**: Cắm USB và chạy file TOOL_KICH_HOAT.bat để tự động mở web và điền Serial.
+        3. **Cấp Key**: Bấm **Xác nhận cấp key**, hệ thống sẽ ghép nối bản quyền trống.
+        4. **Redeem**: Bấm nút mở trang Microsoft để nhập thủ công.
         5. **In Tem**: Tải mã QR in nhiệt dán vỏ hộp và thân máy.
         """)
 
     col1, col2 = st.columns(2)
     with col1:
-        # Lấy danh sách Xã và KTV động từ API
         list_xa = ["Đang tải danh sách..."]
         list_ktv = ["Đang tải danh sách..."]
         try:
             res_data = requests.post(WEB_APP_URL, json={"action": "GET_DANH_SACH_XA", "maDuAn": selected_du_an}).json()
             if res_data.get("status") == "success":
-                if len(res_data.get("data")) > 0:
-                    list_xa = res_data["data"]
-                else:
-                    list_xa = ["Không có dữ liệu đơn vị"]
-                
-                # Nạp danh sách KTV
-                if res_data.get("ktv_data") and len(res_data.get("ktv_data")) > 0:
-                    list_ktv = res_data["ktv_data"]
-                else:
-                    list_ktv = ["Không có dữ liệu KTV"]
+                list_xa = res_data.get("data") if len(res_data.get("data")) > 0 else ["Không có dữ liệu đơn vị"]
+                list_ktv = res_data.get("ktv_data") if res_data.get("ktv_data") and len(res_data.get("ktv_data")) > 0 else ["Không có dữ liệu KTV"]
             else:
-                 list_xa = ["Lỗi lấy dữ liệu xã"]
-                 list_ktv = ["Lỗi lấy dữ liệu KTV"]
-        except Exception as e:
-             list_xa = ["Lỗi kết nối API"]
-             list_ktv = ["Lỗi kết nối API"]
+                 list_xa, list_ktv = ["Lỗi lấy dữ liệu xã"], ["Lỗi lấy dữ liệu KTV"]
+        except:
+             list_xa, list_ktv = ["Lỗi kết nối API"], ["Lỗi kết nối API"]
 
         ma_xa = st.selectbox("Đơn vị / Xã nhận thiết bị:", list_xa)
         ktv_name = st.selectbox("KTV Thực hiện:", list_ktv)
     
     with col2:
-        serial_input = st.text_input("Serial Mainboard:", value=get_serial_mainboard())
-        if st.button("🔍 Tự động quét lại Serial"):
-            st.rerun()
+        # Tự động bắt Serial từ Tool khởi động (.bat) truyền vào
+        query_params = st.query_params
+        auto_serial = query_params.get("serial", "")
+        serial_input = st.text_input("Serial Mainboard:", value=auto_serial)
             
     if st.button("🚀 XÁC NHẬN CẤP KEY & KÍCH HOẠT", type="primary"):
         if not serial_input or ktv_name in ["Đang tải danh sách...", "Không có dữ liệu KTV", "Lỗi kết nối API"]:
