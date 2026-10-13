@@ -7,6 +7,7 @@ from io import BytesIO
 st.set_page_config(page_title="Hệ Thống Bản Quyền Đa Dự Án", page_icon="🛡️", layout="wide")
 
 # ================= CẤU HÌNH API =================
+# ĐÃ CẬP NHẬT CHUẨN LINK API MỚI NHẤT CỦA ANH VỸ
 WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzexUEBTjUj1FW4sg3MyLm5ukFgoTGX4RF0nMbyNTP1m5dnnHqy-3eLoovOZ8S2MdyD_w/exec"
 # ================================================
 
@@ -20,6 +21,7 @@ def generate_qr(data_str):
     img.save(buf, format="PNG")
     return buf.getvalue()
 
+# CẬP NHẬT: Dùng header để tiêu đề gọn gàng trên màn hình điện thoại
 st.header("🛡️ HỆ THỐNG QUẢN TRỊ BẢN QUYỀN ĐA DỰ ÁN")
 st.markdown("---")
 
@@ -59,11 +61,11 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
         ktv_name = st.selectbox("KTV Thực hiện:", list_ktv)
     
     with col2:
-        # Tự động bắt Serial từ Tool khởi động (.bat) truyền vào
         query_params = st.query_params
         auto_serial = query_params.get("serial", "")
         serial_input = st.text_input("Serial Mainboard:", value=auto_serial)
             
+    # CẬP NHẬT: Thêm use_container_width=True để nút bấm tràn viền, không bị lệch trên mobile
     if st.button("🚀 XÁC NHẬN CẤP KEY & KÍCH HOẠT", type="primary", use_container_width=True):
         if not serial_input or ktv_name in ["Đang tải danh sách...", "Không có dữ liệu KTV", "Lỗi kết nối API"]:
             st.error("Vui lòng đảm bảo Serial Mainboard và Tên KTV hợp lệ!")
@@ -89,12 +91,19 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
                         st.caption("Key Office")
                         st.code(res["key"], language="text")
                     
+                    # CẬP NHẬT: Tính năng Auto Redeem cho 6 máy / 1 Tài khoản
                     st.markdown("---")
                     st.markdown("### 🌐 THỰC HIỆN REDEEM BẢN QUYỀN")
-                    st.markdown("""
-                    <a href="https://setup.office.com/" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #0078D4; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
-                        👉 Mở trang Redeem Microsoft (setup.office.com)
+                    
+                    redeem_url = f"https://setup.office.com/?msokey={res['key']}"
+                    
+                    st.markdown(f"""
+                    <a href="{redeem_url}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #0078D4; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                        👉 Mở trang Redeem (Tự động điền sẵn Key)
                     </a>
+                    <p style="margin-top: 10px; font-size: 14px; color: #d83b01;"><b>💡 MẸO TỐI ƯU CHO DA880 (6 máy / 1 TK):</b><br>
+                    - Máy 1: Bấm nút trên, đăng nhập TK Microsoft và ấn Next.<br>
+                    - Từ máy 2 đến máy 6: KTV chỉ việc bấm nút trên, hệ thống sẽ tự động bypass (bỏ qua) bước đăng nhập và tự động điền sẵn Key 25 ký tự vào ô. KTV chỉ việc ấn Next là xong!</p>
                     """, unsafe_allow_html=True)
                     
                     st.markdown("---")
@@ -121,7 +130,7 @@ elif vai_tro == "2. QC Đối Soát Đóng Gói":
     with col_hop: qr_hop = st.text_input("Mã quét từ VỎ HỘP:", key="hop")
     with col_may: qr_may = st.text_input("Mã quét từ THÂN MÁY PC:", key="may")
     
-    if st.button("🔍 KIỂM TRA ĐỐI SOÁT"):
+    if st.button("🔍 KIỂM TRA ĐỐI SOÁT", use_container_width=True):
         if qr_hop and qr_may:
             if qr_hop.strip() == qr_may.strip():
                 serial_extracted = qr_hop.split(" | ")[-1].strip()
@@ -151,7 +160,7 @@ elif vai_tro == "3. Bảo Hành / Quản Trị":
     old_serial = st.text_input("Nhập Serial Mainboard CŨ (Bị hỏng):")
     new_serial = st.text_input("Nhập Serial Mainboard MỚI (Thay thế):")
     
-    if st.button("Cập Nhật Liên Kết Bản Quyền"):
+    if st.button("Cập Nhật Liên Kết Bản Quyền", use_container_width=True):
         if old_serial and new_serial:
             payload = {"action": "DOI_BAO_HANH", "oldSerial": old_serial.strip(), "newSerial": new_serial.strip()}
             res = requests.post(WEB_APP_URL, json=payload).json()
