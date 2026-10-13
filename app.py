@@ -7,7 +7,7 @@ from io import BytesIO
 st.set_page_config(page_title="Hệ Thống Bản Quyền Đa Dự Án", page_icon="🛡️", layout="wide")
 
 # ================= CẤU HÌNH API =================
-WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzexUEBTjUj1FW4sg3MyLm5ukFgoTGX4RF0nMbyNTP1m5dnnHqy-3eLoovOZ8S2MdyD_w/exec"
+WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxekVF8gvJARSf5gemQxGWLr51AZk-bnO3irYJa6FbCQrsWuuO57aZYSDmb8iv8M_xaJQ/exec"
 # ================================================
 
 def generate_qr(data_str):
