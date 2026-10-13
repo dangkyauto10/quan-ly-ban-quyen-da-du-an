@@ -20,7 +20,7 @@ def generate_qr(data_str):
     img.save(buf, format="PNG")
     return buf.getvalue()
 
-st.title("🛡️ HỆ THỐNG QUẢN TRỊ BẢN QUYỀN ĐA DỰ ÁN")
+st.header("🛡️ HỆ THỐNG QUẢN TRỊ BẢN QUYỀN ĐA DỰ ÁN")
 st.markdown("---")
 
 # MENU ĐIỀU HƯỚNG
@@ -64,7 +64,7 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
         auto_serial = query_params.get("serial", "")
         serial_input = st.text_input("Serial Mainboard:", value=auto_serial)
             
-    if st.button("🚀 XÁC NHẬN CẤP KEY & KÍCH HOẠT", type="primary"):
+    if st.button("🚀 XÁC NHẬN CẤP KEY & KÍCH HOẠT", type="primary", use_container_width=True):
         if not serial_input or ktv_name in ["Đang tải danh sách...", "Không có dữ liệu KTV", "Lỗi kết nối API"]:
             st.error("Vui lòng đảm bảo Serial Mainboard và Tên KTV hợp lệ!")
         else:
