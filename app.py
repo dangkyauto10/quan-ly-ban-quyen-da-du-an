@@ -8,7 +8,7 @@ st.set_page_config(page_title="Hệ Thống Bản Quyền Đa Dự Án", page_ic
 
 # ================= CẤU HÌNH API =================
 # Anh Vỹ nhớ dán lại cái link /exec chuẩn lúc nãy vào đây nhé:
-WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxQ1Yzr_u0VtaBQErzXR4YqRAwGNcw9ePRy6jJ4CM9n9H2S-i7EkobHKYjrPl4Y2toL/exec"
+WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwuxyhEFQxehHPguOAPJhm-og8VVYcDOuicEpjxmbiKO1rrt86gGCdZ89Vw7Tezs_iSdQ/exec"
 # ================================================
 
 def generate_qr(data_str):
