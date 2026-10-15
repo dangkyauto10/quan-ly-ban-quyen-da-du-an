@@ -6,10 +6,10 @@ from io import BytesIO
 
 st.set_page_config(page_title="Hệ Thống Bản Quyền Đa Dự Án", page_icon="🛡️", layout="wide")
 
-# ================= CẤU HÌNH API =================
-# Anh Vỹ nhớ dán lại cái link /exec chuẩn lúc nãy vào đây nhé:
-WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwuxyhEFQxehHPguOAPJhm-og8VVYcDOuicEpjxmbiKO1rrt86gGCdZ89Vw7Tezs_iSdQ/exec"
-# ================================================
+# ================= CẤU HÌNH API & LINK WEB =================
+WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxQ1Yzr_u0VtaBQErzXR4YqRAwGNcw9ePRy6jJ4CM9n9H2S-i7EkobHKYjrPl4Y2toL/exec"
+STREAMLIT_APP_URL = "https://quan-ly-ban-quyen-da-du-an-vwhggefuh7qfwpplhpelcb.streamlit.app"
+# ===========================================================
 
 def generate_qr(data_str):
     qr = qrcode.QRCode(version=1, box_size=10, border=2)
@@ -20,6 +20,19 @@ def generate_qr(data_str):
     img.save(buf, format="PNG")
     return buf.getvalue()
 
+# Nội dung file .bat tự động quét 4 tầng phần cứng (Mainboard -> BIOS -> UUID) để diệt tận gốc lỗi O.E.M
+BAT_SCRIPT_CONTENT = f"""@echo off
+title TOOL LAY SERIAL TU DONG - DA880
+color 0A
+echo DANG QUET SERIAL PHAN CUNG MAY TINH...
+
+for /f "delims=" %%A in ('powershell -NoProfile -Command "$bad = 'O\\.E\\.M\vert{}To be filled\vert{}Default\vert{}None\vert{}00000000\vert{}^To$'; $sn = (Get-CimInstance Win32_BaseBoard).SerialNumber.Trim(); if (-not$sn -or $sn -match$bad) {{ $sn = (Get-CimInstance Win32_BIOS).SerialNumber.Trim() }}; if (-not$sn -or $sn -match$bad) {{ $sn = (Get-CimInstance Win32_ComputerSystemProduct).IdentifyingNumber.Trim() }}; if (-not$sn -or $sn -match$bad) {{ $sn = 'OEM_HAY_NHAP_TAY_TEM_VO_MAY' }};$sn -replace '\\s+',''"') do set "SN=%%A"
+
+echo Serial doc duoc: %SN%
+start "" "{STREAMLIT_APP_URL}/?serial=%SN%"
+exit
+"""
+
 st.header("🛡️ HỆ THỐNG QUẢN TRỊ BẢN QUYỀN ĐA DỰ ÁN")
 st.markdown("---")
 
@@ -27,15 +40,26 @@ list_du_an = ["DA880", "DA881", "DA885"]
 selected_du_an = st.sidebar.selectbox("Lựa chọn Dự Án:", list_du_an)
 vai_tro = st.sidebar.radio("Nghiệp vụ thực hiện:", ["1. KTV Tiền Kích Hoạt", "2. QC Đối Soát Đóng Gói", "3. Bảo Hành / Quản Trị"])
 
+st.sidebar.markdown("---")
+st.sidebar.subheader("🛠️ Công cụ lấy Serial")
+st.sidebar.download_button(
+    label="📥 Tải TOOL_KICH_HOAT.bat",
+    data=BAT_SCRIPT_CONTENT.encode("utf-8"),
+    file_name="TOOL_KICH_HOAT.bat",
+    mime="application/bat",
+    use_container_width=True
+)
+st.sidebar.caption("💡 KTV tải file này về máy PC hoặc lưu vào USB, nháy đúp để tự động điền Serial vào trang web.")
+
 # ----------------- MODULE 1: TIỀN KÍCH HOẠT -----------------
 if vai_tro == "1. KTV Tiền Kích Hoạt":
     st.subheader(f"⚡ GIAI ĐOẠN 1: TIỀN KÍCH HOẠT TẠI CÔNG TY - {selected_du_an}")
     
     with st.expander("📖 Xem Hướng Dẫn Sử Dụng Chi Tiết (Bước 1)"):
         st.markdown("""
-        1. **Chọn Đơn Vị/Xã**: Lựa chọn đúng xã nhận thiết bị.
-        2. **Lấy Serial**: Chạy file TOOL_KICH_HOAT.bat để tự động mở web và điền Serial.
-        3. **Cấp Key**: Bấm **Xác nhận cấp key**, hệ thống trả về trọn bộ Key Windows, Office và Diệt Virus.
+        1. **Lấy Serial**: Bấm tải `TOOL_KICH_HOAT.bat` ở thanh menu bên trái (hoặc chạy từ USB) để tự động điền Serial. Nếu máy là hàng O.E.M không nạp mã phần cứng, vui lòng gõ tay mã Serial dán ngoài vỏ thùng/thân máy.
+        2. **Chọn Đơn Vị/Xã**: Chỉ những xã đã được Admin phân bổ Key `Chưa dùng` mới xuất hiện.
+        3. **Cấp Key**: Bấm **Xác nhận**, hệ thống rút đúng Key của xã đó và ghi vào Nhật ký kích hoạt.
         """)
 
     col1, col2 = st.columns(2)
@@ -43,7 +67,7 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
         list_xa = ["Đang tải danh sách..."]
         list_ktv = ["Đang tải danh sách..."]
         try:
-            response = requests.post(WEB_APP_URL, json={"action": "GET_DANH_SACH_XA", "maDuAn": selected_du_an}, timeout=15)
+            response = requests.post(WEB_APP_URL, json={"action": "GET_DANH_SACH_XA", "maDuAn": selected_du_an}, timeout=20)
             res_data = response.json()
             if res_data.get("status") == "success":
                 list_xa = res_data.get("data") if len(res_data.get("data")) > 0 else ["Không có dữ liệu đơn vị"]
@@ -60,73 +84,83 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
     with col2:
         query_params = st.query_params
         auto_serial = query_params.get("serial", "")
-        serial_input = st.text_input("Serial Mainboard:", value=auto_serial)
+        
+        # Nếu URL vẫn dính chữ O.E.M từ bộ nhớ cũ thì tự động làm sạch và cảnh báo
+        clean_auto = auto_serial.replace(" ", "").lower()
+        if "o.e.m" in clean_auto or "tobefilled" in clean_auto or clean_auto == "to" or "nhap_tay" in clean_auto:
+            st.warning("⚠️ Máy tính này dùng Mainboard O.E.M (không nạp Serial trong chip). Vui lòng gõ tay số Serial in trên tem vỏ máy vào ô dưới đây:")
+            auto_serial = ""
+            
+        serial_input = st.text_input("Serial Mainboard (Hoặc S/N trên tem vỏ máy):", value=auto_serial, placeholder="Nhập chính xác mã S/N trên vỏ máy...")
             
     if st.button("🚀 XÁC NHẬN CẤP TRỌN BỘ KEY & KÍCH HOẠT", type="primary", use_container_width=True):
-        if not serial_input or ktv_name in ["Đang tải danh sách...", "Không có dữ liệu KTV", "Lỗi kết nối API"]:
-            st.error("Vui lòng đảm bảo Serial Mainboard và Tên KTV hợp lệ!")
+        clean_check = serial_input.strip().replace(" ", "").lower()
+        if not clean_check or "o.e.m" in clean_check or "tobefilled" in clean_check or clean_check == "to":
+            st.error("❌ CHẶN BẢO MẬT: Không được dùng mã Serial ảo 'To be filled by O.E.M.'! Vui lòng nhập mã Serial thực tế trên tem dán ở vỏ máy PC!")
+            st.stop()
+            
+        if ktv_name in ["Đang tải danh sách...", "Không có dữ liệu KTV", "Lỗi kết nối API"] or ma_xa in ["Đang tải danh sách...", "Không có dữ liệu đơn vị", "Lỗi kết nối API"]:
+            st.error("Vui lòng đảm bảo Đơn vị/Xã và Tên KTV hợp lệ!")
         else:
-            with st.spinner("Đang kết nối kho dữ liệu (Vui lòng chờ, tối đa 30s)..."):
+            with st.spinner("Đang rút Key của đơn vị và ghi Nhật ký (Tối đa 30s)..."):
                 try:
                     payload = {
                         "action": "TIEN_KICH_HOAT", "maDuAn": selected_du_an,
-                        "maXa": ma_xa, "serialMainboard": serial_input, "ktv": ktv_name
+                        "maXa": ma_xa, "serialMainboard": serial_input.strip(), "ktv": ktv_name
                     }
                     response = requests.post(WEB_APP_URL, json=payload, timeout=30)
                     res = response.json()
                     
                     if res.get("status") == "success":
-                        st.success("✅ Đã cấp trọn bộ bản quyền thành công!")
+                        st.success(f"✅ Đã cấp bản quyền thành công cho đơn vị: **{ma_xa}**!")
                         
                         st.markdown("### 🪟 1. BẢN QUYỀN WINDOWS")
-                        st.code(res.get("keyWin", "Chưa có Key Windows trong kho"), language="text")
+                        st.code(res.get("keyWin") if res.get("keyWin") else "Chưa có Key Windows trong kho", language="text")
                         
                         st.markdown("### 📦 2. BẢN QUYỀN OFFICE")
                         c1, c2, c3 = st.columns(3)
                         with c1: 
-                            st.caption("Tài Khoản Microsoft")
+                            st.caption("Tài Khoản Microsoft (Đã Redeem)")
                             st.code(res.get("tkMS", ""), language="text")
                         with c2: 
                             st.caption("Mật Khẩu")
                             st.code(res.get("passMS", ""), language="text")
                         with c3: 
-                            st.caption("Key Office")
+                            st.caption("Key Office (Đối chiếu)")
                             st.code(res.get("keyOffice", ""), language="text")
                         
                         st.markdown("### 🛡️ 3. PHẦN MỀM DIỆT VIRUS & HẠN SỬ DỤNG")
                         v1, v2 = st.columns(2)
                         with v1:
                             st.caption("TK / Key Diệt Virus")
-                            st.code(res.get("keyAnti", "Không có"), language="text")
+                            st.code(res.get("keyAnti") if res.get("keyAnti") else "Không có", language="text")
                         with v2:
                             st.caption("⏰ Hạn Sử Dụng Diệt Virus")
-                            st.error(f"📅 **{res.get('expAnti', 'Chưa cập nhật')}**" if res.get("expAnti") else "Chưa cập nhật hạn")
+                            st.info(f"📅 **{res.get('expAnti')}**" if res.get("expAnti") else "Chưa cập nhật hạn")
                         
                         st.markdown("---")
-                        st.markdown("### 🌐 THỰC HIỆN REDEEM OFFICE")
-                        
-                        redeem_url = f"https://setup.office.com/?msokey={res.get('keyOffice', '')}"
-                        
+                        st.markdown("### 🌐 ĐĂNG NHẬP KÍCH HOẠT OFFICE HOẶC REDEEM")
+                        redeem_url = f"https://setup.office.com/redeem/enter-key?key={res.get('keyOffice', '')}"
                         st.markdown(f"""
                         <a href="{redeem_url}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #0078D4; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
-                            👉 Mở trang Redeem (Tự động điền sẵn Key Office)
+                            👉 Mở trang Redeem 1-chạm (Nếu Key chưa nạp)
                         </a>
-                        <p style="margin-top: 10px; font-size: 14px; color: #d83b01;"><b>💡 MẸO TỐI ƯU CHO DA880 (6 máy / 1 TK):</b><br>
-                        - Máy 1: Bấm nút trên, đăng nhập TK Microsoft và ấn Next.<br>
-                        - Từ máy 2 đến máy 6: KTV chỉ việc bấm nút trên, hệ thống sẽ tự động bypass (bỏ qua) bước đăng nhập và tự động điền sẵn Key 25 ký tự vào ô. KTV chỉ việc ấn Next là xong!</p>
+                        <a href="https://account.microsoft.com/services" target="_blank" style="display: inline-block; margin-left: 10px; padding: 10px 20px; background-color: #107C41; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                            🔑 Mở trang Tài khoản Microsoft (Nếu đã nạp sẵn)
+                        </a>
                         """, unsafe_allow_html=True)
                         
                         st.markdown("---")
                         st.markdown("### 🖨️ IN TEM NHÃN MÃ QR")
-                        qr_data = f"{selected_du_an} | {ma_xa} | {serial_input}"
+                        qr_data = f"{selected_du_an} | {ma_xa} | {serial_input.strip()}"
                         qr_img = generate_qr(qr_data)
                         
                         st.image(qr_img, width=200, caption="Mã đối soát QR")
-                        st.download_button(label="📥 Tải Tem QR (In Nhiệt)", data=qr_img, file_name=f"Tem_{serial_input}.png", mime="image/png")
+                        st.download_button(label="📥 Tải Tem QR (In Nhiệt)", data=qr_img, file_name=f"Tem_{serial_input.strip()}.png", mime="image/png")
                     else:
-                        st.error(f"❌ LỖI TỪ DỮ LIỆU: {res.get('message', 'Lỗi không xác định')}")
+                        st.error(f"❌ TỪ CHỐI CẤP KEY: {res.get('message', 'Lỗi không xác định')}")
                 except Exception as e:
-                    st.error(f"❌ Mất kết nối đến Google (Timeout). Máy chủ đang phản hồi chậm, vui lòng thử lại sau vài giây!")
+                    st.error("❌ Mất kết nối đến Google (Timeout). Máy chủ đang phản hồi chậm, vui lòng thử lại sau vài giây!")
 
 # ----------------- MODULE 2: QC ĐỐI SOÁT -----------------
 elif vai_tro == "2. QC Đối Soát Đóng Gói":
@@ -141,9 +175,9 @@ elif vai_tro == "2. QC Đối Soát Đóng Gói":
                 serial_extracted = qr_hop.split(" | ")[-1].strip()
                 try:
                     payload = {"action": "QC_PASSED", "serial": serial_extracted}
-                    res = requests.post(WEB_APP_URL, json=payload, timeout=15).json()
+                    res = requests.post(WEB_APP_URL, json=payload, timeout=20).json()
                     if res.get("status") == "success":
-                        st.success("✅ KHỚP CHÍNH XÁC! Đã ghi nhận QC Passed.")
+                        st.success("✅ KHỚP CHÍNH XÁC! Đã ghi nhận QC Passed vào đúng Cột I.")
                     else:
                         st.error(res.get("message"))
                 except:
@@ -163,9 +197,9 @@ elif vai_tro == "3. Bảo Hành / Quản Trị":
         if old_serial and new_serial:
             try:
                 payload = {"action": "DOI_BAO_HANH", "oldSerial": old_serial.strip(), "newSerial": new_serial.strip()}
-                res = requests.post(WEB_APP_URL, json=payload, timeout=15).json()
+                res = requests.post(WEB_APP_URL, json=payload, timeout=20).json()
                 if res.get("status") == "success":
-                    st.success("✅ Đã cập nhật Serial mới thành công!")
+                    st.success("✅ Đã cập nhật Serial mới thành công vào đúng Cột E & H!")
                 else:
                     st.error(res.get("message"))
             except:
