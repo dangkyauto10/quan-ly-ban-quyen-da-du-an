@@ -22,7 +22,7 @@ def generate_qr(data_str):
 
 # Nội dung file .bat tự động quét 4 tầng phần cứng (Mainboard -> BIOS -> UUID) để diệt tận gốc lỗi O.E.M
 BAT_SCRIPT_CONTENT = f"""@echo off
-title TOOL LAY SERIAL TU DONG - DA880
+title TOOL LAY SERIAL TU DONG - DA DU AN
 color 0A
 echo DANG QUET SERIAL PHAN CUNG MAY TINH...
 
@@ -36,9 +36,17 @@ exit
 st.header("🛡️ HỆ THỐNG QUẢN TRỊ BẢN QUYỀN ĐA DỰ ÁN")
 st.markdown("---")
 
+# TỰ ĐỘNG LẤY DANH SÁCH DỰ ÁN ĐỘNG TỪ DM_CHUAN / KHO_KEY_DA_NHAP
 list_du_an = ["DA880", "DA881", "DA885"]
-selected_du_an = st.sidebar.selectbox("Lựa chọn Dự Án:", list_du_an)
-vai_tro = st.sidebar.radio("Nghiệp vụ thực hiện:", ["1. KTV Tiền Kích Hoạt", "2. QC Đối Soát Đóng Gói", "3. Bảo Hành / Quản Trị"])
+try:
+    res_proj = requests.post(WEB_APP_URL, json={"action": "GET_DANH_SACH_DU_AN"}, timeout=15).json()
+    if res_proj.get("status") == "success" and len(res_proj.get("projects", [])) > 0:
+        list_du_an = res_proj.get("projects")
+except:
+    pass
+
+selected_du_an = st.sidebar.selectbox("📂 Lựa chọn Dự Án:", list_du_an)
+vai_tro = st.sidebar.radio("⚙️ Nghiệp vụ thực hiện:", ["1. KTV Tiền Kích Hoạt", "2. QC Đối Soát Đóng Gói", "3. Bảo Hành / Quản Trị"])
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🛠️ Công cụ lấy Serial")
@@ -49,7 +57,7 @@ st.sidebar.download_button(
     mime="application/bat",
     use_container_width=True
 )
-st.sidebar.caption("💡 KTV tải file này về máy PC hoặc lưu vào USB, nháy đúp để tự động điền Serial vào trang web.")
+st.sidebar.caption("💡 KTV tải file này về máy PC hoặc lưu vào USB, nháy đúp để tự động mở Web và điền Serial.")
 
 # ----------------- MODULE 1: TIỀN KÍCH HOẠT -----------------
 if vai_tro == "1. KTV Tiền Kích Hoạt":
@@ -57,9 +65,9 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
     
     with st.expander("📖 Xem Hướng Dẫn Sử Dụng Chi Tiết (Bước 1)"):
         st.markdown("""
-        1. **Lấy Serial**: Bấm tải `TOOL_KICH_HOAT.bat` ở thanh menu bên trái (hoặc chạy từ USB) để tự động điền Serial. Nếu máy là hàng O.E.M không nạp mã phần cứng, vui lòng gõ tay mã Serial dán ngoài vỏ thùng/thân máy.
-        2. **Chọn Đơn Vị/Xã**: Chỉ những xã đã được Admin phân bổ Key `Chưa dùng` mới xuất hiện.
-        3. **Cấp Key**: Bấm **Xác nhận**, hệ thống rút đúng Key của xã đó và ghi vào Nhật ký kích hoạt.
+        1. **Lấy Serial**: Chạy `TOOL_KICH_HOAT.bat` để tự động điền Serial. Nếu máy là hàng O.E.M không nạp mã phần cứng, vui lòng gõ tay mã Serial dán ngoài vỏ thùng/thân máy.
+        2. **Chọn Điểm / Xã / Trường / Đơn vị**: Hệ thống tự động lọc đúng danh sách điểm lắp đặt và KTV của dự án đang chọn.
+        3. **Cấp Key**: Bấm **Xác nhận**, hệ thống rút đúng Key `Chưa dùng` của đơn vị đó và ghi vào Nhật ký kích hoạt.
         """)
 
     col1, col2 = st.columns(2)
@@ -73,19 +81,19 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
                 list_xa = res_data.get("data") if len(res_data.get("data")) > 0 else ["Không có dữ liệu đơn vị"]
                 list_ktv = res_data.get("ktv_data") if res_data.get("ktv_data") and len(res_data.get("ktv_data")) > 0 else ["Không có dữ liệu KTV"]
             else:
-                 list_xa, list_ktv = ["Lỗi lấy dữ liệu xã"], ["Lỗi lấy dữ liệu KTV"]
+                 list_xa, list_ktv = ["Lỗi lấy dữ liệu đơn vị"], ["Lỗi lấy dữ liệu KTV"]
         except Exception as e:
              list_xa, list_ktv = ["Lỗi kết nối API"], ["Lỗi kết nối API"]
              st.error("Máy chủ Google đang xử lý quá chậm hoặc bị chặn. Vui lòng tải lại trang.")
 
-        ma_xa = st.selectbox("Đơn vị / Xã nhận thiết bị:", list_xa)
-        ktv_name = st.selectbox("KTV Thực hiện:", list_ktv)
+        ma_xa = st.selectbox("Điểm / Xã / Trường / Đơn vị nhận thiết bị:", list_xa)
+        ktv_name = st.selectbox("KTV / Thành viên thực hiện:", list_ktv)
     
     with col2:
         query_params = st.query_params
         auto_serial = query_params.get("serial", "")
         
-        # Nếu URL vẫn dính chữ O.E.M từ bộ nhớ cũ thì tự động làm sạch và cảnh báo
+        # Làm sạch nếu URL dính mã ảo O.E.M từ cache trình duyệt
         clean_auto = auto_serial.replace(" ", "").lower()
         if "o.e.m" in clean_auto or "tobefilled" in clean_auto or clean_auto == "to" or "nhap_tay" in clean_auto:
             st.warning("⚠️ Máy tính này dùng Mainboard O.E.M (không nạp Serial trong chip). Vui lòng gõ tay số Serial in trên tem vỏ máy vào ô dưới đây:")
@@ -100,7 +108,7 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
             st.stop()
             
         if ktv_name in ["Đang tải danh sách...", "Không có dữ liệu KTV", "Lỗi kết nối API"] or ma_xa in ["Đang tải danh sách...", "Không có dữ liệu đơn vị", "Lỗi kết nối API"]:
-            st.error("Vui lòng đảm bảo Đơn vị/Xã và Tên KTV hợp lệ!")
+            st.error("Vui lòng đảm bảo Đơn vị và Tên KTV hợp lệ!")
         else:
             with st.spinner("Đang rút Key của đơn vị và ghi Nhật ký (Tối đa 30s)..."):
                 try:
@@ -112,7 +120,7 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
                     res = response.json()
                     
                     if res.get("status") == "success":
-                        st.success(f"✅ Đã cấp bản quyền thành công cho đơn vị: **{ma_xa}**!")
+                        st.success(f"✅ Đã cấp bản quyền thành công cho đơn vị: **{ma_xa}** ({selected_du_an})!")
                         
                         st.markdown("### 🪟 1. BẢN QUYỀN WINDOWS")
                         st.code(res.get("keyWin") if res.get("keyWin") else "Chưa có Key Windows trong kho", language="text")
