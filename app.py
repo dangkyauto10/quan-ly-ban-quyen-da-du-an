@@ -19,6 +19,11 @@ def generate_qr(data_str):
     img.save(buf, format="PNG")
     return buf.getvalue()
 
+@st.cache_data(ttl=15, show_spinner=False)
+def fetch_api_data(url, payload):
+    r = requests.post(url, json=payload, timeout=25)
+    return r.status_code, r.text
+
 BAT_LINES = [
     "@echo off",
     "title TOOL LAY SERIAL TU DONG - DA DU AN",
@@ -35,16 +40,13 @@ BAT_SCRIPT_CONTENT = "\r\n".join(BAT_LINES)
 st.header("🛡️ HỆ THỐNG QUẢN TRỊ BẢN QUYỀN ĐA DỰ ÁN")
 st.markdown("---")
 
-list_du_an = ["DA880", "DA881", "DA885"]
-try:
-    res_proj = requests.post(WEB_APP_URL, json={"action": "GET_DANH_SACH_DU_AN"}, timeout=15).json()
-    if res_proj.get("status") == "success" and len(res_proj.get("projects", [])) > 0:
-        list_du_an = res_proj.get("projects")
-except:
-    pass
-
+list_du_an = ["DA880", "DA881", "DA882", "DA883", "DA885"]
 selected_du_an = st.sidebar.selectbox("📂 Lựa chọn Dự Án:", list_du_an)
 vai_tro = st.sidebar.radio("⚙️ Nghiệp vụ thực hiện:", ["1. KTV Tiền Kích Hoạt", "2. QC Đối Soát Đóng Gói", "3. Bảo Hành / Quản Trị"])
+
+if st.sidebar.button("🔄 Làm mới dữ liệu từ Sheet", use_container_width=True):
+    st.cache_data.clear()
+    st.rerun()
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🛠️ Công cụ lấy Serial")
@@ -85,16 +87,21 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
         list_xa = ["Đang tải danh sách..."]
         list_ktv = ["Đang tải danh sách..."]
         try:
-            response = requests.post(WEB_APP_URL, json={"action": "GET_DANH_SACH_XA", "maDuAn": selected_du_an}, timeout=20)
-            res_data = response.json()
-            if res_data.get("status") == "success":
-                list_xa = res_data.get("data") if len(res_data.get("data")) > 0 else ["Không có dữ liệu đơn vị"]
-                list_ktv = res_data.get("ktv_data") if res_data.get("ktv_data") and len(res_data.get("ktv_data")) > 0 else ["Không có dữ liệu KTV"]
+            status_code, raw_text = fetch_api_data(WEB_APP_URL, {"action": "GET_DANH_SACH_XA", "maDuAn": selected_du_an})
+            if "<!DOCTYPE html>" in raw_text or "<html" in raw_text.lower():
+                list_xa, list_ktv = ["Sai quyền truy cập API"], ["Sai quyền truy cập API"]
+                st.error("⚠️ LỖI PHÂN QUYỀN APPS SCRIPT: Bản Deploy trên Google Sheets đang khóa quyền truy cập hoặc sai link WEB_APP_URL. Anh Vỹ hãy vào Apps Script -> Quản lý triển khai -> Chọn 'Bất kỳ ai (Anyone)' và dán đúng link /exec vào dòng 10 của app.py!")
             else:
-                list_xa, list_ktv = ["Lỗi lấy dữ liệu đơn vị"], ["Lỗi lấy dữ liệu KTV"]
-        except:
+                res_data = requests.models.complexjson.loads(raw_text)
+                if res_data.get("status") == "success":
+                    list_xa = res_data.get("data") if len(res_data.get("data", [])) > 0 else ["Không có dữ liệu đơn vị"]
+                    list_ktv = res_data.get("ktv_data") if res_data.get("ktv_data") and len(res_data.get("ktv_data", [])) > 0 else ["Không có dữ liệu KTV"]
+                else:
+                    list_xa, list_ktv = ["Lỗi Sheet"], ["Lỗi Sheet"]
+                    st.error("⚠️ Lỗi từ Google Sheets: " + str(res_data.get("message", "Kiểm tra lại tên tab KHO_KEY_DA_NHAP")))
+        except Exception as err:
             list_xa, list_ktv = ["Lỗi kết nối API"], ["Lỗi kết nối API"]
-            st.error("Máy chủ Google đang phản hồi chậm. Vui lòng tải lại trang.")
+            st.error("⚠️ Chi tiết lỗi kết nối: " + str(err))
 
         ma_xa = st.selectbox("Điểm / Xã / Trường / Đơn vị nhận thiết bị:", list_xa)
         ktv_name = st.selectbox("KTV / Thành viên thực hiện:", list_ktv)
@@ -116,7 +123,7 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
             st.error("❌ CHẶN BẢO MẬT: Vui lòng nhập mã Serial thực tế trên tem dán ở vỏ máy PC!")
             st.stop()
             
-        if ktv_name in ["Đang tải danh sách...", "Không có dữ liệu KTV", "Lỗi kết nối API"] or ma_xa in ["Đang tải danh sách...", "Không có dữ liệu đơn vị", "Lỗi kết nối API"]:
+        if ktv_name in ["Đang tải danh sách...", "Không có dữ liệu KTV", "Lỗi kết nối API", "Sai quyền truy cập API", "Lỗi Sheet"] or ma_xa in ["Đang tải danh sách...", "Không có dữ liệu đơn vị", "Lỗi kết nối API", "Sai quyền truy cập API", "Lỗi Sheet"]:
             st.error("Vui lòng đảm bảo Đơn vị và Tên KTV hợp lệ!")
         else:
             with st.spinner("Đang rút Key của đơn vị và ghi Nhật ký (Tối đa 30s)..."):
@@ -128,11 +135,12 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
                     res = requests.post(WEB_APP_URL, json=payload, timeout=30).json()
                     if res.get("status") == "success":
                         st.session_state["last_activated"] = res
+                        st.cache_data.clear()
                         st.success("✅ Đã cấp bản quyền thành công cho đơn vị: " + ma_xa)
                     else:
                         st.error("❌ TỪ CHỐI CẤP KEY: " + str(res.get("message", "Lỗi không xác định")))
-                except:
-                    st.error("❌ Mất kết nối đến Google (Timeout). Vui lòng thử lại sau vài giây!")
+                except Exception as err:
+                    st.error("❌ Lỗi kết nối khi cấp Key: " + str(err))
 
     if "last_activated" in st.session_state:
         res = st.session_state["last_activated"]
