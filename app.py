@@ -20,18 +20,18 @@ def generate_qr(data_str):
     img.save(buf, format="PNG")
     return buf.getvalue()
 
-# Nội dung file .bat tự động quét 4 tầng phần cứng (Mainboard -> BIOS -> UUID) để diệt tận gốc lỗi O.E.M
-BAT_SCRIPT_CONTENT = f"""@echo off
-title TOOL LAY SERIAL TU DONG - DA DU AN
-color 0A
-echo DANG QUET SERIAL PHAN CUNG MAY TINH...
-
-for /f "delims=" %%A in ('powershell -NoProfile -Command "$bad = 'O\\.E\\.M\vert{}To be filled\vert{}Default\vert{}None\vert{}00000000\vert{}^To$'; $sn = (Get-CimInstance Win32_BaseBoard).SerialNumber.Trim(); if (-not$sn -or $sn -match$bad) {{ $sn = (Get-CimInstance Win32_BIOS).SerialNumber.Trim() }}; if (-not$sn -or $sn -match$bad) {{ $sn = (Get-CimInstance Win32_ComputerSystemProduct).IdentifyingNumber.Trim() }}; if (-not$sn -or $sn -match$bad) {{ $sn = 'OEM_HAY_NHAP_TAY_TEM_VO_MAY' }};$sn -replace '\\s+',''"') do set "SN=%%A"
-
-echo Serial doc duoc: %SN%
-start "" "{STREAMLIT_APP_URL}/?serial=%SN%"
-exit
-"""
+# Nội dung file .bat: Không dùng f-string, không dùng ngoặc nhọn hay dấu gạch đứng để chống lỗi khi Copy-Paste
+BAT_SCRIPT_CONTENT = (
+    "@echo off\r\n"
+    "title TOOL LAY SERIAL TU DONG - DA DU AN\r\n"
+    "color 0A\r\n"
+    "echo DANG QUET SERIAL PHAN CUNG MAY TINH...\r\n"
+    "set \"SN=\"\r\n"
+    "for /f \"delims=\" %%A in ('powershell -NoProfile -Command \"$s = (Get-CimInstance Win32_BIOS).SerialNumber; if (-not $s -or$s -like '*O.E.M*' -or $s -like '*To be filled*' -or$s -like '*Default*') { $s = (Get-CimInstance Win32_BaseBoard).SerialNumber }; if (-not$s -or $s -like '*O.E.M*' -or$s -like '*To be filled*') { $s = (Get-CimInstance Win32_ComputerSystemProduct).IdentifyingNumber }; if (-not$s -or $s -like '*O.E.M*' -or$s -like '*To be filled*') { $s = 'NHAP_TAY_TREN_VO_MAY' };$s -replace '[^a-zA-Z0-9_-]',''\"') do set \"SN=%%A\"\r\n"
+    "echo Serial doc duoc: %SN%\r\n"
+    "start \"\" \"" + STREAMLIT_APP_URL + "/?serial=%SN%\"\r\n"
+    "exit\r\n"
+)
 
 st.header("🛡️ HỆ THỐNG QUẢN TRỊ BẢN QUYỀN ĐA DỰ ÁN")
 st.markdown("---")
@@ -113,7 +113,9 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
         query_params = st.query_params
         auto_serial = query_params.get("serial", "")
         
-        # Làm sạch nếu URL dính mã ảo O.E.M từ cache trình duyệt
+        # Làm sạch dấu gạch chéo / ở đầu và cuối (VD: /HFW42N2/TW3207086D0001/ -> HFW42N2-TW3207086D0001)
+        auto_serial = auto_serial.strip("/").replace("/", "-")
+        
         clean_auto = auto_serial.replace(" ", "").lower()
         if "o.e.m" in clean_auto or "tobefilled" in clean_auto or clean_auto == "to" or "nhap_tay" in clean_auto:
             st.warning("⚠️ Máy tính này dùng Mainboard O.E.M (không nạp Serial trong chip). Vui lòng gõ tay số Serial in trên tem vỏ máy vào ô dưới đây:")
@@ -197,7 +199,7 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
     st.markdown("---")
     st.markdown("### 🖨️ IN TEM NHÃN MÃ QR (DÁN THÂN MÁY & VỎ THÙNG)")
     preview_serial = serial_input.strip() if serial_input.strip() else "CHUA_CO_SERIAL"
-    qr_data = f"{selected_du_an} | {ma_xa} | {preview_serial}"
+    qr_data = selected_du_an + " - " + ma_xa + " - " + preview_serial
     qr_img = generate_qr(qr_data)
     
     col_qr1, col_qr2 = st.columns([1, 3])
@@ -233,7 +235,9 @@ elif vai_tro == "2. QC Đối Soát Đóng Gói":
     if st.button("🔍 KIỂM TRA ĐỐI SOÁT", type="primary", use_container_width=True):
         if qr_hop and qr_may:
             if qr_hop.strip() == qr_may.strip():
-                serial_extracted = qr_hop.split(" | ")[-1].strip()
+                # Hỗ trợ tách mã Serial cho cả định dạng cũ và mới
+                raw_qr = qr_hop.strip()
+                serial_extracted = raw_qr.split(" - ")[-1].strip() if " - " in raw_qr else raw_qr.split()[-1].strip()
                 try:
                     payload = {"action": "QC_PASSED", "serial": serial_extracted}
                     res = requests.post(WEB_APP_URL, json=payload, timeout=20).json()
@@ -246,30 +250,4 @@ elif vai_tro == "2. QC Đối Soát Đóng Gói":
             else:
                 st.error("❌ CẢNH BÁO ĐỎ: VỎ HỘP VÀ THÂN MÁY KHÔNG KHỚP NHAU! Yêu cầu kiểm tra và sắp xếp lại ngay!")
         else:
-            st.warning("Vui lòng quét đủ mã của cả Vỏ hộp và Thân máy.")
-
-# ----------------- MODULE 3: BẢO HÀNH -----------------
-elif vai_tro == "3. Bảo Hành / Quản Trị":
-    st.subheader("🔧 GIAI ĐOẠN 3: CẬP NHẬT BẢO HÀNH (THAY MAINBOARD)")
-    
-    st.info(
-        "📖 **QUY TRÌNH CẬP NHẬT BẢO HÀNH KHI THAY MAINBOARD (BƯỚC 3):**\n\n"
-        "**1. Xác định máy lỗi:** Khi máy tính tại Đơn vị/Xã/Trường bị hỏng Mainboard cần thay mới, nhập chính xác **Serial Mainboard CŨ** vào ô thứ nhất.\n\n"
-        "**2. Nhập Serial mới:** Nhập **Serial Mainboard MỚI** (vừa thay thế) vào ô thứ hai.\n\n"
-        "**3. Đồng bộ hệ thống:** Bấm **`Cập Nhật Liên Kết Bản Quyền`**. Hệ thống sẽ tự động ghi đè Serial mới vào **Cột E** và ghi chú lịch sử thay Mainboard vào **Cột H** trên bảng `NHAT_KY_KICH_HOAT`."
-    )
-
-    old_serial = st.text_input("Nhập Serial Mainboard CŨ (Bị hỏng):")
-    new_serial = st.text_input("Nhập Serial Mainboard MỚI (Thay thế):")
-    
-    if st.button("Cập Nhật Liên Kết Bản Quyền", type="primary", use_container_width=True):
-        if old_serial and new_serial:
-            try:
-                payload = {"action": "DOI_BAO_HANH", "oldSerial": old_serial.strip(), "newSerial": new_serial.strip()}
-                res = requests.post(WEB_APP_URL, json=payload, timeout=20).json()
-                if res.get("status") == "success":
-                    st.success("✅ Đã cập nhật Serial mới thành công vào đúng Cột E & H!")
-                else:
-                    st.error(res.get("message"))
-            except:
-                st.error("Lỗi kết nối API.")
+            st.warning("Vui lòng qu
