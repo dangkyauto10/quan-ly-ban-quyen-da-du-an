@@ -57,18 +57,26 @@ st.sidebar.download_button(
     mime="application/bat",
     use_container_width=True
 )
-st.sidebar.caption("💡 KTV tải file này về máy PC hoặc lưu vào USB, nháy đúp để tự động mở Web và điền Serial.")
+st.sidebar.info(
+    "📌 **HƯỚNG DẪN NHANH:**\n"
+    "1. Tải file `TOOL_KICH_HOAT.bat` lưu vào USB.\n"
+    "2. Cắm vào máy PC cần kích hoạt và nháy đúp chạy file.\n"
+    "3. Trình duyệt sẽ tự động mở lên và điền sẵn mã Serial."
+)
 
 # ----------------- MODULE 1: TIỀN KÍCH HOẠT -----------------
 if vai_tro == "1. KTV Tiền Kích Hoạt":
     st.subheader(f"⚡ GIAI ĐOẠN 1: TIỀN KÍCH HOẠT TẠI CÔNG TY - {selected_du_an}")
     
-    with st.expander("📖 Xem Hướng Dẫn Sử Dụng Chi Tiết (Bước 1)"):
-        st.markdown("""
-        1. **Lấy Serial**: Chạy `TOOL_KICH_HOAT.bat` để tự động điền Serial. Nếu máy là hàng O.E.M không nạp mã phần cứng, vui lòng gõ tay mã Serial dán ngoài vỏ thùng/thân máy.
-        2. **Chọn Điểm / Xã / Trường / Đơn vị**: Hệ thống tự động lọc đúng danh sách điểm lắp đặt và KTV của dự án đang chọn.
-        3. **Cấp Key**: Bấm **Xác nhận**, hệ thống rút đúng Key `Chưa dùng` của đơn vị đó và ghi vào Nhật ký kích hoạt.
-        """)
+    # HIỂN THỊ TRỰC DIỆN HƯỚNG DẪN (KHÔNG DÙNG EXPANDER ẨN)
+    st.info(
+        "📖 **QUY TRÌNH THỰC HIỆN CHUẨN DÀNH CHO KTV (BƯỚC 1):**\n\n"
+        "**1. Lấy Serial tự động:** Cắm USB và chạy file **`TOOL_KICH_HOAT.bat`** trên máy tính đang cài đặt để tự động mở Web và điền Serial.\n\n"
+        "**2. Xử lý máy O.E.M (Nếu có):** Nếu hệ thống cảnh báo mã `To be filled by O.E.M.` (do nhà sản xuất không nạp Serial vào Mainboard), KTV **bắt buộc gõ tay mã Serial (S/N) in trên tem dán ở vỏ thùng hoặc thân máy PC** vào ô Serial Mainboard.\n\n"
+        "**3. Chọn Đơn vị & KTV:** Chọn đúng **Điểm / Xã / Trường / Đơn vị** nhận máy và **Tên KTV** thực hiện (Chỉ các đơn vị còn Key `Chưa dùng` mới hiển thị).\n\n"
+        "**4. Cấp Key & Kích hoạt:** Bấm nút **`🚀 XÁC NHẬN CẤP TRỌN BỘ KEY & KÍCH HOẠT`**. Sử dụng Tài khoản Microsoft và Key hiện ra trên màn hình để kích hoạt máy.\n\n"
+        "**5. In & Dán Tem QR:** Tải mã QR về in nhiệt thành **02 bản** (01 bản dán lên **Thân máy PC**, 01 bản dán lên **Vỏ hộp**) để bàn giao sang bộ phận QC."
+    )
 
     col1, col2 = st.columns(2)
     with col1:
@@ -163,7 +171,7 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
                         qr_data = f"{selected_du_an} | {ma_xa} | {serial_input.strip()}"
                         qr_img = generate_qr(qr_data)
                         
-                        st.image(qr_img, width=200, caption="Mã đối soát QR")
+                        st.image(qr_img, width=200, caption="Mã đối soát QR (In 2 bản: Dán Thân máy PC & Vỏ hộp)")
                         st.download_button(label="📥 Tải Tem QR (In Nhiệt)", data=qr_img, file_name=f"Tem_{serial_input.strip()}.png", mime="image/png")
                     else:
                         st.error(f"❌ TỪ CHỐI CẤP KEY: {res.get('message', 'Lỗi không xác định')}")
@@ -173,11 +181,20 @@ if vai_tro == "1. KTV Tiền Kích Hoạt":
 # ----------------- MODULE 2: QC ĐỐI SOÁT -----------------
 elif vai_tro == "2. QC Đối Soát Đóng Gói":
     st.subheader(f"📦 GIAI ĐOẠN 2: QC ĐỐI SOÁT & NIÊM PHONG - {selected_du_an}")
+    
+    # HIỂN THỊ TRỰC DIỆN HƯỚNG DẪN QC
+    st.info(
+        "📖 **QUY TRÌNH ĐỐI SOÁT ĐÓNG GÓI DÀNH CHO QC (BƯỚC 2):**\n\n"
+        "**1. Quét mã Vỏ hộp:** Đặt con trỏ chuột vào ô **Mã quét từ VỎ HỘP**, dùng súng bắn mã vạch quét tem QR dán ngoài thùng carton.\n\n"
+        "**2. Quét mã Thân máy:** Đặt con trỏ chuột vào ô **Mã quét từ THÂN MÁY PC**, quét tiếp tem QR dán trên vỏ case máy tính.\n\n"
+        "**3. Xác nhận Niêm phong:** Bấm **`🔍 KIỂM TRA ĐỐI SOÁT`**. Nếu hệ thống báo xanh **`KHỚP CHÍNH XÁC`**, trạng thái **`QC Passed - Đã Niêm Phong`** sẽ tự động lưu vào Cột I trên Google Sheets. Lúc này QC mới được phép đóng thùng và dán tem niêm phong."
+    )
+
     col_hop, col_may = st.columns(2)
     with col_hop: qr_hop = st.text_input("Mã quét từ VỎ HỘP:", key="hop")
     with col_may: qr_may = st.text_input("Mã quét từ THÂN MÁY PC:", key="may")
     
-    if st.button("🔍 KIỂM TRA ĐỐI SOÁT", use_container_width=True):
+    if st.button("🔍 KIỂM TRA ĐỐI SOÁT", type="primary", use_container_width=True):
         if qr_hop and qr_may:
             if qr_hop.strip() == qr_may.strip():
                 serial_extracted = qr_hop.split(" | ")[-1].strip()
@@ -185,23 +202,32 @@ elif vai_tro == "2. QC Đối Soát Đóng Gói":
                     payload = {"action": "QC_PASSED", "serial": serial_extracted}
                     res = requests.post(WEB_APP_URL, json=payload, timeout=20).json()
                     if res.get("status") == "success":
-                        st.success("✅ KHỚP CHÍNH XÁC! Đã ghi nhận QC Passed vào đúng Cột I.")
+                        st.success("✅ KHỚP CHÍNH XÁC! Đã ghi nhận QC Passed vào đúng Cột I. Cho phép dán tem niêm phong!")
                     else:
                         st.error(res.get("message"))
                 except:
                     st.error("Lỗi kết nối API.")
             else:
-                st.error("❌ CẢNH BÁO ĐỎ: VỎ HỘP VÀ THÂN MÁY KHÔNG KHỚP NHAU!")
+                st.error("❌ CẢNH BÁO ĐỎ: VỎ HỘP VÀ THÂN MÁY KHÔNG KHỚP NHAU! Yêu cầu kiểm tra và sắp xếp lại ngay!")
         else:
-            st.warning("Vui lòng quét đủ mã.")
+            st.warning("Vui lòng quét đủ mã của cả Vỏ hộp và Thân máy.")
 
 # ----------------- MODULE 3: BẢO HÀNH -----------------
 elif vai_tro == "3. Bảo Hành / Quản Trị":
-    st.subheader("🔧 CẬP NHẬT BẢO HÀNH (THAY MAINBOARD)")
-    old_serial = st.text_input("Nhập Serial Mainboard CŨ:")
-    new_serial = st.text_input("Nhập Serial Mainboard MỚI:")
+    st.subheader("🔧 GIAI ĐOẠN 3: CẬP NHẬT BẢO HÀNH (THAY MAINBOARD)")
     
-    if st.button("Cập Nhật Liên Kết Bản Quyền", use_container_width=True):
+    # HIỂN THỊ TRỰC DIỆN HƯỚNG DẪN BẢO HÀNH
+    st.info(
+        "📖 **QUY TRÌNH CẬP NHẬT BẢO HÀNH KHI THAY MAINBOARD (BƯỚC 3):**\n\n"
+        "**1. Xác định máy lỗi:** Khi máy tính tại Đơn vị/Xã/Trường bị hỏng Mainboard cần thay mới, nhập chính xác **Serial Mainboard CŨ** vào ô thứ nhất.\n\n"
+        "**2. Nhập Serial mới:** Nhập **Serial Mainboard MỚI** (vừa thay thế) vào ô thứ hai.\n\n"
+        "**3. Đồng bộ hệ thống:** Bấm **`Cập Nhật Liên Kết Bản Quyền`**. Hệ thống sẽ tự động ghi đè Serial mới vào **Cột E** và ghi chú lịch sử thay Mainboard vào **Cột H** trên bảng `NHAT_KY_KICH_HOAT`."
+    )
+
+    old_serial = st.text_input("Nhập Serial Mainboard CŨ (Bị hỏng):")
+    new_serial = st.text_input("Nhập Serial Mainboard MỚI (Thay thế):")
+    
+    if st.button("Cập Nhật Liên Kết Bản Quyền", type="primary", use_container_width=True):
         if old_serial and new_serial:
             try:
                 payload = {"action": "DOI_BAO_HANH", "oldSerial": old_serial.strip(), "newSerial": new_serial.strip()}
