@@ -7,7 +7,7 @@ from io import BytesIO
 st.set_page_config(page_title="Hệ Thống Bản Quyền Đa Dự Án", page_icon="🛡️", layout="wide")
 
 # ================= CẤU HÌNH API & LINK WEB =================
-WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxQ1Yzr_u0VtaBQErzXR4YqRAwGNcw9ePRy6jJ4CM9n9H2S-i7EkobHKYjrPl4Y2toL/exec"
+WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwuxyhEFQxehHPguOAPJhm-og8VVYcDOuicEpjxmbiKO1rrt86gGCdZ89Vw7Tezs_iSdQ/exec"
 STREAMLIT_APP_URL = "https://quan-ly-ban-quyen-da-du-an-vwhggefuh7qfwpplhpelcb.streamlit.app"
 
 def generate_qr(data_str):
