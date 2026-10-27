@@ -1,0 +1,18 @@
+name: V2 checks
+on:
+  push:
+    branches: [v2-preview-20261027]
+  pull_request:
+    paths: ['v2_app.py', 'license_app/**', 'tests/**', 'requirements-v2.txt', '.github/workflows/v2-checks.yml']
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-v2.txt pytest
+      - run: python -m pytest -q tests

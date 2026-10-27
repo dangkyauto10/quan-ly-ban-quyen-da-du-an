@@ -1,0 +1,8 @@
+.env
+.streamlit/secrets.toml
+*.db
+*.db-*
+__pycache__/
+.pytest_cache/
+.venv/
+examples/sync_live_input.json

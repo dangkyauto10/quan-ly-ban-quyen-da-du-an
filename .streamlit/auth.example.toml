@@ -1,0 +1,7 @@
+# Copy to secrets.toml only on the runtime host; real secrets must never enter git.
+[auth]
+redirect_uri = "https://YOUR_APP_URL/oauth2callback"
+cookie_secret = "REPLACE_WITH_RANDOM_SECRET"
+client_id = "YOUR_GOOGLE_OIDC_CLIENT_ID"
+client_secret = "FROM_SECRET_MANAGER"
+server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
