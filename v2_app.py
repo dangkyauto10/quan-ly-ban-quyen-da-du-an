@@ -3,27 +3,28 @@ import io
 import os
 import secrets
 import uuid
+import tempfile
 from pathlib import Path
 import streamlit as st
 from cryptography.fernet import Fernet
 from license_app.core import Ledger, DomainError
+from license_app.demo import seed_demo
+from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
 st.set_page_config(page_title='Bản quyền V2',page_icon='🛡️',layout='wide')
 st.title('Quản lý bản quyền')
-st.caption('V2-20261027-A · Bản xem thử')
+st.caption('V2-20261027-B · Bản xem thử có hướng dẫn theo vai trò')
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
 def connect(url,key,fp):return Ledger(url,key,fp)
 if os.getenv('APP_MODE','production')=='demo':
     st.warning('DỮ LIỆU GIẢ · Chỉ nhập key thử. Mỗi phiên trình duyệt có dữ liệu minh họa riêng.')
     if 'config' not in st.session_state:
-        st.session_state.config=(f'sqlite:////tmp/license-demo-{uuid.uuid4()}.db',Fernet.generate_key().decode(),secrets.token_urlsafe(48))
+        demo_path=Path(tempfile.gettempdir()) / f'license-demo-{uuid.uuid4()}.db'
+        st.session_state.config=('sqlite:///'+demo_path.as_posix(),Fernet.generate_key().decode(),secrets.token_urlsafe(48))
     ledger=connect(*st.session_state.config)
-    ledger.bootstrap('admin@example.test')
-    ledger.add_user('admin@example.test','vy@example.test','OPERATOR','seed-vy')
-    ledger.add_user('admin@example.test','ktv@example.test','KTV','seed-ktv')
-    unit=ledger.add_unit('admin@example.test','DU_AN_THU','Đơn vị minh họa','seed-unit')
-    ledger.add_account('vy@example.test',unit,'office@example.test','Người quản lý đơn vị','seed-account')
-    actor=st.sidebar.selectbox('Xem thử vai trò',['admin@example.test','vy@example.test','ktv@example.test'])
+    seed_demo(ledger)
+    demo_people={'admin@example.test':'Admin (quản trị) mẫu','vy@example.test':'Người redeem (quy đổi key) mẫu','ktv@example.test':'KTV (kỹ thuật viên) có việc','ktv2@example.test':'KTV khác — chưa có việc'}
+    actor=st.sidebar.selectbox('Xem thử vai trò',list(demo_people),format_func=demo_people.get)
 else:
     if os.getenv('APP_MODE','production')!='production':st.error('APP_MODE không hợp lệ.');st.stop()
     url,key,fp,admin=[os.getenv(x,'') for x in ['DATABASE_URL','LICENSE_ENCRYPTION_KEY','FINGERPRINT_KEY','BOOTSTRAP_ADMIN_EMAIL']]
@@ -41,14 +42,19 @@ else:
     if st.sidebar.button('Đăng xuất'):st.logout()
 try:role=ledger.role(actor)
 except DomainError as e:st.error(str(e));st.stop()
-st.sidebar.caption(actor+' · '+role)
+st.sidebar.caption(actor+' · '+ROLE_NAMES[role])
 menus=['Việc của tôi'] if role=='KTV' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
 if role=='ADMIN':menus.append('Người dùng')
+menus.append('Hướng dẫn theo vai trò')
 page=st.sidebar.radio('Chức năng',menus)
 st.subheader(page)
+if page in PAGE_GUIDES:
+    title, steps=PAGE_GUIDES[page]
+    with st.expander('Cách thực hiện: '+title):
+        for index,step in enumerate(steps,1):st.write(f'{index}. {step}')
 def rows(name):return ledger.rows(actor,name)
 def table(data):
-    if data:st.dataframe([{k:LABELS.get(v,v) if k=='state' else v for k,v in r.items()} for r in data],hide_index=True,use_container_width=True)
+    if data:st.dataframe([display_record(r,LABELS) for r in data],hide_index=True,use_container_width=True)
     else:st.info('Chưa có hồ sơ.')
 def pick(label,data,fmt):
     if not data:st.info('Chưa có lựa chọn phù hợp.');return None
@@ -146,5 +152,17 @@ elif page=='Nhật ký':table(rows('audit'))
 elif page=='Người dùng':
     table(rows('users'))
     with st.form('user'):
-        email=st.text_input('Email Google đã xác minh');new_role=st.selectbox('Quyền',['KTV','OPERATOR','ADMIN'])
+        email=st.text_input('Email Google đã xác minh');new_role=st.selectbox('Quyền',['KTV','OPERATOR','ADMIN'],format_func=ROLE_NAMES.get)
         if st.form_submit_button('Cấp quyền'):run('user',lambda t:ledger.add_user(actor,email,new_role,t))
+elif page=='Hướng dẫn theo vai trò':
+    st.info('Hướng dẫn dự thảo cho chức năng hiện có. Cách vận hành chính thức sẽ cập nhật sau khi anh Vỹ chốt các mục góp ý.')
+    sequences={
+        'ADMIN':['Người dùng','Đơn vị & tài khoản','Kho key','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký'],
+        'OPERATOR':['Đơn vị & tài khoản','Kho key','Redeem Office','Kích hoạt','Nhật ký'],
+        'KTV':['Việc của tôi'],
+    }
+    for name in sequences[role]:
+        title,steps=PAGE_GUIDES[name]
+        with st.expander(name+' — '+title,expanded=role=='KTV'):
+            for index,step in enumerate(steps,1):st.write(f'{index}. {step}')
+    st.caption('Chữ dùng trong app: Admin = quản trị; KTV = kỹ thuật viên; redeem = quy đổi key; license = giấy phép bản quyền; serial = số nhận dạng; SKU = mã phiên bản sản phẩm.')

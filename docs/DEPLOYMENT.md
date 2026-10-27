@@ -18,16 +18,20 @@ Windows PowerShell:
     $env:APP_MODE='demo'
     streamlit run v2_app.py
 
-Chọn vai trò minh họa ở thanh bên. Mỗi phiên trình duyệt dùng SQLite tạm riêng trong
-/tmp. Dữ liệu và khóa mã hóa mất khi phiên/container bị hủy. Không đưa key thật vào demo.
-Có sẵn 1 đơn vị, 1 tài khoản giả và 3 người dùng giả. Đi theo thứ tự:
-1. Admin nhập key giả AAAAA-BBBBB-CCCCC-DDDDD-EEEEE, Office, Retail, ACCOUNT_REDEEM.
-2. V kiểm tra hồ sơ, ghi căn cứ; ghi nhận redeem giả vào office@example.test.
-3. Thêm máy PC1, model thử, serial SN1 và BOARD1.
-4. Admin phân license cho PC1 và ktv@example.test.
-5. Chọn KTV, xem việc, gửi thất bại kèm mã lỗi rồi báo thành công.
-6. Admin thay mainboard BOARD2. License chờ xét bảo hành; Admin ghi căn cứ duyệt
-   rồi KTV báo kết quả kích hoạt lại. Nhật ký giữ các lần trước.
+Chọn vai trò minh họa ở thanh bên. Mỗi phiên trình duyệt có SQLite riêng trong
+thư mục tạm của hệ điều hành (Windows/Linux). Khóa mã hóa chỉ nằm trong phiên,
+không có quy trình khôi phục demo; file tạm có thể còn đến khi hệ điều hành dọn dẹp.
+Không dùng key thật trong demo.
+
+Có sẵn một đơn vị, một tài khoản giả, bốn người dùng giả, ba key giả và hai máy.
+Hai key đã ghi nhận redeem giả vào cùng tài khoản: một máy báo thành công,
+một máy báo lỗi. Key thứ ba chờ kiểm tra; KTV thứ hai chưa có công việc.
+Mở Hướng dẫn theo vai trò hoặc Cách thực hiện ở từng màn hình để xem cách thao tác.
+Có thể báo lại thành công cho việc đang lỗi, sau đó dùng Admin xem lịch sử.
+
+Muốn thử thêm luồng mới: nhập key giả RRRRR-SSSSS-TTTTT-UUUUU-VVVVV, Office,
+Retail (bán lẻ), ACCOUNT_REDEEM (quy đổi vào tài khoản), rồi thực hiện kiểm tra,
+ghi nhận redeem giả, thêm máy mới và giao KTV. Không thử key giả trên Microsoft.
 
 ## Production: cấu hình cần có trước khi đưa key thật
 - Cloud Run service, Cloud SQL PostgreSQL và Artifact Registry cùng vùng phù hợp.

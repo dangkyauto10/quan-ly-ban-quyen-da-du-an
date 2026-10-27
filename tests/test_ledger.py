@@ -83,9 +83,36 @@ def test_demo_ui(monkeypatch):
     app=AppTest.from_file(str(__import__('pathlib').Path(__file__).resolve().parents[1] / 'v2_app.py')).run(timeout=20)
     assert not app.exception
     assert app.title[0].value=='Quản lý bản quyền'
-    for page in ['Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký','Người dùng']:
+    for page in ['Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký','Người dùng','Hướng dẫn theo vai trò']:
         app.sidebar.radio[0].set_value(page).run()
         assert not app.exception
     app.sidebar.selectbox[0].set_value('ktv@example.test').run()
     assert not app.exception
     assert app.subheader[0].value=='Việc của tôi'
+    app.sidebar.radio[0].set_value('Hướng dẫn theo vai trò').run()
+    assert not app.exception
+    app.sidebar.selectbox[0].set_value('ktv2@example.test').run()
+    app.sidebar.radio[0].set_value('Việc của tôi').run()
+    assert not app.exception and not app.dataframe
+
+def test_demo_seed_preserves_user_reports(tmp_path):
+    from license_app.demo import seed_demo
+    l=Ledger(f'sqlite:///{tmp_path}/demo.db',Fernet.generate_key().decode(),'a'*48)
+    seed_demo(l)
+    assert len(l.rows('admin@example.test','licenses'))==3
+    jobs=l.rows('ktv@example.test','jobs')
+    assert {r['state'] for r in jobs}=={'SUCCESS','FAILED'}
+    assert len({r['account'] for r in jobs})==1
+    failed=next(r for r in jobs if r['state']=='FAILED')
+    l.report('ktv@example.test',failed['id'],True,'','Đã xử lý minh họa','',op())
+    seed_demo(l)
+    assert len(l.rows('admin@example.test','licenses'))==3
+    assert all(r['state']=='SUCCESS' for r in l.rows('ktv@example.test','jobs'))
+
+def test_vietnamese_labels_preserve_source():
+    from license_app.guidance import display_record
+    source={'role':'KTV','route':'ACCOUNT_REDEEM','state':'REDEEMED'}
+    result=display_record(source,{'REDEEMED':'Đã redeem'})
+    assert result['Vai trò']=='KTV (kỹ thuật viên)'
+    assert result['Cách xử lý']=='Redeem vào tài khoản Microsoft'
+    assert source['state']=='REDEEMED'
