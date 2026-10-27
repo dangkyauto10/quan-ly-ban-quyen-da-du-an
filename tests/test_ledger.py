@@ -83,7 +83,7 @@ def test_demo_ui(monkeypatch):
     app=AppTest.from_file(str(__import__('pathlib').Path(__file__).resolve().parents[1] / 'v2_app.py')).run(timeout=20)
     assert not app.exception
     assert app.title[0].value=='Quản lý bản quyền'
-    for page in ['Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký','Người dùng','Hướng dẫn theo vai trò']:
+    for page in ['Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký','Người dùng','Hướng dẫn theo vai trò','Đồng bộ Google Sheet']:
         app.sidebar.radio[0].set_value(page).run()
         assert not app.exception
     app.sidebar.selectbox[0].set_value('ktv@example.test').run()

@@ -1,0 +1,430 @@
+{
+  "created_at": "2026-10-27T08:24:45.353380+00:00",
+  "demo": true,
+  "tables": {
+    "01_DU_AN_DON_VI": [
+      [
+        "APP-DV-fbcc7e5d-3315-4878-bf4f-bb20bdfa673f",
+        "DU_AN_THU",
+        "",
+        "Đơn vị minh họa",
+        "",
+        "Đang dùng",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ]
+    ],
+    "02_NGUOI_DUNG": [
+      [
+        "APP-ND-admin@example.test",
+        "admin@example.test",
+        "admin@example.test",
+        "Admin (quản trị)",
+        "Theo vai trò bản app thử",
+        "Đang dùng",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-ND-vy@example.test",
+        "vy@example.test",
+        "vy@example.test",
+        "Quản lý redeem (quy đổi key)",
+        "Theo vai trò bản app thử",
+        "Đang dùng",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-ND-ktv@example.test",
+        "ktv@example.test",
+        "ktv@example.test",
+        "KTV (kỹ thuật viên)",
+        "Theo vai trò bản app thử",
+        "Đang dùng",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-ND-ktv2@example.test",
+        "ktv2@example.test",
+        "ktv2@example.test",
+        "KTV (kỹ thuật viên)",
+        "Theo vai trò bản app thử",
+        "Đang dùng",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ]
+    ],
+    "03_SAN_PHAM": [
+      [
+        "APP-SP-5641f32eed07c39c",
+        "Office",
+        "Office",
+        "Home & Business 2024 (minh họa)",
+        "Retail (bán lẻ)",
+        "Redeem vào Microsoft",
+        "1",
+        "",
+        "Bản thử quản lý 1 license/1 máy; xác minh theo SKU trước dùng thật",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ]
+    ],
+    "04_LO_BAN_GIAO": [
+      [
+        "APP-LO-9194740e1b1059f1",
+        "",
+        "",
+        "APP-SP-5641f32eed07c39c",
+        "3",
+        "",
+        "",
+        "Chưa đối chiếu",
+        "DỮ LIỆU GIẢ — từ app chạy thử; mã lô app: LO-MAU-01; số lượng là key đang lưu, chưa thay biên nhận công ty"
+      ]
+    ],
+    "05_KHO_KEY": [
+      [
+        "APP-KEY-0ca22ae0-9287-4016-bf26-9c6c124fea55",
+        "APP-LO-9194740e1b1059f1",
+        "APP-SP-5641f32eed07c39c",
+        "…EEEEE",
+        "Đã redeem",
+        "",
+        "",
+        "Xác nhận GIẢ — không có redeem thật",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-KEY-b99ba84b-d946-4e0c-99a8-3e93ce61e2ea",
+        "APP-LO-9194740e1b1059f1",
+        "APP-SP-5641f32eed07c39c",
+        "…KKKKK",
+        "Đã redeem",
+        "",
+        "",
+        "Xác nhận GIẢ — không có redeem thật",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-KEY-86206d32-e0dc-4d9d-8f4e-67cfc0e0295b",
+        "APP-LO-9194740e1b1059f1",
+        "APP-SP-5641f32eed07c39c",
+        "…QQQQQ",
+        "Mới nhận",
+        "",
+        "",
+        "",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ]
+    ],
+    "06_TK_MICROSOFT": [
+      [
+        "APP-TK-cba12f70-6301-4290-9d6e-cea40c1a265b",
+        "APP-DV-fbcc7e5d-3315-4878-bf4f-bb20bdfa673f",
+        "office@example.test",
+        "Người quản lý đơn vị mẫu",
+        "Chưa xác minh",
+        "Chưa xác minh",
+        "Chờ xác minh",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ]
+    ],
+    "07_REDEEM_LICENSE": [
+      [
+        "APP-RD-2c82b13a-dbc2-42c4-85df-d901720a84bc",
+        "APP-KEY-0ca22ae0-9287-4016-bf26-9c6c124fea55",
+        "APP-TK-cba12f70-6301-4290-9d6e-cea40c1a265b",
+        "2026-10-27",
+        "APP-ND-vy@example.test",
+        "Thành công",
+        "APP-LIC-0ca22ae0-9287-4016-bf26-9c6c124fea55",
+        "Home & Business 2024 (minh họa)",
+        "Xác nhận GIẢ — không có redeem thật",
+        "DỮ LIỆU GIẢ — từ app chạy thử; kết quả do người thao tác xác nhận"
+      ],
+      [
+        "APP-RD-74d2c222-2944-403e-a974-51a49b26dfad",
+        "APP-KEY-b99ba84b-d946-4e0c-99a8-3e93ce61e2ea",
+        "APP-TK-cba12f70-6301-4290-9d6e-cea40c1a265b",
+        "2026-10-27",
+        "APP-ND-vy@example.test",
+        "Thành công",
+        "APP-LIC-b99ba84b-d946-4e0c-99a8-3e93ce61e2ea",
+        "Home & Business 2024 (minh họa)",
+        "Xác nhận GIẢ — không có redeem thật",
+        "DỮ LIỆU GIẢ — từ app chạy thử; kết quả do người thao tác xác nhận"
+      ]
+    ],
+    "08_THIET_BI": [
+      [
+        "APP-MAY-dc04c6cc-3446-4997-8850-380d0ebdfc41",
+        "APP-DV-fbcc7e5d-3315-4878-bf4f-bb20bdfa673f",
+        "PC-MAU-01",
+        "Máy minh họa",
+        "SN-MAU-01",
+        "MB-MAU-01",
+        "",
+        "",
+        "DỮ LIỆU GIẢ — từ app chạy thử; app chưa lưu nguồn serial/trạng thái thiết bị riêng"
+      ],
+      [
+        "APP-MAY-3018f98b-225b-4480-a09b-635f68751404",
+        "APP-DV-fbcc7e5d-3315-4878-bf4f-bb20bdfa673f",
+        "PC-MAU-02",
+        "Máy minh họa",
+        "SN-MAU-02",
+        "MB-MAU-02",
+        "",
+        "",
+        "DỮ LIỆU GIẢ — từ app chạy thử; app chưa lưu nguồn serial/trạng thái thiết bị riêng"
+      ]
+    ],
+    "09_PHAN_BO": [
+      [
+        "APP-PB-8cb898a4-02d1-4796-a6d6-f009dd793f19",
+        "APP-LIC-0ca22ae0-9287-4016-bf26-9c6c124fea55",
+        "APP-KEY-0ca22ae0-9287-4016-bf26-9c6c124fea55",
+        "APP-MAY-dc04c6cc-3446-4997-8850-380d0ebdfc41",
+        "APP-ND-ktv@example.test",
+        "",
+        "",
+        "Đã hoàn thành",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-PB-b848f382-b0dc-4edc-aa71-f08680608330",
+        "APP-LIC-b99ba84b-d946-4e0c-99a8-3e93ce61e2ea",
+        "APP-KEY-b99ba84b-d946-4e0c-99a8-3e93ce61e2ea",
+        "APP-MAY-3018f98b-225b-4480-a09b-635f68751404",
+        "APP-ND-ktv@example.test",
+        "",
+        "",
+        "Chờ xử lý",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ]
+    ],
+    "10_KICH_HOAT": [
+      [
+        "APP-BC-2a8f6cb9-5044-4fc0-b34c-f76ca6b4e2e5",
+        "APP-PB-8cb898a4-02d1-4796-a6d6-f009dd793f19",
+        "APP-MAY-dc04c6cc-3446-4997-8850-380d0ebdfc41",
+        "APP-ND-ktv@example.test",
+        "2026-10-27",
+        "Thành công",
+        "",
+        "Báo cáo GIẢ — chưa kiểm tra phần mềm thực tế",
+        "",
+        "DỮ LIỆU GIẢ — từ app chạy thử; link minh chứng không đưa vào bản đồng bộ này"
+      ],
+      [
+        "APP-BC-2c8cf923-49a1-4b4f-83aa-5c730a6f2bfe",
+        "APP-PB-b848f382-b0dc-4edc-aa71-f08680608330",
+        "APP-MAY-3018f98b-225b-4480-a09b-635f68751404",
+        "APP-ND-ktv@example.test",
+        "2026-10-27",
+        "Thất bại",
+        "LOI-MAU",
+        "Báo cáo GIẢ — chưa kiểm tra phần mềm thực tế",
+        "",
+        "DỮ LIỆU GIẢ — từ app chạy thử; link minh chứng không đưa vào bản đồng bộ này"
+      ]
+    ],
+    "11_BAO_HANH": [],
+    "12_NHAT_KY": [
+      [
+        "APP-NK-8b5530fa-4d6b-4834-ab62-c609fe9b7d3e",
+        "2026-10-27T08:24:45.299128+00:00",
+        "APP-ND-admin@example.test",
+        "Thêm người dùng",
+        "",
+        "vy@example.test",
+        "",
+        "ADD_USER",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-cc004d02-6217-48d9-978f-b26767cdb4dc",
+        "2026-10-27T08:24:45.303629+00:00",
+        "APP-ND-admin@example.test",
+        "Thêm người dùng",
+        "",
+        "ktv@example.test",
+        "",
+        "ADD_USER",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-ff57c1c2-3789-4a14-b36d-371d70cbc773",
+        "2026-10-27T08:24:45.305551+00:00",
+        "APP-ND-admin@example.test",
+        "Thêm người dùng",
+        "",
+        "ktv2@example.test",
+        "",
+        "ADD_USER",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-29875693-f8cd-4e98-8f8a-b9247f931cec",
+        "2026-10-27T08:24:45.307605+00:00",
+        "APP-ND-admin@example.test",
+        "Thêm đơn vị",
+        "",
+        "fbcc7e5d-3315-4878-bf4f-bb20bdfa673f",
+        "",
+        "ADD_UNIT",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-b2dfa4eb-1a7f-4bb2-908d-733b1628b8ad",
+        "2026-10-27T08:24:45.310207+00:00",
+        "APP-ND-vy@example.test",
+        "Thêm tài khoản Microsoft",
+        "",
+        "cba12f70-6301-4290-9d6e-cea40c1a265b",
+        "",
+        "ADD_ACCOUNT",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-d91e148f-ade0-4dc8-907e-8914638e798d",
+        "2026-10-27T08:24:45.316943+00:00",
+        "APP-ND-admin@example.test",
+        "Nhập lô key",
+        "",
+        "LO-MAU-01",
+        "",
+        "IMPORT_BATCH",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-af1277d0-75da-4941-b4e3-5e9ebe40dea6",
+        "2026-10-27T08:24:45.319316+00:00",
+        "APP-ND-admin@example.test",
+        "Nhập lô key",
+        "",
+        "LO-MAU-01",
+        "",
+        "IMPORT_BATCH",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-aaec6c3e-b567-4014-b6ae-aabe25acbde6",
+        "2026-10-27T08:24:45.321673+00:00",
+        "APP-ND-admin@example.test",
+        "Nhập lô key",
+        "",
+        "LO-MAU-01",
+        "",
+        "IMPORT_BATCH",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-f2331979-2470-4aaa-913a-800a297de327",
+        "2026-10-27T08:24:45.324681+00:00",
+        "APP-ND-vy@example.test",
+        "Xác nhận kiểm tra",
+        "",
+        "0ca22ae0-9287-4016-bf26-9c6c124fea55",
+        "",
+        "VERIFY",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-2c82b13a-dbc2-42c4-85df-d901720a84bc",
+        "2026-10-27T08:24:45.328128+00:00",
+        "APP-ND-vy@example.test",
+        "Ghi nhận redeem thành công",
+        "",
+        "0ca22ae0-9287-4016-bf26-9c6c124fea55",
+        "",
+        "REDEEM_CONFIRMED",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-0ee02003-7b29-406b-b002-b094e7348772",
+        "2026-10-27T08:24:45.330861+00:00",
+        "APP-ND-admin@example.test",
+        "Tạo hồ sơ máy",
+        "",
+        "dc04c6cc-3446-4997-8850-380d0ebdfc41",
+        "",
+        "ADD_DEVICE",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-a2b31cbd-f0ae-4f6e-8930-889688e0b16c",
+        "2026-10-27T08:24:45.334169+00:00",
+        "APP-ND-admin@example.test",
+        "Phân bản quyền và giao việc",
+        "",
+        "0ca22ae0-9287-4016-bf26-9c6c124fea55",
+        "",
+        "ASSIGN",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-2a8f6cb9-5044-4fc0-b34c-f76ca6b4e2e5",
+        "2026-10-27T08:24:45.337428+00:00",
+        "APP-ND-ktv@example.test",
+        "Báo kích hoạt thành công",
+        "",
+        "8cb898a4-02d1-4796-a6d6-f009dd793f19",
+        "",
+        "ACTIVATION_SUCCESS",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-7ed55b78-a372-4a5f-a7ef-65ed5df2cc5b",
+        "2026-10-27T08:24:45.339735+00:00",
+        "APP-ND-vy@example.test",
+        "Xác nhận kiểm tra",
+        "",
+        "b99ba84b-d946-4e0c-99a8-3e93ce61e2ea",
+        "",
+        "VERIFY",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-74d2c222-2944-403e-a974-51a49b26dfad",
+        "2026-10-27T08:24:45.341951+00:00",
+        "APP-ND-vy@example.test",
+        "Ghi nhận redeem thành công",
+        "",
+        "b99ba84b-d946-4e0c-99a8-3e93ce61e2ea",
+        "",
+        "REDEEM_CONFIRMED",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-a4682ee7-c8c9-4388-ae80-fe06fa1b3142",
+        "2026-10-27T08:24:45.343722+00:00",
+        "APP-ND-admin@example.test",
+        "Tạo hồ sơ máy",
+        "",
+        "3018f98b-225b-4480-a09b-635f68751404",
+        "",
+        "ADD_DEVICE",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-6e18196b-7c8a-486e-baf0-d1f160a39ee3",
+        "2026-10-27T08:24:45.346334+00:00",
+        "APP-ND-admin@example.test",
+        "Phân bản quyền và giao việc",
+        "",
+        "b99ba84b-d946-4e0c-99a8-3e93ce61e2ea",
+        "",
+        "ASSIGN",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ],
+      [
+        "APP-NK-2c8cf923-49a1-4b4f-83aa-5c730a6f2bfe",
+        "2026-10-27T08:24:45.348943+00:00",
+        "APP-ND-ktv@example.test",
+        "Báo kích hoạt thất bại",
+        "",
+        "b848f382-b0dc-4edc-aa71-f08680608330",
+        "",
+        "ACTIVATION_FAILED",
+        "DỮ LIỆU GIẢ — từ app chạy thử"
+      ]
+    ]
+  }
+}

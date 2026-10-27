@@ -64,7 +64,7 @@ Muốn deploy từ GitHub Actions: cấu hình OIDC Workload Identity Federation
 đúng repo/branch/environment, service account deploy riêng, không dùng JSON key dài hạn.
 Thêm workflow deploy khi biết project, region, service, Cloud SQL connection và policy
 phê duyệt của công ty; các giá trị này chưa được cung cấp nên chưa tạo workflow ghi Cloud.
-Build bằng Dockerfile.v2. Runtime cổng 8080, user 10001. App không gọi Apps Script/Sheets.
+Build bằng Dockerfile.v2. Runtime cổng 8080, user 10001. App không gọi Apps Script; bộ đồng bộ Sheets theo docs/DONG_BO_GOOGLE_SHEET.md.
 
 ## Tiêu chí trước cutover
 - Kiểm tra 2 request đồng thời trên PostgreSQL thật; rollback, idempotency và constraint.
@@ -80,7 +80,7 @@ Build bằng Dockerfile.v2. Runtime cổng 8080, user 10001. App không gọi Ap
 
 ## Phạm vi tiếp theo
 Thu hồi/giao lại license, vô hiệu người dùng, nhiều seat, nhập danh mục hàng loạt,
-QR tài sản, ảnh lưu riêng, báo cáo Sheets tự đồng bộ và KMS rotation chưa được triển khai.
+QR tài sản, ảnh lưu riêng, báo cáo Sheets tự chạy nền và KMS rotation chưa được triển khai.
 CSV hiện chỉ xuất dữ liệu quản lý đã che key; nội dung bắt đầu bằng công thức được escape.
 
 Nguồn thiết kế:

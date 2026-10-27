@@ -12,7 +12,7 @@ from license_app.demo import seed_demo
 from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
 st.set_page_config(page_title='Bản quyền V2',page_icon='🛡️',layout='wide')
 st.title('Quản lý bản quyền')
-st.caption('V2-20261027-B · Bản xem thử có hướng dẫn theo vai trò')
+st.caption('V2-20261027-C · Có bộ đồng bộ báo cáo Google Sheet')
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
 def connect(url,key,fp):return Ledger(url,key,fp)
@@ -44,7 +44,7 @@ try:role=ledger.role(actor)
 except DomainError as e:st.error(str(e));st.stop()
 st.sidebar.caption(actor+' · '+ROLE_NAMES[role])
 menus=['Việc của tôi'] if role=='KTV' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
-if role=='ADMIN':menus.append('Người dùng')
+if role=='ADMIN':menus.extend(['Người dùng','Đồng bộ Google Sheet'])
 menus.append('Hướng dẫn theo vai trò')
 page=st.sidebar.radio('Chức năng',menus)
 st.subheader(page)
@@ -166,3 +166,30 @@ elif page=='Hướng dẫn theo vai trò':
         with st.expander(name+' — '+title,expanded=role=='KTV'):
             for index,step in enumerate(steps,1):st.write(f'{index}. {step}')
     st.caption('Chữ dùng trong app: Admin = quản trị; KTV = kỹ thuật viên; redeem = quy đổi key; license = giấy phép bản quyền; serial = số nhận dạng; SKU = mã phiên bản sản phẩm.')
+elif page=='Đồng bộ Google Sheet':
+    from license_app.sheet_sync import make_snapshot, sync_with_service, SHEET_ID
+    st.write('Đồng bộ một chiều app → các tab dữ liệu. Dòng có mã bắt đầu APP- do app cập nhật; ghi ý kiến ở tab 14_V_GOP_Y.')
+    st.caption('Chỉ xuất key đã che. Mật khẩu, key gốc và nội dung kho mã hóa không được xuất.')
+    snapshot=make_snapshot(ledger,actor,demo=os.getenv('APP_MODE')=='demo')
+    st.write('Số bản ghi có thể xuất:',sum(len(r) for r in snapshot['tables'].values()))
+    st.download_button('Tải bản dữ liệu để đối chiếu (JSON — tệp dữ liệu có cấu trúc)',
+        __import__('json').dumps(snapshot,ensure_ascii=False,indent=2),'ban_quyen_dong_bo.json','application/json')
+    st.link_button('Mở Google Sheet nghiên cứu','https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/edit')
+    if os.getenv('APP_MODE')=='demo':
+        st.info('Phiên demo cá nhân chỉ cho xem/xuất dữ liệu giả. Bản minh họa dùng chung được B ghi riêng vào Sheet để anh Vỹ nghiên cứu.')
+    else:
+        cfg=st.secrets.get('google_sheets',{})
+        target=cfg.get('spreadsheet_id',SHEET_ID)
+        st.caption('Đích đồng bộ: '+target)
+        if st.button('Đồng bộ báo cáo lên Google Sheet',type='primary'):
+            try:
+                import google.auth
+                from google.oauth2.service_account import Credentials
+                from googleapiclient.discovery import build
+                scopes=['https://www.googleapis.com/auth/spreadsheets']
+                info=st.secrets.get('google_service_account')
+                credentials=Credentials.from_service_account_info(dict(info),scopes=scopes) if info else google.auth.default(scopes=scopes)[0]
+                count=sync_with_service(build('sheets','v4',credentials=credentials,cache_discovery=False),target,snapshot)
+                st.success(f'Đã đồng bộ {count} bản ghi. Xem thời điểm tại tab 15_DONG_BO_APP.')
+            except DomainError as err:st.error(str(err))
+            except Exception:st.error('Chưa đồng bộ được. Kiểm tra Google Sheets API, danh tính chạy app và quyền Người chỉnh sửa trên đúng file Sheet. Dữ liệu app vẫn đã lưu; có thể đồng bộ lại.')

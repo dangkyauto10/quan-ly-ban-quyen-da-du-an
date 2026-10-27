@@ -1,0 +1,135 @@
+{
+  "01_DU_AN_DON_VI": [
+    "Mã đơn vị",
+    "Mã dự án",
+    "Tên dự án",
+    "Tên đơn vị",
+    "Người phụ trách",
+    "Trạng thái",
+    "Ghi chú"
+  ],
+  "02_NGUOI_DUNG": [
+    "Mã người dùng",
+    "Email đăng nhập",
+    "Tên hiển thị",
+    "Vai trò",
+    "Phạm vi được giao",
+    "Trạng thái",
+    "Ghi chú"
+  ],
+  "03_SAN_PHAM": [
+    "Mã sản phẩm",
+    "Nhóm phần mềm",
+    "Tên phần mềm",
+    "Phiên bản và SKU",
+    "Kênh cấp phép",
+    "Luồng dự kiến",
+    "Số máy được phép",
+    "Thời hạn bản quyền",
+    "Căn cứ sử dụng và chuyển máy",
+    "Ghi chú"
+  ],
+  "04_LO_BAN_GIAO": [
+    "Mã lô",
+    "Ngày nhận",
+    "Đơn vị cung cấp",
+    "Mã sản phẩm",
+    "Số key bàn giao",
+    "Số chứng từ",
+    "Người nhận",
+    "Trạng thái đối chiếu",
+    "Ghi chú"
+  ],
+  "05_KHO_KEY": [
+    "Mã key",
+    "Mã lô",
+    "Mã sản phẩm",
+    "Key đã che",
+    "Trạng thái key",
+    "Người kiểm tra",
+    "Ngày kiểm tra",
+    "Căn cứ kiểm tra",
+    "Ghi chú"
+  ],
+  "06_TK_MICROSOFT": [
+    "Mã tài khoản",
+    "Mã đơn vị",
+    "Email Microsoft",
+    "Người sở hữu/quản lý",
+    "Tình trạng xác thực",
+    "MFA (xác thực nhiều bước)",
+    "Trạng thái tài khoản",
+    "Ghi chú"
+  ],
+  "07_REDEEM_LICENSE": [
+    "Mã lần redeem",
+    "Mã key",
+    "Mã tài khoản",
+    "Ngày thao tác",
+    "Người thao tác",
+    "Kết quả redeem",
+    "Mã license",
+    "Sản phẩm Microsoft xác nhận",
+    "Mã lỗi / tham chiếu",
+    "Ghi chú"
+  ],
+  "08_THIET_BI": [
+    "Mã máy",
+    "Mã đơn vị",
+    "Mã tem tài sản",
+    "Hãng / model",
+    "Serial máy",
+    "Serial mainboard hiện tại",
+    "Nguồn lấy serial",
+    "Trạng thái thiết bị",
+    "Ghi chú"
+  ],
+  "09_PHAN_BO": [
+    "Mã phân bổ",
+    "Mã license",
+    "Mã key",
+    "Mã máy",
+    "KTV được giao",
+    "Ngày giao",
+    "Người giao",
+    "Trạng thái phân bổ",
+    "Ghi chú"
+  ],
+  "10_KICH_HOAT": [
+    "Mã báo cáo",
+    "Mã phân bổ",
+    "Mã máy",
+    "Người báo cáo",
+    "Ngày báo cáo",
+    "Kết quả kích hoạt",
+    "Mã lỗi",
+    "Cách xác minh / nội dung lỗi",
+    "Link minh chứng",
+    "Ghi chú"
+  ],
+  "11_BAO_HANH": [
+    "Mã hồ sơ",
+    "Mã máy",
+    "Mã phân bổ liên quan",
+    "Ngày tiếp nhận",
+    "Nội dung yêu cầu",
+    "Serial mainboard cũ",
+    "Serial mainboard mới",
+    "Căn cứ được kích hoạt lại",
+    "Người duyệt",
+    "Trạng thái hồ sơ",
+    "Kết quả xử lý",
+    "Ghi chú"
+  ],
+  "12_NHAT_KY": [
+    "Mã sự kiện",
+    "Thời điểm",
+    "Người thao tác",
+    "Loại thao tác",
+    "Tab / hồ sơ liên quan",
+    "Mã hồ sơ liên quan",
+    "Trước thay đổi",
+    "Sau thay đổi",
+    "Ghi chú"
+  ]
+}

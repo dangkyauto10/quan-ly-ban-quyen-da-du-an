@@ -2,3 +2,5 @@ streamlit[auth]>=1.48,<2
 SQLAlchemy>=2.0,<3
 psycopg[binary]>=3.2,<4
 cryptography>=44,<47
+google-api-python-client>=2.160,<3
+google-auth>=2.38,<3

@@ -4,7 +4,7 @@ File nghiên cứu:
 https://docs.google.com/spreadsheets/d/1H5j9IK1U7CBef94utPNbhUQ1A31bcQD03yCEaP2L7-U/edit
 
 Đã đọc lại ngày 27-10-2026: tab 14_V_GOP_Y có 13 mục, đều Chờ V chốt,
-cột ý kiến chưa có nội dung. App chưa đọc/ghi tự động vào file này.
+cột ý kiến chưa có nội dung. Bản C đã có bộ ghi một chiều theo thao tác Admin; đã ghi mẫu qua kết nối Drive. App runtime chưa cấp quyền Google Cloud.
 Bảng dưới là bản đối chiếu thiết kế, chưa phải cấu hình đồng bộ.
 
 | Tab nghiên cứu | Phần có trong bản app thử | Phần cần hoàn thiện/chốt |
@@ -23,7 +23,8 @@ Bảng dưới là bản đối chiếu thiết kế, chưa phải cấu hình �
 | 11_BAO_HANH | Serial trước/sau, chờ xét và duyệt kích hoạt lại | Hồ sơ hỗ trợ tổng quát và chuyển cả máy |
 | 12_NHAT_KY | audit (nhật ký sự kiện) | Chính sách lưu và hiển thị giờ địa phương |
 | 13_TU_DIEN_COT | Giải thích tiếng Việt trong file nghiên cứu | Chuẩn hóa toàn bộ nhãn/cột trong app |
-| 14_V_GOP_Y | File theo dõi quyết định | Không áp dụng tự động trước khi chốt |
+| 14_V_GOP_Y | File theo dõi quyết định, giữ nguyên khi đồng bộ | Không áp dụng tự động trước khi chốt |
+| 15_DONG_BO_APP | Nhật ký các lần ghi bản xuất | Chưa có lịch tự chạy nền |
 
 Bản V2-20261027-B bổ sung nhãn tiếng Việt, trang hướng dẫn theo vai trò và dữ liệu giả xuyên suốt. Kết quả kiểm tra được ghi trong PR. Chưa triển khai Google Cloud hoặc xác minh kích hoạt Microsoft thực tế.
 
