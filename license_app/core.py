@@ -121,6 +121,23 @@ class Ledger:
             return email
         return self._atomic(actor, {'ADMIN'}, op, fn)
 
+    def update_user(self,actor,email,role,active,op):
+        email=email.lower().strip()
+        if role not in ROLES or type(active) is not bool:raise DomainError('Vai trò hoặc trạng thái không hợp lệ.')
+        def fn(c):
+            # Serialize admin changes so two admins cannot remove the last active admin concurrently.
+            c.execute(update(users).where(users.c.role=='ADMIN',users.c.active==1).values(active=users.c.active))
+            self._auth(c,actor,{'ADMIN'})
+            target=c.execute(select(users).where(users.c.email==email)).mappings().first()
+            if not target:raise DomainError('Không tìm thấy thành viên.')
+            remaining=c.execute(select(users.c.email).where(users.c.role=='ADMIN',users.c.active==1,users.c.email!=email)).all()
+            if target['role']=='ADMIN' and target['active'] and (role!='ADMIN' or not active) and not remaining:
+                raise DomainError('Phải giữ ít nhất một Admin đang hoạt động.')
+            c.execute(update(users).where(users.c.email==email).values(role=role,active=int(active)))
+            self._log(c,actor,'UPDATE_USER',email,{'old_role':target['role'],'role':role,'active':active})
+            return email
+        return self._atomic(actor,{'ADMIN'},op,fn)
+
     def add_unit(self, actor, project, name, op):
         if not project.strip() or not name.strip(): raise DomainError('Nhập đủ dự án và đơn vị.')
         def fn(c):
@@ -181,7 +198,7 @@ class Ledger:
 
     def reveal(self, actor, entity):
         with self.engine.begin() as c:
-            self._auth(c, actor, {'ADMIN', 'OPERATOR'})
+            self._auth(c, actor, {'ADMIN'})
             row = self._get(c, licenses, entity)
             self._log(c, actor, 'REVEAL_KEY', entity)
             return self.fernet.decrypt(row['cipher'].encode()).decode()
@@ -195,7 +212,7 @@ class Ledger:
             self._transition(c, entity, 'VERIFIED', 'REDEEMED', account_id=account_id, reference=reference.strip())
             self._log(c, actor, 'REDEEM_CONFIRMED', entity, {'account_id': account_id, 'reference': reference})
             return entity
-        return self._atomic(actor, {'ADMIN', 'OPERATOR'}, op, fn)
+        return self._atomic(actor, {'ADMIN'}, op, fn)
 
     def add_device(self, actor, unit_id, tag, serial, board, model, op):
         if any(not x.strip() for x in [tag, serial, board, model]):
