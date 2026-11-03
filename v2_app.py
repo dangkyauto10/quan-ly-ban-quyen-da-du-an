@@ -7,12 +7,13 @@ import tempfile
 from pathlib import Path
 import streamlit as st
 from cryptography.fernet import Fernet
-from license_app.core import Ledger, DomainError
+from license_app.core import DomainError
+from license_app.preparation import PreparationLedger as Ledger
 from license_app.demo import seed_demo
 from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
 st.set_page_config(page_title='Bản quyền V2',page_icon='🛡️',layout='wide')
 st.title('Quản lý bản quyền')
-st.caption('V2-20261027-C · Có bộ đồng bộ báo cáo Google Sheet')
+st.caption('V2-20261103-D · Kế hoạch PC, cặp tem QR và kiểm tra độc lập')
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
 def connect(url,key,fp):return Ledger(url,key,fp)
@@ -23,7 +24,7 @@ if os.getenv('APP_MODE','production')=='demo':
         st.session_state.config=('sqlite:///'+demo_path.as_posix(),Fernet.generate_key().decode(),secrets.token_urlsafe(48))
     ledger=connect(*st.session_state.config)
     seed_demo(ledger)
-    demo_people={'admin@example.test':'Admin (quản trị) mẫu','vy@example.test':'Người redeem (quy đổi key) mẫu','ktv@example.test':'KTV (kỹ thuật viên) có việc','ktv2@example.test':'KTV khác — chưa có việc'}
+    demo_people={'admin@example.test':'Admin (quản trị) mẫu','vy@example.test':'Người redeem (quy đổi key) mẫu','ktv@example.test':'KTV (kỹ thuật viên) có việc','ktv2@example.test':'KTV khác — chưa có việc','qc@example.test':'Bộ phận kiểm tra độc lập mẫu'}
     actor=st.sidebar.selectbox('Xem thử vai trò',list(demo_people),format_func=demo_people.get)
 else:
     if os.getenv('APP_MODE','production')!='production':st.error('APP_MODE không hợp lệ.');st.stop()
@@ -45,6 +46,9 @@ except DomainError as e:st.error(str(e));st.stop()
 st.sidebar.caption(actor+' · '+ROLE_NAMES[role])
 menus=['Việc của tôi'] if role=='KTV' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
 if role=='ADMIN':menus.extend(['Người dùng','Đồng bộ Google Sheet'])
+if role=='QC':menus=['Đối chiếu tem và kiểm tra']
+elif role=='ADMIN':menus.extend(['Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'])
+elif role=='KTV':menus.extend(['In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'])
 menus.append('Hướng dẫn theo vai trò')
 page=st.sidebar.radio('Chức năng',menus)
 st.subheader(page)
@@ -54,7 +58,7 @@ if page in PAGE_GUIDES:
         for index,step in enumerate(steps,1):st.write(f'{index}. {step}')
 def rows(name):return ledger.rows(actor,name)
 def table(data):
-    if data:st.dataframe([display_record(r,LABELS) for r in data],hide_index=True,use_container_width=True)
+    if data:st.dataframe([display_record(r,LABELS) for r in data],hide_index=True,width='stretch')
     else:st.info('Chưa có hồ sơ.')
 def pick(label,data,fmt):
     if not data:st.info('Chưa có lựa chọn phù hợp.');return None
@@ -69,7 +73,10 @@ def run(name,fn,confirmation=None):
     except DomainError as e:st.error(str(e))
     except Exception:st.error('Chưa xác nhận lưu thành công. Hãy kiểm tra kết nối và tải lại hồ sơ.')
 def label(r):return f"{r['product']} · {r['sku']} · …{r['tail']} · {LABELS[r['state']]}"
-if page=='Tổng quan':
+if page in {'Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'}:
+    from license_app.preparation_ui import render
+    render(ledger,actor,role,page,os.getenv('APP_MODE')=='demo')
+elif page=='Tổng quan':
     data=rows('licenses'); cols=st.columns(4)
     for col,title,n in zip(cols,['Đã nhận','Chưa phân bổ','Đã giao máy','Đã kích hoạt'],[len(data),sum(r['state'] in {'RECEIVED','VERIFIED','REDEEMED'} for r in data),sum(r['state']=='ASSIGNED' for r in data),sum(r['state']=='ACTIVATED' for r in data)]):col.metric(title,n)
     table(data)
@@ -169,7 +176,7 @@ elif page=='Nhật ký':table(rows('audit'))
 elif page=='Người dùng':
     table(rows('users'))
     with st.form('user'):
-        email=st.text_input('Email Google đã xác minh');new_role=st.selectbox('Quyền',['KTV','OPERATOR','ADMIN'],format_func=ROLE_NAMES.get)
+        email=st.text_input('Email Google đã xác minh');new_role=st.selectbox('Quyền',['KTV','QC','OPERATOR','ADMIN'],format_func=ROLE_NAMES.get)
         if st.form_submit_button('Cấp quyền'):run('user',lambda t:ledger.add_user(actor,email,new_role,t))
 elif page=='Hướng dẫn theo vai trò':
     st.info('Hướng dẫn dự thảo cho chức năng hiện có. Cách vận hành chính thức sẽ cập nhật sau khi anh Vỹ chốt các mục góp ý.')
@@ -177,7 +184,9 @@ elif page=='Hướng dẫn theo vai trò':
         'ADMIN':['Người dùng','Đơn vị & tài khoản','Kho key','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký'],
         'OPERATOR':['Đơn vị & tài khoản','Kho key','Redeem Office','Kích hoạt','Nhật ký'],
         'KTV':['Việc của tôi'],
+        'QC':[],
     }
+    if role=='QC':st.info('Quét hai tem, đối chiếu serial thực, ghi kết quả kỹ thuật rồi xác nhận đóng gói. Người kiểm tra độc lập với KTV kích hoạt.')
     for name in sequences[role]:
         title,steps=PAGE_GUIDES[name]
         with st.expander(name+' — '+title,expanded=role=='KTV'):
