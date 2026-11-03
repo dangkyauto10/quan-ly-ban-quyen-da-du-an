@@ -19,7 +19,7 @@ def render(ledger,actor,role,page,is_demo):
     if os.getenv('APP_MODE') in {'shared_test','team_test'}:
         key=hashlib.sha256(ledger.fingerprint_key+b'paired-label-v1').digest()
     elif not is_demo:
-        key_text=st.secrets.get('qr_signing_key','')
+        key_text=os.getenv('QR_SIGNING_KEY') or st.secrets.get('qr_signing_key','')
         if len(key_text)<32:st.error('Admin cần cấu hình qr_signing_key ít nhất 32 ký tự, ổn định để đối chiếu tem.');return
         key=key_text.encode()
     else:key=preview_signing_key()
