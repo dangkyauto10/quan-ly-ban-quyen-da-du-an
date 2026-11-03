@@ -54,7 +54,11 @@ class PreparationLedger(Ledger):
                 devices.join(units).outerjoin(slots,slots.c.id==devices.c.id)
                 .outerjoin(plans,plans.c.id==units.c.id).outerjoin(inspections,inspections.c.id==devices.c.id))
             if role=='KTV':query=query.where(devices.c.id.in_(select(jobs.c.device_id).where(jobs.c.ktv==actor)))
-            return [dict(r) for r in c.execute(query).mappings()]
+            result=[dict(r) for r in c.execute(query).mappings()]
+            for r in result:
+                states=c.execute(select(jobs.c.state).where(jobs.c.device_id==r['id'])).scalars().all()
+                r['activation_ready']=bool(states) and all(state=='SUCCESS' for state in states)
+            return result
 
     def inspect_device(self,actor,device_id,passed,note,serial,op):
         if not note.strip():raise DomainError('Nhập nội dung kiểm tra.')
