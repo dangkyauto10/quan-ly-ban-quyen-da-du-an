@@ -8,18 +8,18 @@ from pathlib import Path
 import streamlit as st
 from cryptography.fernet import Fernet
 from license_app.core import DomainError
-from license_app.preparation import PreparationLedger as Ledger
+from license_app.packing import PackingLedger as Ledger
 from license_app.demo import seed_demo
 from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
 st.set_page_config(page_title='Bản quyền V2',page_icon='🛡️',layout='wide')
 st.title('Quản lý bản quyền')
-st.caption('V2-20261103-E · Thử tại Công ty: kế hoạch, tem QR, kiểm tra và đóng gói')
+st.caption('V2-20261103-F · Đội kiểm tra trên điện thoại — dữ liệu thử dùng chung')
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
 def connect(url,key,fp):return Ledger(url,key,fp)
-if os.getenv('APP_MODE','production') in {'demo','shared_test'}:
-    shared_test=os.getenv('APP_MODE')=='shared_test'
-    st.warning('DỮ LIỆU GIẢ · Bản thử dùng chung trong mạng nội bộ; chọn vai trò minh họa, không phải đăng nhập thật.' if shared_test else 'DỮ LIỆU GIẢ · Chỉ nhập key thử. Mỗi phiên trình duyệt có dữ liệu minh họa riêng.')
+if os.getenv('APP_MODE','production') in {'demo','shared_test','team_test'}:
+    shared_test=os.getenv('APP_MODE') in {'shared_test','team_test'}
+    st.warning('DỮ LIỆU GIẢ DÙNG CHUNG · Chọn danh tính thử, chưa phải đăng nhập thật. Chỉ thử nghiệp vụ; bản trực tuyến có thể mất dữ liệu/tem khi khởi động lại hoặc triển khai lại.' if shared_test else 'DỮ LIỆU GIẢ · Chỉ nhập key thử. Mỗi phiên trình duyệt có dữ liệu minh họa riêng.')
     if shared_test:
         from license_app.shared_test import shared_config
         st.session_state.config=shared_config()
@@ -35,6 +35,7 @@ if os.getenv('APP_MODE','production') in {'demo','shared_test'}:
             return True
         seed_shared(*st.session_state.config)
     demo_people={'admin@example.test':'Admin (quản trị) mẫu','vy@example.test':'Người redeem (quy đổi key) mẫu','ktv@example.test':'KTV (kỹ thuật viên) có việc','ktv2@example.test':'KTV khác — chưa có việc','qc@example.test':'Bộ phận kiểm tra độc lập mẫu'}
+    demo_people.update({f'qc{n}@example.test':f'Người kiểm tra số {n} — mẫu' for n in range(2,7)})
     actor=st.sidebar.selectbox('Xem thử vai trò',list(demo_people),format_func=demo_people.get)
 else:
     if os.getenv('APP_MODE','production')!='production':st.error('APP_MODE không hợp lệ.');st.stop()
@@ -206,12 +207,12 @@ elif page=='Đồng bộ Google Sheet':
     from license_app.sheet_sync import make_snapshot, sync_with_service, SHEET_ID
     st.write('Đồng bộ một chiều app → các tab dữ liệu. Dòng có mã bắt đầu APP- do app cập nhật; ghi ý kiến ở tab 14_V_GOP_Y.')
     st.caption('Chỉ xuất key đã che. Mật khẩu, key gốc và nội dung kho mã hóa không được xuất.')
-    snapshot=make_snapshot(ledger,actor,demo=os.getenv('APP_MODE') in {'demo','shared_test'})
+    snapshot=make_snapshot(ledger,actor,demo=os.getenv('APP_MODE') in {'demo','shared_test','team_test'})
     st.write('Số bản ghi có thể xuất:',sum(len(r) for r in snapshot['tables'].values()))
     st.download_button('Tải bản dữ liệu để đối chiếu (JSON — tệp dữ liệu có cấu trúc)',
         __import__('json').dumps(snapshot,ensure_ascii=False,indent=2),'ban_quyen_dong_bo.json','application/json')
     st.link_button('Mở Google Sheet nghiên cứu','https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/edit')
-    if os.getenv('APP_MODE') in {'demo','shared_test'}:
+    if os.getenv('APP_MODE') in {'demo','shared_test','team_test'}:
         st.info('Phiên demo cá nhân chỉ cho xem/xuất dữ liệu giả. Bản minh họa dùng chung được B ghi riêng vào Sheet để anh Vỹ nghiên cứu.')
     else:
         cfg=st.secrets.get('google_sheets',{})
