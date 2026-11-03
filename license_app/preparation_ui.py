@@ -1,4 +1,8 @@
 import secrets
+import os
+import hashlib
+import csv
+import io
 import streamlit as st
 import streamlit.components.v1 as components
 from .core import DomainError
@@ -11,12 +15,15 @@ def preview_signing_key():
     return secrets.token_bytes(32)
 
 def render(ledger,actor,role,page,is_demo):
-    if not is_demo:
+    if os.getenv('APP_MODE')=='shared_test':
+        key=hashlib.sha256(ledger.fingerprint_key+b'paired-label-v1').digest()
+    elif not is_demo:
         key_text=st.secrets.get('qr_signing_key','')
         if len(key_text)<32:st.error('Admin cần cấu hình qr_signing_key ít nhất 32 ký tự, ổn định để đối chiếu tem.');return
         key=key_text.encode()
     else:key=preview_signing_key()
     data=ledger.preparation_rows(actor)
+    if os.getenv('APP_MODE')=='shared_test':st.caption('Dữ liệu thử lưu chung trên máy chạy app. Điện thoại cùng mạng có thể tải ảnh QR; máy quét USB nhập vào hai ô mã. Camera trực tiếp trên web cần HTTPS.')
     if page=='Kế hoạch PC theo điểm':
         units=ledger.rows(actor,'units')
         if not units:st.info('Tạo đơn vị trước tại Đơn vị & tài khoản.');return
@@ -28,7 +35,18 @@ def render(ledger,actor,role,page,is_demo):
                 try:ledger.set_plan(actor,unit['id'],int(qty),secrets.token_hex(16));st.success('Đã lưu kế hoạch số PC.');data=ledger.preparation_rows(actor)
                 except DomainError as e:st.error(str(e))
         if data:
+            counts=[]
+            for u in units:
+                ds=[r for r in data if r['unit_id']==u['id']]
+                planned=next((r['quantity'] for r in ds if r['quantity']),None)
+                counts.append({'Điểm':u['name'],'Kế hoạch':planned,'Đã gán số':sum(bool(r['number']) for r in ds),'Đóng gói':sum(r['inspection_state']=='PACKED' for r in ds)})
+            st.dataframe(counts,hide_index=True)
             st.dataframe([{'Điểm':r['unit'],'Mã máy':r['asset_tag'],'Số thứ tự':r['number'],'Tổng PC kế hoạch':r['quantity']} for r in data],hide_index=True)
+            buf=io.StringIO();writer=csv.writer(buf);writer.writerow(['Dự án','Điểm','Mã máy','Serial','Thứ tự','Tổng PC','Trạng thái kiểm tra'])
+            for r in data:
+                values=[r['project'],r['unit'],r['asset_tag'],r['serial'],r['number'],r['quantity'],r['inspection_state'] or 'Chưa kiểm tra']
+                writer.writerow(["'"+v if isinstance(v,str) and v[:1] in '=+-@\t\r' else v for v in values])
+            st.download_button('Tải danh sách đối soát PC (CSV — mở bằng Excel)',buf.getvalue().encode('utf-8-sig'),'danh_sach_pc.csv','text/csv')
             device=st.selectbox('Máy cần cấp số thứ tự',[r for r in data if not r['number']],format_func=lambda r:r['asset_tag']) if any(not r['number'] for r in data) else None
             if device and st.button('Cấp số thứ tự máy'):
                 try:ledger.number_device(actor,device['id'],secrets.token_hex(16));st.rerun()
@@ -49,17 +67,19 @@ def render(ledger,actor,role,page,is_demo):
             st.code(label_token(record,'BOX',key),language=None)
         return
     if is_demo:st.warning('Đối chiếu QR dùng được giữa điện thoại và PC khi cùng bản app đang chạy. Dữ liệu tem là ảnh chụp lúc in; kết quả kiểm tra vẫn lưu riêng từng phiên. App khởi động lại có thể làm tem thử hết hiệu lực. Chưa dùng cho dữ liệu thật.')
-    st.caption('Chụp từng QR hoặc tải ảnh tem. Có thể dán nội dung QR vào hai ô bên dưới. Đây là đọc ảnh từng tem, chưa phải quét camera liên tục.')
+    st.caption('Máy quét QR 2D USB: bấm ô mã tem thứ nhất rồi quét; bấm ô thứ hai rồi quét. Chụp từng QR hoặc tải ảnh tem. Có thể dán nội dung QR vào hai ô bên dưới. Đây là đọc ảnh từng tem, chưa phải quét camera liên tục.')
     tokens=[]
     for i,title in enumerate(['Tem thứ nhất','Tem thứ hai']):
         st.subheader(title)
-        photo=st.camera_input('Chụp '+title.lower(),key='camera-'+str(i))
+        photo=None
+        if os.getenv('APP_MODE')!='shared_test':
+            photo=st.camera_input('Chụp '+title.lower(),key='camera-'+str(i))
         upload=st.file_uploader('Hoặc chọn ảnh '+title.lower(),type=['png','jpg','jpeg'],key='upload-'+str(i))
         source=photo or upload
         if source:
             try:st.session_state['scan-text-'+str(i)]=decode_photo(source.getvalue())
             except DomainError as e:st.error(str(e))
-        tokens.append(st.text_area('Nội dung QR '+str(i+1),key='scan-text-'+str(i)))
+        tokens.append(st.text_input('Mã QR '+str(i+1)+' — bấm vào đây rồi quét',key='scan-text-'+str(i)))
     matched=None
     if all(tokens):
         try:
