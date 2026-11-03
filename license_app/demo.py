@@ -5,6 +5,7 @@ def seed_demo(ledger):
     ledger.add_user(admin, operator, 'OPERATOR', 'seed-vy')
     ledger.add_user(admin, ktv, 'KTV', 'seed-ktv')
     ledger.add_user(admin, 'ktv2@example.test', 'KTV', 'seed-ktv2')
+    ledger.add_user(admin, 'qc@example.test', 'QC', 'seed-qc')
     unit = ledger.add_unit(admin, 'DU_AN_THU', 'Đơn vị minh họa', 'seed-unit')
     account = ledger.add_account(operator, unit, 'office@example.test', 'Người quản lý đơn vị mẫu', 'seed-account')
     for i, key in enumerate([
