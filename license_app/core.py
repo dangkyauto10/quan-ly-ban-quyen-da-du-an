@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timezone
 from cryptography.fernet import Fernet
 from sqlalchemy import (create_engine, MetaData, Table, Column, String, Text, Integer,
-                        ForeignKey, UniqueConstraint, select, update, insert, event)
+                        ForeignKey, UniqueConstraint, select, update, insert, event, delete)
 from sqlalchemy.exc import IntegrityError
 
 meta = MetaData()
@@ -41,7 +41,7 @@ audit = Table('audit', meta, Column('id', String, primary_key=True),
     Column('details', Text, nullable=False))
 operations = Table('operations', meta, Column('id', String, primary_key=True),
                    Column('actor', String, nullable=False), Column('result', String, nullable=False))
-ROLES = {'ADMIN', 'OPERATOR', 'KTV'}
+ROLES = {'ADMIN', 'OPERATOR', 'KTV', 'QC'}
 PRODUCTS = {'Office', 'Windows', 'Antivirus'}
 
 class DomainError(Exception):
@@ -261,6 +261,9 @@ class Ledger:
             for job in linked:
                 self._transition(c, job['license_id'], 'ACTIVATED', 'WARRANTY_REVIEW')
                 c.execute(update(jobs).where(jobs.c.id == job['id']).values(state='WARRANTY_REVIEW'))
+            if 'preparation_inspections' in meta.tables:
+                tab=meta.tables['preparation_inspections']
+                c.execute(delete(tab).where(tab.c.id==device_id))
             self._log(c, actor, 'BOARD_REPLACED', device_id, {'old_board': device['board_serial'],
                 'new_board': new_board.strip(), 'reason': reason})
             return device_id
@@ -285,6 +288,8 @@ class Ledger:
         if name not in tables: raise DomainError('Danh sách không hợp lệ.')
         with self.engine.connect() as c:
             role = self._auth(c, actor, ROLES)
+            if role == 'QC' and name not in {'jobs','devices','units'}:
+                raise DomainError('Bộ phận kiểm tra chỉ xem hồ sơ máy và công việc.')
             if role == 'KTV':
                 if name != 'jobs': raise DomainError('KTV chỉ được xem việc được giao.')
                 stmt = select(jobs, devices.c.asset_tag, devices.c.serial, devices.c.board_serial,
