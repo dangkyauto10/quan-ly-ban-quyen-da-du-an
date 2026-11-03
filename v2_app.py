@@ -13,7 +13,7 @@ from license_app.demo import seed_demo
 from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
 st.set_page_config(page_title='Bản quyền V2',page_icon='🛡️',layout='wide')
 st.title('Quản lý bản quyền')
-st.caption('V2-20261103-F · Đội kiểm tra trên điện thoại — dữ liệu thử dùng chung')
+st.caption('V2-20261104-G · Bản quyền trên web')
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
 def connect(url,key,fp):return Ledger(url,key,fp)
@@ -39,30 +39,43 @@ if os.getenv('APP_MODE','production') in {'demo','shared_test','team_test'}:
     actor=st.sidebar.selectbox('Xem thử vai trò',list(demo_people),format_func=demo_people.get)
 else:
     if os.getenv('APP_MODE','production')!='production':st.error('APP_MODE không hợp lệ.');st.stop()
-    url,key,fp,admin=[os.getenv(x,'') for x in ['DATABASE_URL','LICENSE_ENCRYPTION_KEY','FINGERPRINT_KEY','BOOTSTRAP_ADMIN_EMAIL']]
-    if not all([url,key,fp,admin]) or not url.startswith('postgresql+psycopg://'):
-        st.error('Chưa cấu hình PostgreSQL và bí mật triển khai. Xem docs/DEPLOYMENT.md.');st.stop()
+    from license_app.web_config import load_web_settings,ConfigurationError
+    try:
+        try:deployment_secrets=st.secrets.to_dict()
+        except FileNotFoundError:deployment_secrets={}
+        settings=load_web_settings(deployment_secrets)
+    except ConfigurationError:
+        st.info('Bản web đang chờ quản trị kết nối đăng nhập và kho dữ liệu dùng chung. KTV không cần cài phần mềm.')
+        st.caption('Quản trị xem cấu hình web_app.py trong docs/WEB_DANG_NHAP_V2_G.md.')
+        st.stop()
+    url,key,fp,admin=[settings[x] for x in ['DATABASE_URL','LICENSE_ENCRYPTION_KEY','FINGERPRINT_KEY','BOOTSTRAP_ADMIN_EMAIL']]
     if not st.user.is_logged_in:
         st.info('Đăng nhập tài khoản được Admin cấp quyền.')
-        if st.button('Đăng nhập Google'):st.login()
+        if st.button('Đăng nhập bằng Google',type='primary'):st.login()
         st.stop()
     if st.user.get('email_verified') is not True:st.error('Email chưa được xác minh.');st.stop()
     actor=st.user.get('email','').lower().strip()
+    if st.sidebar.button('Đăng xuất'):st.logout()
     try:
         ledger=connect(url,key,fp);ledger.bootstrap(admin)
     except Exception:st.error('Không kết nối được kho dữ liệu. Liên hệ quản trị.');st.stop()
-    if st.sidebar.button('Đăng xuất'):st.logout()
 try:role=ledger.role(actor)
-except DomainError as e:st.error(str(e));st.stop()
+except DomainError:
+    st.info('Tài khoản chưa được cấp quyền hoặc đã tạm dừng. Liên hệ Admin để được phân công.')
+    st.stop()
 st.sidebar.caption(actor+' · '+ROLE_NAMES[role])
 menus=['Việc của tôi'] if role=='KTV' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
 if role=='ADMIN':menus.extend(['Người dùng','Đồng bộ Google Sheet'])
 if role=='QC':menus=['Đối chiếu tem và kiểm tra']
 elif role=='ADMIN':menus.extend(['Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'])
 elif role=='KTV':menus.extend(['In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'])
+if role=='OPERATOR':menus=[name for name in menus if name!='Redeem Office']
 menus.append('Hướng dẫn theo vai trò')
 page=st.sidebar.radio('Chức năng',menus)
 st.subheader(page)
+if page=='Người dùng':
+    notice=st.session_state.get('report-confirmation')
+    if notice and notice[0]==actor:st.success(notice[1])
 if page in PAGE_GUIDES:
     title, steps=PAGE_GUIDES[page]
     with st.expander('Cách thực hiện: '+title):
@@ -121,6 +134,7 @@ elif page=='Kho key':
         ref=st.text_area('Căn cứ: chứng từ, phiên bản và điều kiện sử dụng')
         if st.form_submit_button('Xác nhận đã kiểm tra') and lic:run('verify',lambda t:ledger.verify(actor,lic['id'],ref,t))
 elif page=='Redeem Office':
+    if role!='ADMIN':st.error('Chỉ Admin thực hiện redeem và xem key gốc.');st.stop()
     lic=pick('Key đã kiểm tra',[r for r in rows('licenses') if r['route']=='ACCOUNT_REDEEM' and r['state']=='VERIFIED'],label)
     if lic:
         if st.button('Hiện key cho tác vụ này'):st.code(ledger.reveal(actor,lic['id']),language=None)
@@ -186,14 +200,23 @@ elif page=='Bảo hành':
 elif page=='Nhật ký':table(rows('audit'))
 elif page=='Người dùng':
     table(rows('users'))
+    st.caption('Chỉ cấp quyền cho email Google đã xác minh. Thành viên mở web và đăng nhập Google; không cài Python.')
+    existing=rows('users')
+    with st.form('update-user'):
+        person=pick('Thành viên cần cập nhật',existing,lambda r:r['email']+' · '+ROLE_NAMES[r['role']])
+        role_choice=st.selectbox('Vai trò mới',['KTV','QC','OPERATOR','ADMIN'],format_func=ROLE_NAMES.get)
+        enabled=st.checkbox('Được phép sử dụng app',value=True)
+        if st.form_submit_button('Lưu quyền thành viên') and person:
+            run('update-user',lambda t:ledger.update_user(actor,person['email'],role_choice,enabled,t),
+                'Đã cập nhật quyền thành viên.')
     with st.form('user'):
         email=st.text_input('Email Google đã xác minh');new_role=st.selectbox('Quyền',['KTV','QC','OPERATOR','ADMIN'],format_func=ROLE_NAMES.get)
         if st.form_submit_button('Cấp quyền'):run('user',lambda t:ledger.add_user(actor,email,new_role,t))
 elif page=='Hướng dẫn theo vai trò':
     st.info('Hướng dẫn dự thảo cho chức năng hiện có. Cách vận hành chính thức sẽ cập nhật sau khi anh Vỹ chốt các mục góp ý.')
     sequences={
-        'ADMIN':['Người dùng','Đơn vị & tài khoản','Kho key','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký'],
-        'OPERATOR':['Đơn vị & tài khoản','Kho key','Redeem Office','Kích hoạt','Nhật ký'],
+        'ADMIN':['Người dùng','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký'],
+        'OPERATOR':['Đơn vị & tài khoản','Kho key','Kích hoạt','Nhật ký'],
         'KTV':['Việc của tôi'],
         'QC':[],
     }
