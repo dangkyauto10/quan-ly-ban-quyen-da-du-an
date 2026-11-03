@@ -1,5 +1,5 @@
 """Vietnamese guidance for the currently implemented preview, not final policy."""
-ROLE_NAMES = {'ADMIN': 'Admin (quản trị)', 'OPERATOR': 'Người quản lý redeem (quy đổi key)', 'KTV': 'KTV (kỹ thuật viên)'}
+ROLE_NAMES = {'QC':'Bộ phận kiểm tra độc lập', 'ADMIN': 'Admin (quản trị)', 'OPERATOR': 'Người quản lý redeem (quy đổi key)', 'KTV': 'KTV (kỹ thuật viên)'}
 FIELD_NAMES = {
     'id':'Mã hồ sơ', 'project':'Mã dự án', 'name':'Tên đơn vị', 'email':'Email',
     'role':'Vai trò', 'active':'Đang được cấp quyền', 'unit_id':'Mã đơn vị',
