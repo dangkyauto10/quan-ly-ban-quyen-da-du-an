@@ -21,7 +21,7 @@ def ready(s):
     l.import_keys('admin@test.example','B1','Office','Home Business 2024','Retail','ACCOUNT_REDEEM',['AAAAA-BBBBB-CCCCC-DDDDD-EEEEE'],'',op())
     entity=l.rows('admin@test.example','licenses')[0]['id']
     l.verify('vy@test.example',entity,'Verified document and license terms',op())
-    l.redeem('vy@test.example',entity,a,'Confirmed at Microsoft',op())
+    l.redeem('admin@test.example',entity,a,'Confirmed at Microsoft',op())
     return entity
 
 def test_complete_flow_and_warranty(setup):
@@ -75,7 +75,7 @@ def test_wrong_unit_and_invalid_state(setup):
     u=l.add_unit('admin@test.example','DA2','Unit B',op())
     d=l.add_device('admin@test.example',u,'PC2','SN2','BOARD2','Model',op())
     with pytest.raises(DomainError):l.assign('admin@test.example',entity,d,'ktv@test.example',op())
-    with pytest.raises(DomainError):l.redeem('vy@test.example',entity,a,'Again',op())
+    with pytest.raises(DomainError):l.redeem('admin@test.example',entity,a,'Again',op())
 
 def test_demo_ui(monkeypatch):
     monkeypatch.setenv('APP_MODE','demo')
