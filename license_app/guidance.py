@@ -15,7 +15,10 @@ FIELD_NAMES = {
     'entity':'Mã hồ sơ liên quan', 'details':'Chi tiết sự kiện',
 }
 ACTION_NAMES = {
-    'ADD_USER':'Thêm người dùng', 'ADD_UNIT':'Thêm đơn vị', 'ADD_ACCOUNT':'Thêm tài khoản Microsoft',
+    'ADD_USER':'Thêm người dùng', 'UPDATE_USER':'Cập nhật quyền thành viên',
+    'CLAIM_CHECK':'Nhận máy kiểm tra','RELEASE_CHECK':'Trả lượt kiểm tra',
+    'PACK_PC':'Hoàn tất đóng gói','INSPECT_PC_FAILED':'Kiểm tra không đạt',
+    'INSPECT_PC':'Kiểm tra kỹ thuật','SET_PC_PLAN':'Lập kế hoạch PC','NUMBER_PC':'Cấp số thứ tự PC', 'ADD_UNIT':'Thêm đơn vị', 'ADD_ACCOUNT':'Thêm tài khoản Microsoft',
     'IMPORT_BATCH':'Nhập lô key', 'VERIFY':'Xác nhận kiểm tra', 'REVEAL_KEY':'Xem key đầy đủ',
     'REDEEM_CONFIRMED':'Ghi nhận redeem thành công', 'ADD_DEVICE':'Tạo hồ sơ máy',
     'ASSIGN':'Phân bản quyền và giao việc', 'ACTIVATION_SUCCESS':'Báo kích hoạt thành công',
