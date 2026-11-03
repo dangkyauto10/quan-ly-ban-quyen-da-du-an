@@ -21,7 +21,7 @@ def seed_demo(ledger):
     for i, tail in [(1,'EEEEE'), (2,'KKKKK')]:
         lic = next(r for r in records if r['tail'] == tail)['id']
         ledger.verify(operator, lic, 'Chứng từ GIẢ dùng thử quy trình', f'seed-verify-{i}')
-        ledger.redeem(operator, lic, account, 'Xác nhận GIẢ — không có redeem thật', f'seed-redeem-{i}')
+        ledger.redeem(admin, lic, account, 'Xác nhận GIẢ — không có redeem thật', f'seed-redeem-{i}')
         device = ledger.add_device(admin, unit, f'PC-MAU-0{i}', f'SN-MAU-0{i}',
             f'MB-MAU-0{i}', 'Máy minh họa', f'seed-device-{i}')
         job = ledger.assign(admin, lic, device, ktv, f'seed-assign-{i}')
