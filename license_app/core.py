@@ -84,6 +84,7 @@ class Ledger:
     def _atomic(self, actor, allowed, op, fn):
         try:
             with self.engine.begin() as c:
+                if self.engine.dialect.name == 'sqlite':c.exec_driver_sql('BEGIN IMMEDIATE')
                 self._auth(c, actor, allowed)
                 prior = c.execute(select(operations).where(operations.c.id == op)).mappings().first()
                 if prior:
@@ -261,6 +262,9 @@ class Ledger:
             for job in linked:
                 self._transition(c, job['license_id'], 'ACTIVATED', 'WARRANTY_REVIEW')
                 c.execute(update(jobs).where(jobs.c.id == job['id']).values(state='WARRANTY_REVIEW'))
+            if 'packing_claims' in meta.tables:
+                tab=meta.tables['packing_claims']
+                c.execute(delete(tab).where(tab.c.id==device_id))
             if 'preparation_inspections' in meta.tables:
                 tab=meta.tables['preparation_inspections']
                 c.execute(delete(tab).where(tab.c.id==device_id))
