@@ -59,9 +59,13 @@ def table(data):
 def pick(label,data,fmt):
     if not data:st.info('Chưa có lựa chọn phù hợp.');return None
     return st.selectbox(label,data,format_func=fmt)
-def run(name,fn):
+def run(name,fn,confirmation=None):
     token=st.session_state.setdefault('op-'+name,str(uuid.uuid4()))
-    try:fn(token);st.session_state.pop('op-'+name,None);st.rerun()
+    try:
+        fn(token)
+        st.session_state.pop('op-'+name,None)
+        if confirmation:st.session_state['report-confirmation']=(actor,confirmation)
+        st.rerun()
     except DomainError as e:st.error(str(e))
     except Exception:st.error('Chưa xác nhận lưu thành công. Hãy kiểm tra kết nối và tải lại hồ sơ.')
 def label(r):return f"{r['product']} · {r['sku']} · …{r['tail']} · {LABELS[r['state']]}"
@@ -131,12 +135,25 @@ elif page=='Phân bổ':
 elif page in ['Kích hoạt','Việc của tôi']:
     data=rows('jobs');table(data)
     if role=='OPERATOR':st.stop()
-    with st.form('report'):
-        job=pick('Việc cần báo cáo',[r for r in data if r['state'] in {'PENDING','FAILED'}],lambda r:r.get('asset_tag',r['device_id'])+' · '+r['id'][:8])
+    notice=st.session_state.get('report-confirmation')
+    if notice and notice[0]==actor:st.success(notice[1])
+    pending=[r for r in data if r['state'] in {'PENDING','FAILED'}]
+    if not pending:
+        st.info('Không còn công việc chờ báo cáo. Các hồ sơ đã xử lý nằm trong bảng phía trên.')
+        st.stop()
+    with st.form('report',clear_on_submit=True):
+        job=pick('Việc cần báo cáo',pending,lambda r:r.get('asset_tag',r['device_id'])+' · '+r['id'][:8])
         success=st.radio('Kết quả',['Thành công','Thất bại'])=='Thành công'
         error=st.text_input('Mã lỗi nếu thất bại');note=st.text_area('Trạng thái đã kiểm tra / nội dung xử lý')
         evidence=st.text_input('Link HTTPS minh chứng (nếu có; không chứa key hoặc mật khẩu)')
-        if st.form_submit_button('Gửi báo cáo') and job:run('report',lambda t:ledger.report(actor,job['id'],success,error,note,evidence,t))
+        if st.form_submit_button('Gửi báo cáo') and job:
+            if not note.strip():st.error('Anh/chị cần nhập nội dung đã kiểm tra / xử lý trước khi gửi báo cáo.')
+            elif not success and not error.strip():st.error('Báo cáo thất bại cần có mã lỗi.')
+            else:
+                machine=job.get('asset_tag',job['device_id'])
+                outcome='Thành công — công việc đã hoàn thành.' if success else 'Thất bại — công việc còn chờ xử lý.'
+                run('report',lambda t:ledger.report(actor,job['id'],success,error,note,evidence,t),
+                    f'Đã lưu báo cáo cho máy {machine}. Kết quả: {outcome} Đã ghi nhật ký.')
 elif page=='Bảo hành':
     table(rows('devices'))
     if role!='ADMIN':st.info('Admin xác nhận thay mainboard và duyệt kích hoạt lại.');st.stop()
