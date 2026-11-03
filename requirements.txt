@@ -1,4 +1,4 @@
-streamlit
+-r requirements-v2.txt
 pandas
 requests
 qrcode
