@@ -3,9 +3,14 @@ import json
 import os
 import secrets
 from pathlib import Path
+from threading import Lock
+_CONFIG_LOCK=Lock()
 from cryptography.fernet import Fernet
 
 def shared_config():
+    with _CONFIG_LOCK:return _load_config()
+
+def _load_config():
     root=Path(os.getenv('LICENSE_TEST_DATA_DIR',str(Path(__file__).resolve().parent.parent/'test-data'))).resolve()
     root.mkdir(parents=True,exist_ok=True)
     config=root/'test-secrets.json'
