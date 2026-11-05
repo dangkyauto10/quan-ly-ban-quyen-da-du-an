@@ -36,10 +36,16 @@ st.markdown('''<style>
 [data-testid="stSidebar"] [role="radio"] {padding:8px 6px;border-radius:8px;}
 [data-testid="stSidebar"] hr {border-color:#344359;}
 h1,h2,h3, [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="stMain"] h3, [data-testid="stMain"] p {letter-spacing:-.015em;color:#14283f!important;}
-[data-testid="stMain"] [data-testid="stMarkdownContainer"] p {color:#33465e!important;}
+[data-testid="stMain"] [data-testid="stMarkdownContainer"] p {color:#33465e!important;font-size:15px;line-height:1.6;}
 [data-testid="stMain"] label, [data-testid="stMain"] label p {color:#33465e!important;}
 [data-testid="stMain"] input, [data-testid="stMain"] textarea {background:#fff!important;color:#18273d!important;border:1px solid #cbd7e4!important;border-radius:8px;}
-[data-testid="stMainBlockContainer"] {max-width:1480px;}
+[data-testid="stMainBlockContainer"] {max-width:1180px;}
+[data-testid="stSidebar"] {width:215px!important;}
+[data-testid="stSidebar"] label p,[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {font-size:14px!important;}
+[data-testid="stCaptionContainer"] p {font-size:13px!important;}
+[data-testid="stMetricLabel"] {font-size:14px!important;}
+[data-testid="stMetricValue"] {font-size:30px!important;}
+[data-testid="stExpander"] summary {font-size:15px!important;}
 header[data-testid="stHeader"] {background:rgba(244,247,251,.88);}
 [data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-top:1.2rem;}
 .brand-lockup {display:flex;align-items:center;gap:11px;margin:0 0 20px;}
@@ -57,7 +63,7 @@ div[data-testid="stMetric"] {box-shadow:0 5px 18px #14283f08;}
 .step-number {display:flex;align-items:center;gap:6px;}
 .step-title {color:#14283f;}
 .step-card:hover {border-color:#8bd7ca;transform:translateY(-2px);transition:all .18s ease;}
-[data-testid="stSidebar"] {width:230px!important;}
+
 div[data-testid="stMetric"] {background:white;border:1px solid #e1e7ef;border-radius:14px;padding:20px 22px;border-top:3px solid #13a394;}
 [data-testid="stMetricLabel"] {color:#64748b;}
 [data-testid="stMetricValue"] {color:#14283f;font-weight:700;}
@@ -69,10 +75,10 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] * {color:#fff!importan
 .brand-title {font-size:30px;font-weight:750;line-height:1.2;letter-spacing:-1px;margin:0;}
 .side-note {font-size:11px;color:#64748b!important;margin-bottom:24px;letter-spacing:.5px;}
 .page-note {color:#64748b;margin-top:-10px;margin-bottom:24px;font-size:14px;}
-.step-card {background:#fff;border:1px solid #e1e7ef;border-radius:12px;padding:16px;height:178px;box-sizing:border-box;margin-bottom:10px;}
+.step-card {background:linear-gradient(145deg,#fff,#f9fcff);border:1px solid #dce5ef;border-radius:15px;padding:20px;height:166px;box-sizing:border-box;margin-bottom:10px;box-shadow:0 8px 22px #14283f0a;}
 .step-number {font-size:11px;color:#087f75;font-weight:750;letter-spacing:1px;}
-.step-title {font-size:16px;font-weight:700;margin:7px 0;}
-.step-note {font-size:13px;color:#64748b;line-height:1.5;}
+.step-title {font-size:19px;font-weight:700;margin:9px 0;color:#14283f;}
+.step-note {font-size:15px;color:#52657b;line-height:1.55;}
 @media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.brand-title {font-size:25px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 </style>''',unsafe_allow_html=True)
 st.markdown('<div class="brand-lockup"><div class="brand-mark">V⌗</div><div><div class="brand-kicker">V · LICENSE OPERATIONS</div><div style="font-size:12px;color:#61738a">Hệ thống quản lý bản quyền và thiết bị</div></div></div>',unsafe_allow_html=True)
@@ -200,6 +206,7 @@ elif page=='Tổng quan':
     data=rows('licenses'); cols=st.columns(4)
     for col,title,n in zip(cols,['Đã nhận','Chưa phân bổ','Đã giao máy','Đã kích hoạt'],[len(data),sum(r['state'] in {'RECEIVED','VERIFIED','REDEEMED'} for r in data),sum(r['state']=='ASSIGNED' for r in data),sum(r['state']=='ACTIVATED' for r in data)]):col.metric(title,n)
     st.markdown('### Luồng xử lý bản quyền')
+    st.caption('Mỗi PC đi qua bốn bước. Chọn nút trên thẻ để mở đúng màn hình thao tác.')
     steps=[('01','Chuẩn bị','Đơn vị, số lượng PC, key và tài khoản.','Đơn vị & tài khoản'),('02','Redeem & giao việc','Admin ghi nhận redeem và phân công KTV.','Phân bổ'),('03','Kích hoạt · in tem QR','KTV báo kết quả; in tem PC và vỏ hộp theo số thứ tự.','Kích hoạt'),('04','Quét · kiểm tra · đóng gói','QC đối chiếu cặp QR, đơn vị và số lượng thiết bị.','Đối chiếu tem và kiểm tra')]
     def open_page(target):
         for group,items in groups.items():
@@ -207,10 +214,10 @@ elif page=='Tổng quan':
                 st.session_state['nav-section']=group
                 st.session_state['nav-page-'+group]=target
                 return
-    for col,(number,title,note,target) in zip(st.columns(4),steps):
+    for col,(number,title,note,target) in zip(st.columns(2),steps):
         with col:
             st.markdown(f'<div class="step-card"><div class="step-number">BƯỚC {number}</div><div class="step-title">{title}</div><div class="step-note">{note}</div></div>',unsafe_allow_html=True)
-            if target in menus:st.button({'01':'Chuẩn bị','02':'Giao việc','03':'Kích hoạt','04':'Kiểm tra'}[number]+' →',key='shortcut-'+number,on_click=open_page,args=(target,),use_container_width=True)
+            if target in menus:st.button({'01':'Mở chuẩn bị','02':'Mở giao việc','03':'Mở kích hoạt','04':'Mở kiểm tra'}[number]+'  →',key='shortcut-'+number,on_click=open_page,args=(target,),use_container_width=True,type='primary')
     st.markdown('### Danh sách bản quyền')
     if not data:st.info('Kho dữ liệu mới chưa có bản quyền. Bắt đầu từ bước 01: thêm đơn vị và tài khoản, sau đó nhập lô key thử nghiệm.')
     else:table(data)
