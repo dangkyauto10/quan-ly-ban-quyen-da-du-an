@@ -17,27 +17,31 @@ st.markdown('''<style>
 [data-testid="stAppViewContainer"] {background:radial-gradient(ellipse at 92% 0%,#eaf7f5 0,transparent 28%),#f4f7fb;}
 .stApp {background:#f5f7fb;color:#18273d;}
 .block-container {padding-top:4.5rem;max-width:1400px;padding-bottom:3rem;}
-[data-testid="stSidebar"] {background:#101f36;}
-[data-testid="stSidebar"] {color:#e4edf8;}
+[data-testid="stSidebar"] {background:#edf2f8!important;border-right:1px solid #d8e2ed;}
+[data-testid="stSidebar"] {color:#1b2d45;}
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
 [data-testid="stSidebar"] label p,
-[data-testid="stSidebar"] .side-brand {color:#e4edf8;}
-[data-testid="stSidebar"] a {color:#69d8cb;}
-[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] {background:#213650;border:1px solid #49617c;}
+[data-testid="stSidebar"] .side-brand {color:#1b2d45;}
+[data-testid="stSidebar"] a {color:#087f75;}
+[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"],
+[data-testid="stSidebar"] button[kind="secondary"] {background:#fff;border:1px solid #cbd7e4;color:#1b2d45;}
 [data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] *,
-[data-testid="stSidebar"] button[kind="secondary"] * {color:#fff!important;}
-[data-testid="stSidebar"] button[kind="secondary"] {background:#213650;border-color:#49617c;}
+[data-testid="stSidebar"] button[kind="secondary"] * {color:#1b2d45!important;}
 [data-testid="stSidebar"] [data-baseweb="select"] {background:#fff;border-radius:9px;}
 [data-testid="stSidebar"] [data-baseweb="select"] * {color:#18273d!important;}
 [data-testid="stSidebar"] [data-baseweb="select"] input {color:#18273d!important;-webkit-text-fill-color:#18273d!important;}
-[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {color:#b3c1d3;}
-[data-testid="stSidebar"] [data-testid="stIconMaterial"] {color:#e4edf8;}
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {color:#5c6d82;}
+[data-testid="stSidebar"] [data-testid="stIconMaterial"] {color:#51657d;}
 [data-testid="stSidebar"] [role="radiogroup"] {gap:4px;}
 [data-testid="stSidebar"] [role="radio"] {padding:8px 6px;border-radius:8px;}
 [data-testid="stSidebar"] hr {border-color:#344359;}
-h1,h2,h3 {letter-spacing:-.035em;color:#14283f;}
+h1,h2,h3, [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="stMain"] h3, [data-testid="stMain"] p {letter-spacing:-.015em;color:#14283f!important;}
+[data-testid="stMain"] [data-testid="stMarkdownContainer"] p {color:#33465e!important;}
+[data-testid="stMain"] label, [data-testid="stMain"] label p {color:#33465e!important;}
+[data-testid="stMain"] input, [data-testid="stMain"] textarea {background:#fff!important;color:#18273d!important;border:1px solid #cbd7e4!important;border-radius:8px;}
 [data-testid="stMainBlockContainer"] {max-width:1480px;}
 header[data-testid="stHeader"] {background:rgba(244,247,251,.88);}
+[data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-top:1.2rem;}
 .brand-lockup {display:flex;align-items:center;gap:11px;margin:0 0 20px;}
 .brand-mark {width:37px;height:37px;border-radius:11px;background:#10263d;color:#8cf0d4;display:grid;place-items:center;font-size:18px;font-weight:800;box-shadow:0 5px 14px #10263d24;}
 .brand-kicker {font-size:10px;letter-spacing:1.8px;font-weight:750;color:#087f75;margin:0 0 3px;}
@@ -45,14 +49,15 @@ header[data-testid="stHeader"] {background:rgba(244,247,251,.88);}
 .side-brand-row {display:flex;align-items:center;gap:10px;margin:4px 0 3px;}
 .side-mark {width:30px;height:30px;border:1px solid #47cdb5;border-radius:9px;color:#8cf0d4;display:grid;place-items:center;font-size:15px;font-weight:800;}
 .side-brand {font-size:17px;font-weight:750;letter-spacing:.3px;margin:0;}
-[data-testid="stSidebar"] [role="radio"]:has(input:checked) {background:#193b50;border:1px solid #2a786f;}
-[data-testid="stSidebar"] [role="radio"]:has(input:checked) p {color:#8cf0d4!important;font-weight:700;}
+[data-testid="stSidebar"] [role="radio"]:has(input:checked) {background:#dff4ef;border:1px solid #a7ddd1;}
+[data-testid="stSidebar"] [role="radio"]:has(input:checked) p {color:#075f58!important;font-weight:700;}
 [data-testid="stSidebar"] [data-testid="stSelectbox"] {margin-top:2px;}
 div[data-testid="stMetric"] {box-shadow:0 5px 18px #14283f08;}
 .step-card {box-shadow:0 5px 18px #14283f08;}
 .step-number {display:flex;align-items:center;gap:6px;}
 .step-title {color:#14283f;}
 .step-card:hover {border-color:#8bd7ca;transform:translateY(-2px);transition:all .18s ease;}
+[data-testid="stSidebar"] {width:230px!important;}
 div[data-testid="stMetric"] {background:white;border:1px solid #e1e7ef;border-radius:14px;padding:20px 22px;border-top:3px solid #13a394;}
 [data-testid="stMetricLabel"] {color:#64748b;}
 [data-testid="stMetricValue"] {color:#14283f;font-weight:700;}
@@ -148,7 +153,7 @@ st.sidebar.divider()
 section=st.sidebar.selectbox('Nhóm công việc',list(groups),key='nav-section')
 page=st.sidebar.radio('Chức năng',groups[section],key='nav-page-'+section)
 st.sidebar.divider()
-st.sidebar.caption('V2 · Giao diện H · 05/11/2026')
+st.sidebar.caption('V2 · Giao diện sáng · 05/11/2026')
 st.subheader(page)
 page_notes={
     'Tổng quan':'Theo dõi kho bản quyền và chọn bước tiếp theo trong quy trình.',
