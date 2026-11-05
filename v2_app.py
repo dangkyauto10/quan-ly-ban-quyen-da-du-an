@@ -101,6 +101,25 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain
 .step-title {font-size:21px;font-weight:700;margin:9px 0;color:#14283f;}
 .step-note {font-size:18px;color:#40546c;line-height:1.6;}
 @media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.hero-tech {min-height:205px;padding:20px 14px;border-radius:16px;background-position:center 50%;}.hero-tech h1 {font-size:29px!important;}.hero-logo {width:50px;height:50px;}.hero-name {font-size:14px;letter-spacing:1.3px;}.hero-sub,.hero-note {font-size:13px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
+/* Raised, consistent surfaces across dashboard and workflow pages */
+[data-testid="stSidebar"] {box-shadow:8px 0 28px #10243a0b;z-index:3;}
+[data-testid="stMain"] h2 {font-weight:760!important;margin-top:1.35rem!important;margin-bottom:.35rem!important;}
+[data-testid="stMain"] h3 {font-weight:720!important;margin-top:1rem!important;}
+[data-testid="stMetric"] {position:relative;overflow:hidden;background:linear-gradient(145deg,#fff,#f8fbff)!important;box-shadow:0 10px 24px #13243b12,0 2px 5px #13243b08!important;transition:transform .18s ease,box-shadow .18s ease;}
+[data-testid="stMetric"]:hover {transform:translateY(-4px);box-shadow:0 18px 32px #13243b1c,0 4px 8px #13243b0c!important;}
+[data-testid="stForm"] {background:linear-gradient(145deg,#fff 0%,#fbfdff 100%)!important;border:1px solid #dce6f0!important;border-radius:18px!important;padding:24px!important;box-shadow:0 12px 28px #13243b10,0 2px 5px #13243b08!important;transition:transform .18s ease,box-shadow .18s ease;}
+[data-testid="stForm"]:hover {transform:translateY(-2px);box-shadow:0 17px 34px #13243b16,0 3px 8px #13243b0a!important;}
+[data-testid="stDataFrame"], [data-testid="stTable"] {border:1px solid #dce5ef;border-radius:14px!important;box-shadow:0 10px 24px #13243b10;overflow:hidden;}
+[data-testid="stExpander"] {background:linear-gradient(145deg,#fff,#f9fbfe);border:1px solid #dce5ef!important;border-radius:14px!important;box-shadow:0 7px 18px #13243b0b;transition:box-shadow .18s ease,transform .18s ease;}
+[data-testid="stExpander"]:hover {box-shadow:0 12px 25px #13243b14;transform:translateY(-1px);}
+[data-testid="stAlert"] {border-radius:14px!important;box-shadow:0 8px 20px #13243b0b;border:1px solid #dbe6f1;}
+[data-testid="stMain"] input:focus,[data-testid="stMain"] textarea:focus,[data-testid="stMain"] [data-baseweb="select"]:focus-within {border-color:#0ea5a0!important;box-shadow:0 0 0 3px #12a89b26!important;}
+[data-testid="stMain"] [data-baseweb="select"] {border-radius:10px;}
+.stButton button,.stDownloadButton button,.stLinkButton a {box-shadow:0 5px 12px #14283f14;transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;}
+.stButton button:hover,.stDownloadButton button:hover,.stLinkButton a:hover {transform:translateY(-2px);box-shadow:0 9px 18px #14283f20;filter:brightness(1.04);}
+.step-card {background:linear-gradient(145deg,#fff 0%,#f7fbff 100%);border-color:#d9e3ef;border-left:5px solid #e1ae21;box-shadow:0 12px 26px #13243b12,0 2px 5px #13243b08;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
+.step-card:hover {border-color:#b8cce0;transform:translateY(-5px);box-shadow:0 20px 35px #13243b1c,0 5px 10px #13243b0a;}
+@media(prefers-reduced-motion:reduce) {[data-testid="stMetric"],[data-testid="stForm"],[data-testid="stExpander"],.stButton button,.stDownloadButton button,.stLinkButton a,.step-card {transition:none!important;}}
 </style>''',unsafe_allow_html=True)
 st.markdown(f'''<section class="hero-tech" style="--hero-photo:url('{hero_photo_src}')">
 <div class="hero-lockup"><img class="hero-logo" src="{logo_src}" alt="Logo KEY BẢN QUYỀN"><div><div class="hero-name">KEY BẢN QUYỀN</div><div class="hero-sub">Quản lý bản quyền và thiết bị</div></div></div><h1>KEY BẢN QUYỀN</h1><div class="hero-rule"></div><div class="hero-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div></section>''',unsafe_allow_html=True)
