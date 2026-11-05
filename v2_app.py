@@ -64,9 +64,10 @@ div[data-testid="stMetric"] {background:white;border:1px solid #e1e7ef;border-ra
 [data-testid="stForm"] {background:#fff;border:1px solid #e1e7ef;border-radius:14px;padding:22px;}
 [data-testid="stDataFrame"], [data-testid="stExpander"] {border-radius:12px;overflow:hidden;}
 .stButton button,.stDownloadButton button,.stLinkButton a {border-radius:9px;min-height:42px;}
-button[kind="primary"],button[kind="primaryFormSubmit"] {background:#087f75;border-color:#087f75;color:white;}
+button[kind="primary"],button[kind="primaryFormSubmit"] {background:#087f75!important;border-color:#087f75!important;color:#fff!important;}
+button[kind="primary"] *,button[kind="primaryFormSubmit"] * {color:#fff!important;}
 .brand-title {font-size:30px;font-weight:750;line-height:1.2;letter-spacing:-1px;margin:0;}
-.side-note {font-size:12px;color:#9eafc6!important;margin-bottom:24px;}
+.side-note {font-size:11px;color:#64748b!important;margin-bottom:24px;letter-spacing:.5px;}
 .page-note {color:#64748b;margin-top:-10px;margin-bottom:24px;font-size:14px;}
 .step-card {background:#fff;border:1px solid #e1e7ef;border-radius:12px;padding:16px;height:178px;box-sizing:border-box;margin-bottom:10px;}
 .step-number {font-size:11px;color:#087f75;font-weight:750;letter-spacing:1px;}
