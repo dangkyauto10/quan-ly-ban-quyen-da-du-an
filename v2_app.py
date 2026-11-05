@@ -44,9 +44,12 @@ else:
         try:deployment_secrets=st.secrets.to_dict()
         except FileNotFoundError:deployment_secrets={}
         settings=load_web_settings(deployment_secrets)
-    except ConfigurationError:
+    except ConfigurationError as config_error:
         st.info('Bản web đang chờ quản trị kết nối đăng nhập và kho dữ liệu dùng chung. KTV không cần cài phần mềm.')
-        st.caption('Quản trị xem cấu hình web_app.py trong docs/WEB_DANG_NHAP_V2_G.md.')
+        st.error('Các mục cấu hình còn thiếu hoặc chưa hợp lệ:')
+        for field in config_error.fields:
+            st.text('• '+field)
+        st.caption('Sửa các mục trên trong Settings → Secrets. Chỉ hiển thị tên mục; không hiển thị mật khẩu hay giá trị khóa.')
         st.stop()
     url,key,fp,admin=[settings[x] for x in ['DATABASE_URL','LICENSE_ENCRYPTION_KEY','FINGERPRINT_KEY','BOOTSTRAP_ADMIN_EMAIL']]
     if not st.user.is_logged_in:
