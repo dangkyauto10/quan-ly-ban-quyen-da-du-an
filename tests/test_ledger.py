@@ -82,7 +82,7 @@ def test_demo_ui(monkeypatch):
     from streamlit.testing.v1 import AppTest
     app=AppTest.from_file(str(__import__('pathlib').Path(__file__).resolve().parents[1] / 'v2_app.py')).run(timeout=20)
     assert not app.exception
-    assert app.title[0].value=='Quản lý bản quyền'
+    assert app.subheader[0].value=='Tổng quan'
     def navigate(page):
         for group in app.selectbox(key='nav-section').options:
             app.selectbox(key='nav-section').set_value(group).run()
