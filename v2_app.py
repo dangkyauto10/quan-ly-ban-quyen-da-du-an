@@ -15,10 +15,22 @@ st.set_page_config(page_title='Bản quyền V2',page_icon='🛡️',layout='wid
 st.markdown('''<style>
 :root {color-scheme:light;}
 .stApp {background:#f5f7fb;color:#18273d;}
-.block-container {padding-top:2.2rem;max-width:1400px;padding-bottom:3rem;}
+.block-container {padding-top:4.5rem;max-width:1400px;padding-bottom:3rem;}
 [data-testid="stSidebar"] {background:#101f36;}
-[data-testid="stSidebar"] * {color:#e4edf8;}
-[data-testid="stSidebar"] [data-baseweb="select"] * {color:#18273d;}
+[data-testid="stSidebar"] {color:#e4edf8;}
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stSidebar"] label p,
+[data-testid="stSidebar"] .side-brand {color:#e4edf8;}
+[data-testid="stSidebar"] a {color:#69d8cb;}
+[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] {background:#213650;border:1px solid #49617c;}
+[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] *,
+[data-testid="stSidebar"] button[kind="secondary"] * {color:#fff!important;}
+[data-testid="stSidebar"] button[kind="secondary"] {background:#213650;border-color:#49617c;}
+[data-testid="stSidebar"] [data-baseweb="select"] {background:#fff;border-radius:9px;}
+[data-testid="stSidebar"] [data-baseweb="select"] * {color:#18273d!important;}
+[data-testid="stSidebar"] [data-baseweb="select"] input {color:#18273d!important;-webkit-text-fill-color:#18273d!important;}
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {color:#b3c1d3;}
+[data-testid="stSidebar"] [data-testid="stIconMaterial"] {color:#e4edf8;}
 [data-testid="stSidebar"] [role="radiogroup"] {gap:4px;}
 [data-testid="stSidebar"] [role="radio"] {padding:8px 6px;border-radius:8px;}
 [data-testid="stSidebar"] hr {border-color:#344359;}
@@ -36,11 +48,11 @@ button[kind="primary"],button[kind="primaryFormSubmit"] {background:#087f75;bord
 .side-brand {font-size:19px;font-weight:750;letter-spacing:.5px;margin-bottom:4px;}
 .side-note {font-size:12px;color:#9eafc6!important;margin-bottom:24px;}
 .page-note {color:#64748b;margin-top:-10px;margin-bottom:24px;font-size:14px;}
-.step-card {background:#fff;border:1px solid #e1e7ef;border-radius:12px;padding:16px;min-height:124px;margin-bottom:10px;}
+.step-card {background:#fff;border:1px solid #e1e7ef;border-radius:12px;padding:16px;height:178px;box-sizing:border-box;margin-bottom:10px;}
 .step-number {font-size:11px;color:#087f75;font-weight:750;letter-spacing:1px;}
 .step-title {font-size:16px;font-weight:700;margin:7px 0;}
 .step-note {font-size:13px;color:#64748b;line-height:1.5;}
-@media(max-width:640px) {.block-container {padding:1.2rem 1rem 2rem;}.brand-title {font-size:25px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {min-height:0;}}
+@media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.brand-title {font-size:25px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 </style>''',unsafe_allow_html=True)
 st.markdown('<div class="brand-kicker">BẢN QUYỀN · ĐIỀU PHỐI TRIỂN KHAI</div>',unsafe_allow_html=True)
 st.title('Quản lý bản quyền')
@@ -177,7 +189,7 @@ elif page=='Tổng quan':
     for col,(number,title,note,target) in zip(st.columns(4),steps):
         with col:
             st.markdown(f'<div class="step-card"><div class="step-number">BƯỚC {number}</div><div class="step-title">{title}</div><div class="step-note">{note}</div></div>',unsafe_allow_html=True)
-            if target in menus:st.button('Mở '+title,key='shortcut-'+number,on_click=open_page,args=(target,),use_container_width=True)
+            if target in menus:st.button({'01':'Chuẩn bị','02':'Giao việc','03':'Kích hoạt','04':'Kiểm tra'}[number]+' →',key='shortcut-'+number,on_click=open_page,args=(target,),use_container_width=True)
     st.markdown('### Danh sách bản quyền')
     if not data:st.info('Kho dữ liệu mới chưa có bản quyền. Bắt đầu từ bước 01: thêm đơn vị và tài khoản, sau đó nhập lô key thử nghiệm.')
     else:table(data)
