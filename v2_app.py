@@ -19,7 +19,7 @@ st.markdown('''<style>
 :root {color-scheme:light;--ink:#13243b;--teal:#087f75;--mint:#dff6ef;--line:#dce5ef;--muted:#61738a;}
 [data-testid="stAppViewContainer"] {background:radial-gradient(ellipse at 92% 0%,#eaf7f5 0,transparent 28%),#f4f7fb;}
 .stApp {background:#f5f7fb;color:#18273d;}
-.block-container {padding-top:4.5rem;max-width:1400px;padding-bottom:3rem;}
+.block-container {padding:2.2rem clamp(1.25rem,3vw,3.5rem) 3rem;max-width:none;width:100%;}
 [data-testid="stSidebar"] {background:#edf2f8!important;border-right:1px solid #d8e2ed;}
 [data-testid="stSidebar"] {color:#1b2d45;}
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
@@ -39,15 +39,15 @@ st.markdown('''<style>
 [data-testid="stSidebar"] [role="radio"] {padding:8px 6px;border-radius:8px;}
 [data-testid="stSidebar"] hr {border-color:#344359;}
 h1,h2,h3, [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="stMain"] h3, [data-testid="stMain"] p {letter-spacing:-.015em;color:#14283f!important;}
-[data-testid="stMain"] [data-testid="stMarkdownContainer"] p {color:#33465e!important;font-size:15px;line-height:1.6;}
-[data-testid="stMain"] label, [data-testid="stMain"] label p {color:#33465e!important;}
+[data-testid="stMain"] [data-testid="stMarkdownContainer"] p {color:#33465e!important;font-size:17px;line-height:1.65;}
+[data-testid="stMain"] label, [data-testid="stMain"] label p {color:#33465e!important;font-size:15px!important;}
 [data-testid="stMain"] input, [data-testid="stMain"] textarea {background:#fff!important;color:#18273d!important;border:1px solid #cbd7e4!important;border-radius:8px;}
-[data-testid="stMainBlockContainer"] {max-width:1180px;}
+[data-testid="stMainBlockContainer"] {max-width:none;width:100%;}
 [data-testid="stSidebar"] {width:215px!important;}
 [data-testid="stSidebar"] label p,[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {font-size:14px!important;}
 [data-testid="stCaptionContainer"] p {font-size:13px!important;}
 [data-testid="stMetricLabel"] {font-size:14px!important;}
-[data-testid="stMetricValue"] {font-size:30px!important;}
+[data-testid="stMetricValue"], [data-testid="stMetricValue"] div {font-size:34px!important;font-weight:750!important;color:#14283f!important;}
 [data-testid="stExpander"] summary {font-size:15px!important;}
 header[data-testid="stHeader"] {background:rgba(244,247,251,.88);}
 [data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-top:1.2rem;}
@@ -69,21 +69,21 @@ div[data-testid="stMetric"] {box-shadow:0 5px 18px #14283f08;}
 .step-title {color:#14283f;}
 .step-card:hover {border-color:#8bd7ca;transform:translateY(-2px);transition:all .18s ease;}
 
-div[data-testid="stMetric"] {background:white;border:1px solid #e1e7ef;border-radius:14px;padding:20px 22px;border-top:3px solid #13a394;}
+div[data-testid="stMetric"] {background:white;border:1px solid #e1e7ef;border-radius:16px;padding:25px 26px;border-top:4px solid #13a394;min-height:118px;}
 [data-testid="stMetricLabel"] {color:#64748b;}
 [data-testid="stMetricValue"] {color:#14283f;font-weight:700;}
 [data-testid="stForm"] {background:#fff;border:1px solid #e1e7ef;border-radius:14px;padding:22px;}
 [data-testid="stDataFrame"], [data-testid="stExpander"] {border-radius:12px;overflow:hidden;}
 .stButton button,.stDownloadButton button,.stLinkButton a {border-radius:9px;min-height:42px;}
 button[kind="primary"],button[kind="primaryFormSubmit"] {background:#087f75!important;border-color:#087f75!important;color:#fff!important;}
-button[kind="primary"] *,button[kind="primaryFormSubmit"] * {color:#fff!important;}
+button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain"] button[kind="primary"] * {color:#fff!important;-webkit-text-fill-color:#fff!important;}
 .brand-title {font-size:30px;font-weight:750;line-height:1.2;letter-spacing:-1px;margin:0;}
 .side-note {font-size:11px;color:#64748b!important;margin-bottom:24px;letter-spacing:.5px;}
 .page-note {color:#64748b;margin-top:-10px;margin-bottom:24px;font-size:14px;}
-.step-card {background:linear-gradient(145deg,#fff,#f9fcff);border:1px solid #dce5ef;border-radius:15px;padding:20px;height:166px;box-sizing:border-box;margin-bottom:10px;box-shadow:0 8px 22px #14283f0a;}
+.step-card {background:linear-gradient(145deg,#fff,#f9fcff);border:1px solid #dce5ef;border-radius:15px;padding:22px;height:190px;box-sizing:border-box;margin-bottom:10px;box-shadow:0 8px 22px #14283f0a;}
 .step-number {font-size:11px;color:#087f75;font-weight:750;letter-spacing:1px;}
-.step-title {font-size:19px;font-weight:700;margin:9px 0;color:#14283f;}
-.step-note {font-size:15px;color:#52657b;line-height:1.55;}
+.step-title {font-size:21px;font-weight:700;margin:9px 0;color:#14283f;}
+.step-note {font-size:17px;color:#52657b;line-height:1.55;}
 @media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.brand-title {font-size:25px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 </style>''',unsafe_allow_html=True)
 st.markdown(f'<div class="brand-lockup"><div class="brand-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div><div class="brand-kicker">KEY BẢN QUYỀN</div><div style="font-size:13px;color:#61738a">Quản lý bản quyền và thiết bị</div></div></div>',unsafe_allow_html=True)
@@ -219,7 +219,7 @@ elif page=='Tổng quan':
                 st.session_state['nav-section']=group
                 st.session_state['nav-page-'+group]=target
                 return
-    for col,(number,title,note,target) in zip(st.columns(2),steps):
+    for col,(number,title,note,target) in zip(st.columns(4),steps):
         with col:
             st.markdown(f'<div class="step-card"><div class="step-number">BƯỚC {number}</div><div class="step-title">{title}</div><div class="step-note">{note}</div></div>',unsafe_allow_html=True)
             if target in menus:st.button({'01':'Mở chuẩn bị','02':'Mở giao việc','03':'Mở kích hoạt','04':'Mở kiểm tra'}[number]+'  →',key='shortcut-'+number,on_click=open_page,args=(target,),use_container_width=True,type='primary')
