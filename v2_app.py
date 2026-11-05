@@ -56,7 +56,7 @@ h1,h2,h3, [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="st
 [data-testid="stMainBlockContainer"] {max-width:none;width:100%;}
 [data-testid="stSidebar"] {width:215px!important;}
 [data-testid="stSidebar"] label p,[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {font-size:14px!important;}
-[data-testid="stCaptionContainer"] p {font-size:13px!important;}
+[data-testid="stCaptionContainer"] p {font-size:15px!important;color:#52657b!important;line-height:1.5;}
 [data-testid="stMetricLabel"] {font-size:14px!important;}
 [data-testid="stMetricValue"], [data-testid="stMetricValue"] div {font-size:34px!important;font-weight:750!important;color:#14283f!important;}
 [data-testid="stExpander"] summary {font-size:15px!important;}
@@ -85,10 +85,10 @@ div[data-testid="stMetric"] {background:#fff;border:1px solid #dce3ed;border-rad
 [data-testid="stHorizontalBlock"] [data-testid="stColumn"]:nth-child(3) div[data-testid="stMetric"] {border-top-color:#148879;}
 [data-testid="stHorizontalBlock"] [data-testid="stColumn"]:nth-child(4) div[data-testid="stMetric"] {border-top-color:#7655ad;}
 [data-testid="stMetricLabel"] {color:#52657b;font-size:16px!important;font-weight:650!important;}
-[data-testid="stMetricValue"], [data-testid="stMetricValue"] div, [data-testid="stMetricValue"] span {color:#14283f!important;font-size:42px!important;font-weight:800!important;line-height:1.1!important;}
+[data-testid="stMetricValue"], [data-testid="stMetricValue"] *, div[data-testid="stMetricValue"] {color:#14283f!important;font-size:46px!important;font-weight:800!important;line-height:1.1!important;}
 [data-testid="stForm"] {background:#fff;border:1px solid #e1e7ef;border-radius:14px;padding:22px;}
 [data-testid="stDataFrame"], [data-testid="stExpander"] {border-radius:12px;overflow:hidden;}
-.stButton button,.stDownloadButton button,.stLinkButton a {border-radius:9px;min-height:42px;}
+.stButton button,.stDownloadButton button,.stLinkButton a {border-radius:9px;min-height:46px;font-size:15px!important;font-weight:650!important;}
 button[kind="primary"],button[kind="primaryFormSubmit"] {background:#122b49!important;border-color:#122b49!important;color:#fff!important;box-shadow:0 4px 12px #122b4926;}
 button[kind="primary"]:hover,button[kind="primaryFormSubmit"]:hover {background:#9a6a00!important;border-color:#9a6a00!important;}
 button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain"] button[kind="primary"] * {color:#fff!important;-webkit-text-fill-color:#fff!important;}
@@ -99,7 +99,7 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain
 .step-card {background:linear-gradient(145deg,#fffdf7,#fff);border:1px solid #e5d8ad;border-left:5px solid #d6a51c;border-radius:14px;padding:22px;height:190px;box-sizing:border-box;margin-bottom:10px;box-shadow:0 8px 22px #14283f0d;}
 .step-number {font-size:12px;color:#825900;font-weight:800;letter-spacing:1px;background:#fff0bd;border-radius:999px;display:inline-block;padding:5px 10px;}
 .step-title {font-size:21px;font-weight:700;margin:9px 0;color:#14283f;}
-.step-note {font-size:17px;color:#52657b;line-height:1.55;}
+.step-note {font-size:18px;color:#40546c;line-height:1.6;}
 @media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.hero-tech {min-height:205px;padding:20px 14px;border-radius:16px;}.hero-tech h1 {font-size:29px!important;}.hero-logo {width:50px;height:50px;}.hero-name {font-size:14px;letter-spacing:1.3px;}.hero-sub,.hero-note {font-size:13px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 </style>''',unsafe_allow_html=True)
 st.markdown(f'<section class="hero-tech"><div class="hero-lockup"><img class="hero-logo" src="{logo_src}" alt="Logo KEY BẢN QUYỀN"><div><div class="hero-name">KEY BẢN QUYỀN</div><div class="hero-sub">Quản lý bản quyền và thiết bị</div></div></div><h1>KEY BẢN QUYỀN</h1><div class="hero-rule"></div><div class="hero-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div></section>',unsafe_allow_html=True)
