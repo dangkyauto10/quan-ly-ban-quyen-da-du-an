@@ -12,8 +12,38 @@ from license_app.packing import PackingLedger as Ledger
 from license_app.demo import seed_demo
 from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
 st.set_page_config(page_title='Bản quyền V2',page_icon='🛡️',layout='wide')
-st.title('Quản lý bản quyền')
-st.caption('V2-20261104-G · Bản quyền trên web')
+st.markdown('''<style>
+:root {color-scheme:light;}
+.stApp {background:#f5f7fb;color:#18273d;}
+.block-container {padding-top:2.2rem;max-width:1400px;padding-bottom:3rem;}
+[data-testid="stSidebar"] {background:#101f36;}
+[data-testid="stSidebar"] * {color:#e4edf8;}
+[data-testid="stSidebar"] [data-baseweb="select"] * {color:#18273d;}
+[data-testid="stSidebar"] [role="radiogroup"] {gap:4px;}
+[data-testid="stSidebar"] [role="radio"] {padding:8px 6px;border-radius:8px;}
+[data-testid="stSidebar"] hr {border-color:#344359;}
+h1,h2,h3 {letter-spacing:-.035em;color:#14283f;}
+div[data-testid="stMetric"] {background:white;border:1px solid #e1e7ef;border-radius:14px;padding:20px 22px;border-top:3px solid #13a394;}
+[data-testid="stMetricLabel"] {color:#64748b;}
+[data-testid="stMetricValue"] {color:#14283f;font-weight:700;}
+[data-testid="stForm"] {background:#fff;border:1px solid #e1e7ef;border-radius:14px;padding:22px;}
+[data-testid="stDataFrame"], [data-testid="stExpander"] {border-radius:12px;overflow:hidden;}
+.stButton button,.stDownloadButton button,.stLinkButton a {border-radius:9px;min-height:42px;}
+button[kind="primary"],button[kind="primaryFormSubmit"] {background:#087f75;border-color:#087f75;color:white;}
+.brand-kicker {font-size:11px;letter-spacing:2px;font-weight:700;color:#087f75;margin-bottom:7px;}
+.brand-title {font-size:30px;font-weight:750;line-height:1.2;letter-spacing:-1px;margin:0;}
+.brand-note {color:#64748b;font-size:14px;margin:9px 0 25px;}
+.side-brand {font-size:19px;font-weight:750;letter-spacing:.5px;margin-bottom:4px;}
+.side-note {font-size:12px;color:#9eafc6!important;margin-bottom:24px;}
+.page-note {color:#64748b;margin-top:-10px;margin-bottom:24px;font-size:14px;}
+.step-card {background:#fff;border:1px solid #e1e7ef;border-radius:12px;padding:16px;min-height:124px;margin-bottom:10px;}
+.step-number {font-size:11px;color:#087f75;font-weight:750;letter-spacing:1px;}
+.step-title {font-size:16px;font-weight:700;margin:7px 0;}
+.step-note {font-size:13px;color:#64748b;line-height:1.5;}
+@media(max-width:640px) {.block-container {padding:1.2rem 1rem 2rem;}.brand-title {font-size:25px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {min-height:0;}}
+</style>''',unsafe_allow_html=True)
+st.markdown('<div class="brand-kicker">BẢN QUYỀN · ĐIỀU PHỐI TRIỂN KHAI</div><div class="brand-title">Quản lý bản quyền</div><div class="brand-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div>',unsafe_allow_html=True)
+st.sidebar.markdown('<div class="side-brand">BẢN QUYỀN</div><div class="side-note">Không gian làm việc</div>',unsafe_allow_html=True)
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
 def connect(url,key,fp):return Ledger(url,key,fp)
@@ -74,8 +104,36 @@ elif role=='ADMIN':menus.extend(['Kế hoạch PC theo điểm','In tem PC và v
 elif role=='KTV':menus.extend(['In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'])
 if role=='OPERATOR':menus=[name for name in menus if name!='Redeem Office']
 menus.append('Hướng dẫn theo vai trò')
-page=st.sidebar.radio('Chức năng',menus)
+groups={
+    'Tổng quan':['Tổng quan'],
+    '01 · Chuẩn bị & bản quyền':['Đơn vị & tài khoản','Kế hoạch PC theo điểm','Kho key','Redeem Office'],
+    '02 · Giao việc & kích hoạt':['Thiết bị','Phân bổ','Kích hoạt','Việc của tôi'],
+    '03 · Tem & kiểm tra':['In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'],
+    '04 · Bảo hành & lịch sử':['Bảo hành','Nhật ký'],
+    'Quản trị':['Người dùng','Đồng bộ Google Sheet'],
+    'Hướng dẫn':['Hướng dẫn theo vai trò'],
+}
+groups={name:[item for item in items if item in menus] for name,items in groups.items()}
+groups={name:items for name,items in groups.items() if items}
+st.sidebar.divider()
+section=st.sidebar.selectbox('Nhóm công việc',list(groups),key='nav-section')
+page=st.sidebar.radio('Chức năng',groups[section],key='nav-page-'+section)
+st.sidebar.divider()
+st.sidebar.caption('V2 · Giao diện H · 05/11/2026')
 st.subheader(page)
+page_notes={
+    'Tổng quan':'Theo dõi kho bản quyền và chọn bước tiếp theo trong quy trình.',
+    'Đơn vị & tài khoản':'Khai báo nơi nhận PC và tài khoản Microsoft quản lý sản phẩm.',
+    'Kế hoạch PC theo điểm':'Chốt số lượng PC theo từng đơn vị để đánh số và giao nhận.',
+    'Kho key':'Nhập lô key, kiểm tra chứng từ và theo dõi trạng thái bản quyền.',
+    'Redeem Office':'Admin redeem tại Microsoft rồi ghi nhận tài khoản nhận sản phẩm.',
+    'Thiết bị':'Khai báo mã PC và serial để đối chiếu xuyên suốt quá trình.',
+    'Phân bổ':'Chọn bản quyền, máy nhận và KTV chịu trách nhiệm.',
+    'In tem PC và vỏ hộp':'Tạo hai tem cho cùng một PC sau khi kích hoạt thành công.',
+    'Đối chiếu tem và kiểm tra':'Quét tem PC và hộp, kiểm tra thiết bị rồi xác nhận đóng gói.',
+    'Người dùng':'Cấp quyền theo nhiệm vụ cho từng tài khoản Google.',
+}
+if page in page_notes:st.markdown('<div class="page-note">'+page_notes[page]+'</div>',unsafe_allow_html=True)
 if page=='Người dùng':
     notice=st.session_state.get('report-confirmation')
     if notice and notice[0]==actor:st.success(notice[1])
@@ -106,7 +164,21 @@ if page in {'Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối ch
 elif page=='Tổng quan':
     data=rows('licenses'); cols=st.columns(4)
     for col,title,n in zip(cols,['Đã nhận','Chưa phân bổ','Đã giao máy','Đã kích hoạt'],[len(data),sum(r['state'] in {'RECEIVED','VERIFIED','REDEEMED'} for r in data),sum(r['state']=='ASSIGNED' for r in data),sum(r['state']=='ACTIVATED' for r in data)]):col.metric(title,n)
-    table(data)
+    st.markdown('### Quy trình triển khai')
+    steps=[('01','Chuẩn bị','Đơn vị, số lượng PC, key và tài khoản.','Đơn vị & tài khoản'),('02','Redeem & giao việc','Admin ghi nhận redeem và phân công KTV.','Phân bổ'),('03','Kích hoạt & in tem','KTV báo cáo kết quả và in cặp tem.','Kích hoạt'),('04','Kiểm tra & đóng gói','QC đối chiếu hai tem và kiểm tra thiết bị.','Đối chiếu tem và kiểm tra')]
+    def open_page(target):
+        for group,items in groups.items():
+            if target in items:
+                st.session_state['nav-section']=group
+                st.session_state['nav-page-'+group]=target
+                return
+    for col,(number,title,note,target) in zip(st.columns(4),steps):
+        with col:
+            st.markdown(f'<div class="step-card"><div class="step-number">BƯỚC {number}</div><div class="step-title">{title}</div><div class="step-note">{note}</div></div>',unsafe_allow_html=True)
+            if target in menus:st.button('Mở '+title,key='shortcut-'+number,on_click=open_page,args=(target,),use_container_width=True)
+    st.markdown('### Danh sách bản quyền')
+    if not data:st.info('Kho dữ liệu mới chưa có bản quyền. Bắt đầu từ bước 01: thêm đơn vị và tài khoản, sau đó nhập lô key thử nghiệm.')
+    else:table(data)
     if data:
         st.bar_chart({LABELS[s]:sum(r['state']==s for r in data) for s in LABELS if any(r['state']==s for r in data)})
         buf=io.StringIO();writer=csv.DictWriter(buf,fieldnames=list(data[0]));writer.writeheader();writer.writerows([{k:("'"+v if isinstance(v,str) and v[:1] in {'=','+','-','@','\t','\r'} else v) for k,v in row.items()} for row in data])
