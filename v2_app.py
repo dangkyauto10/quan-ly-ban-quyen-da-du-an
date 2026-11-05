@@ -211,18 +211,17 @@ except DomainError:
     st.info('Tài khoản chưa được cấp quyền hoặc đã tạm dừng. Liên hệ Admin để được phân công.')
     st.stop()
 st.sidebar.caption(actor+' · '+ROLE_NAMES[role])
-menus=['Việc của tôi'] if role=='KTV' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
+menus=['Việc của tôi','Tem của tôi'] if role=='KTV' else ['Hàng đợi in'] if role=='PRINT' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
 if role=='ADMIN':menus.extend(['Người dùng','Đồng bộ Google Sheet'])
 if role=='QC':menus=['Đối chiếu tem và kiểm tra']
-elif role=='ADMIN':menus.extend(['Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'])
-elif role=='KTV':menus.extend(['In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'])
+elif role=='ADMIN':menus.extend(['Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra','Hàng đợi in'])
 if role=='OPERATOR':menus=[name for name in menus if name!='Redeem Office']
 menus.append('Hướng dẫn theo vai trò')
 groups={
     'Tổng quan':['Tổng quan'],
     '01 · Chuẩn bị & bản quyền':['Đơn vị & tài khoản','Kế hoạch PC theo điểm','Kho key','Redeem Office'],
     '02 · Giao việc & kích hoạt':['Thiết bị','Phân bổ','Kích hoạt','Việc của tôi'],
-    '03 · Tem QR & kiểm tra':['In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'],
+    '03 · Tem QR & kiểm tra':['Tem của tôi','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra','Hàng đợi in'],
     '04 · Bảo hành & lịch sử':['Bảo hành','Nhật ký'],
     'Quản trị':['Người dùng','Đồng bộ Google Sheet'],
     'Hướng dẫn':['Hướng dẫn theo vai trò'],
@@ -242,7 +241,7 @@ st.sidebar.divider()
 st.sidebar.caption('V2 · Giao diện sáng · 05/11/2026')
 st.subheader(page)
 flow_phases=[('01','Chuẩn bị'),('02','Redeem & giao việc'),('03','Kích hoạt & in QR'),('04','Quét & đóng gói')]
-flow_stage={'Đơn vị & tài khoản':0,'Kế hoạch PC theo điểm':0,'Kho key':0,'Redeem Office':1,'Thiết bị':1,'Phân bổ':1,'Kích hoạt':2,'Việc của tôi':2,'In tem PC và vỏ hộp':2,'Đối chiếu tem và kiểm tra':3}
+flow_stage={'Đơn vị & tài khoản':0,'Kế hoạch PC theo điểm':0,'Kho key':0,'Redeem Office':1,'Thiết bị':1,'Phân bổ':1,'Kích hoạt':2,'Việc của tôi':2,'Tem của tôi':2,'In tem PC và vỏ hộp':2,'Hàng đợi in':2,'Đối chiếu tem và kiểm tra':3}
 if page in flow_stage:
     current=flow_stage[page]
     flow_html=''.join(f'<div class="process-phase {"active" if i==current else "prior" if i<current else ""}"><b>{number}</b><span>{title}</span></div>' for i,(number,title) in enumerate(flow_phases))
@@ -255,7 +254,9 @@ page_notes={
     'Redeem Office':'Admin redeem tại Microsoft rồi ghi nhận tài khoản nhận sản phẩm.',
     'Thiết bị':'Khai báo mã PC và serial để đối chiếu xuyên suốt quá trình.',
     'Phân bổ':'Chọn bản quyền, máy nhận và KTV chịu trách nhiệm.',
-    'In tem PC và vỏ hộp':'Tạo hai tem cho cùng một PC sau khi kích hoạt thành công.',
+    'In tem PC và vỏ hộp':'Admin xử lý tem lẻ khi cần; lô của KTV được in tại trạm USB.',
+    'Tem của tôi':'Gửi PC đã kích hoạt thành công theo lô đến trạm in USB.',
+    'Hàng đợi in':'Trạm in USB xử lý lô tem theo đơn vị và KTV.',
     'Đối chiếu tem và kiểm tra':'Quét tem PC và hộp, kiểm tra thiết bị rồi xác nhận đóng gói.',
     'Người dùng':'Cấp quyền theo nhiệm vụ cho từng tài khoản Google.',
 }
@@ -292,7 +293,7 @@ def serial_agent_archive():
         archive.write(Path('tools/SerialAgent.ps1'),'SerialAgent.ps1')
         archive.write(Path('tools/START_SERIAL_AGENT.cmd'),'START_SERIAL_AGENT.cmd')
     return bundle.getvalue()
-if page in {'Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'}:
+if page in {'Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra','Tem của tôi','Hàng đợi in'}:
     from license_app.preparation_ui import render
     render(ledger,actor,role,page,os.getenv('APP_MODE')=='demo')
 elif page=='Tổng quan':
@@ -432,10 +433,10 @@ elif page in ['Kích hoạt','Việc của tôi']:
                 outcome='Thành công — công việc đã hoàn thành.' if success else 'Thất bại — công việc còn chờ xử lý.'
                 run('report',lambda t:ledger.report(actor,job['id'],success,error,note,evidence,t),
                     f'Đã lưu báo cáo cho máy {machine}. Kết quả: {outcome} Đã ghi nhật ký.',
-                    next_page='In tem PC và vỏ hộp' if role=='KTV' and success else None,
+                    next_page='Tem của tôi' if role=='KTV' and success else None,
                     select_record=job['device_id'] if role=='KTV' and success else None)
       if role=='KTV':
-        st.caption('Sau khi báo kích hoạt thành công, mở “In tem PC và vỏ hộp”, in cặp tem của đúng PC, dán lên thân máy và hộp tương ứng rồi đóng hộp.')
+        st.caption('Sau khi hoàn tất các PC của đơn vị, ghi serial lên vỏ hộp và gửi thành một lô tại “Tem của tôi”.')
 elif page=='Bảo hành':
     table(rows('devices'))
     if role!='ADMIN':st.info('Admin xác nhận thay mainboard và duyệt kích hoạt lại.');st.stop()
@@ -454,13 +455,13 @@ elif page=='Người dùng':
     existing=rows('users')
     with st.form('update-user'):
         person=pick('Thành viên cần cập nhật',existing,lambda r:r['email']+' · '+ROLE_NAMES[r['role']])
-        role_choice=st.selectbox('Vai trò mới',['KTV','QC','OPERATOR','ADMIN'],format_func=ROLE_NAMES.get)
+        role_choice=st.selectbox('Vai trò mới',['KTV','QC','OPERATOR','PRINT','ADMIN'],format_func=ROLE_NAMES.get)
         enabled=st.checkbox('Được phép sử dụng app',value=True)
         if st.form_submit_button('Lưu quyền thành viên') and person:
             run('update-user',lambda t:ledger.update_user(actor,person['email'],role_choice,enabled,t),
                 'Đã cập nhật quyền thành viên.')
     with st.form('user'):
-        email=st.text_input('Email Google đã xác minh');new_role=st.selectbox('Quyền',['KTV','QC','OPERATOR','ADMIN'],format_func=ROLE_NAMES.get)
+        email=st.text_input('Email Google đã xác minh');new_role=st.selectbox('Quyền',['KTV','QC','OPERATOR','PRINT','ADMIN'],format_func=ROLE_NAMES.get)
         if st.form_submit_button('Cấp quyền'):run('user',lambda t:ledger.add_user(actor,email,new_role,t))
 elif page=='Hướng dẫn theo vai trò':
     st.info('Hướng dẫn dự thảo cho chức năng hiện có. Cách vận hành chính thức sẽ cập nhật sau khi anh Vỹ chốt các mục góp ý.')

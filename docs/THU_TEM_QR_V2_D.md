@@ -4,7 +4,12 @@ Bản này bổ sung vào app BẢN QUYỀN, không thay đổi QUẢN LÝ DỰ 
 
 1. Admin tạo điểm tại Đơn vị & tài khoản, tạo máy tại Thiết bị.
 2. Mở Kế hoạch PC theo điểm, chọn điểm, nhập tổng số PC và lưu. Chọn từng máy và bấm Cấp số thứ tự máy. Số không đổi khi in lại; không cấp vượt kế hoạch.
-3. Chọn In tem PC và vỏ hộp. Chọn máy, khổ mặc định 60 × 40 mm. Tải HTML, mở bằng trình duyệt, bấm In 2 tem, chọn 100%, tắt đầu/chân trang. Cần thử trên máy in thật trước in hàng loạt. Tên đơn vị dài cần chọn khổ tem lớn hơn.
+3. KTV ghi serial mainboard lên vỏ hộp, chọn các PC đã kích hoạt thành công của cùng đơn vị trong “Tem của tôi” rồi gửi thành một lô.
+4. Tại PC trạm in kết nối máy in tem USB, đăng nhập tài khoản vai trò “Trạm in tem”, mở “Hàng đợi in”, chọn đúng đơn vị/KTV và in lô. Mỗi PC có hai tem liền nhau (thân máy, vỏ hộp), theo thứ tự số máy.
+5. Chọn khổ tem phù hợp (mặc định 60 × 40 mm), tỷ lệ 100%, tắt đầu/chân trang. In thử và quét kiểm tra trước khi chạy lô lớn.
+6. Trạm in xác nhận sau khi máy in đã in xong toàn bộ lô. KTV nhận tem, đối chiếu serial từng cặp với serial ghi trên vỏ, dán đúng PC/hộp rồi xác nhận trong app.
+
+QR ký số chứa mã máy, serial mainboard, đơn vị và thứ tự máy; không chứa product key hoặc mật khẩu. Máy in USB không cần hỗ trợ mạng vì trình duyệt tại trạm in gửi lệnh trực tiếp đến máy in.
 4. Mỗi PC có hai QR phân biệt THÂN MÁY/VỎ HỘP. Cùng tên điểm, thứ tự/tổng số, mã máy và serial. Không chứa key hoặc tài khoản Microsoft.
 5. Đối chiếu tem và kiểm tra: chụp từng QR hoặc chọn ảnh; cũng có thể dán nội dung mã trong phần thử ở màn hình in tem. Đây là đọc ảnh từng QR, chưa phải camera quét liên tục. Điện thoại có thể hỏi quyền camera; chỉ cấp khi dùng chức năng chụp.
 6. ĐÚNG CẶP cần hai tem khác loại cùng hồ sơ và thông tin. SAI CẶP nếu khác máy/thông tin; cùng loại hoặc thiếu một tem thì chưa đủ đối chiếu. Hai tem đúng không chứng minh đã dán lên đúng thiết bị: vẫn phải đọc serial thực.

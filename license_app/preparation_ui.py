@@ -7,7 +7,7 @@ import time
 import streamlit as st
 import streamlit.components.v1 as components
 from .core import DomainError
-from .labels import label_token,print_html,compare_labels,decode_photo
+from .labels import label_token,print_html,print_html_batch,compare_labels,decode_photo
 
 @st.cache_resource
 def preview_signing_key():
@@ -23,6 +23,28 @@ def render(ledger,actor,role,page,is_demo):
         if len(key_text)<32:st.error('Admin cần cấu hình qr_signing_key ít nhất 32 ký tự, ổn định để đối chiếu tem.');return
         key=key_text.encode()
     else:key=preview_signing_key()
+    if page=='Hàng đợi in':
+        batches=ledger.label_queue_rows(actor)
+        if not batches:st.info('Chưa có lô tem đang chờ in.');return
+        grouped={}
+        for row in batches:grouped.setdefault(row['batch_id'],[]).append(row)
+        choices=list(grouped)
+        selected=st.selectbox('Lô chờ in',choices,format_func=lambda bid:
+            f"{grouped[bid][0]['project']} · {grouped[bid][0]['unit']} · {grouped[bid][0]['ktv']} · {len(grouped[bid])} PC")
+        rows=grouped[selected]
+        st.dataframe([{'PC':r['asset_tag'],'Serial mainboard':r['board_serial'],
+            'Thứ tự':f"{r['number']}/{r['quantity']}"} for r in rows],hide_index=True,width='stretch')
+        width=st.number_input('Rộng tem (mm)',50,100,60,key='queue-width')
+        height=st.number_input('Cao tem (mm)',35,100,40,key='queue-height')
+        batch,records=ledger.label_batch_records(actor,selected)
+        content=print_html_batch(records,key,int(width),int(height))
+        st.caption('Mỗi PC in hai tem liền nhau theo thứ tự. In xong cả lô, đối chiếu số tem và xác nhận để KTV nhận.')
+        components.html(content,height=230,scrolling=True)
+        st.download_button('Tải lô tem (HTML)',content,'lo_tem_pc_vo_hop.html','text/html')
+        if st.button('Xác nhận đã in xong toàn bộ lô',type='primary',key='confirm-print-'+selected):
+            try:ledger.confirm_label_batch_printed(actor,selected,secrets.token_hex(16));st.success('Đã chuyển lô sang trạng thái đã in. KTV có thể nhận tem.');st.rerun()
+            except DomainError as e:st.error(str(e))
+        return
     data=ledger.preparation_rows(actor)
     if os.getenv('APP_MODE')=='shared_test':st.caption('Dữ liệu thử lưu chung trên máy chạy app. Điện thoại cùng mạng có thể tải ảnh QR; máy quét USB nhập vào hai ô mã. Camera trực tiếp trên web cần HTTPS.')
     if page=='Kế hoạch PC theo điểm':
@@ -53,7 +75,43 @@ def render(ledger,actor,role,page,is_demo):
                 try:ledger.number_device(actor,device['id'],secrets.token_hex(16));st.rerun()
                 except DomainError as e:st.error(str(e))
         return
+    if page=='Tem của tôi':
+        existing=ledger.label_batches_for_ktv(actor)
+        used={device_id for batch in existing for device_id in batch['device_ids']}
+        ready=[r for r in data if r['number'] and r['activation_ready'] and r['id'] not in used]
+        st.markdown('### Gửi PC đã kích hoạt vào hàng đợi chung')
+        if ready:
+            units={r['unit_id']:r['unit'] for r in ready}
+            unit_id=st.selectbox('Đơn vị của lô',list(units),format_func=lambda uid:units[uid],key='queue-unit')
+            devices=[r for r in ready if r['unit_id']==unit_id]
+            chosen=st.multiselect('Chọn PC đã hoàn tất kích hoạt',devices,
+                format_func=lambda r:f"{r['asset_tag']} · {r['number']}/{r['quantity']} · S/N {r['board_serial']}",
+                key='queue-devices-'+unit_id)
+            handwritten=st.checkbox('Đã ghi serial mainboard lên từng vỏ hộp tương ứng trước khi gửi lô.',key='queue-handwritten-'+unit_id)
+            if st.button('Chuyển lô sang chờ in',type='primary',key='submit-queue-'+unit_id):
+                if not handwritten:st.error('Ghi serial lên vỏ hộp trước khi gửi lô để đối chiếu tại trạm in.')
+                else:
+                    try:ledger.queue_label_batch(actor,unit_id,[r['id'] for r in chosen],secrets.token_hex(16));st.success('Đã gửi lô vào hàng đợi trạm in.');st.rerun()
+                    except DomainError as e:st.error(str(e))
+        else:st.info('Chưa có PC mới đủ điều kiện gửi tem. Hoàn tất kích hoạt và cấp số thứ tự trước.')
+        st.markdown('### Lô tem của tôi')
+        if not existing:st.info('Chưa có lô gửi hoặc in.')
+        for batch in existing:
+            names={r['id']:r['asset_tag'] for r in data}
+            with st.container(border=True):
+                state_name={'WAITING':'Đang chờ in','PRINTED':'Đã in · chờ KTV nhận','COLLECTED':'Đã nhận và đối chiếu'}.get(batch['state'],batch['state'])
+                st.markdown(f"**{batch['project']} · {batch['unit']}** — {len(batch['device_ids'])} PC · trạng thái: **{state_name}**")
+                st.write(', '.join(names.get(device_id,device_id) for device_id in batch['device_ids']))
+                if batch['state']=='PRINTED':
+                    checked=st.checkbox('Đã nhận đủ tem, đối chiếu từng serial với vỏ hộp, dán đúng PC/hộp và đóng lại.',key='collect-confirm-'+batch['id'])
+                    if st.button('Xác nhận đã nhận và đối chiếu lô',key='collect-'+batch['id'],type='primary'):
+                        if not checked:st.error('Cần đối chiếu serial và số tem của toàn bộ PC trong lô trước khi xác nhận.')
+                        else:
+                            try:ledger.confirm_label_batch_collected(actor,batch['id'],secrets.token_hex(16));st.rerun()
+                            except DomainError as e:st.error(str(e))
+        return
     if page=='In tem PC và vỏ hộp':
+        if role=='KTV':st.error('KTV gửi tem theo lô tại “Tem của tôi”; chỉ trạm in dùng máy in USB.');return
         ready=[r for r in data if r['number'] and r['activation_ready']]
         if not ready:st.info('Cần cấp số máy tại Kế hoạch PC theo điểm và KTV báo kích hoạt thành công trước khi in tem.');return
         last_id=st.session_state.get('last-activated-device-'+actor) if role=='KTV' else None

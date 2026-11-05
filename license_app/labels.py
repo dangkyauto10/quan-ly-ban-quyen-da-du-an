@@ -51,17 +51,23 @@ def qr_svg(text):
     return out.getvalue().decode()
 
 def print_html(record,key,width=60,height=40):
+    return print_html_batch([record],key,width,height)
+
+def print_html_batch(records,key,width=60,height=40):
     if not 50<=width<=100 or not 35<=height<=100:raise DomainError('Khổ tem chưa hỗ trợ.')
+    if not records:raise DomainError('Lô tem đang trống.')
     labels=[]
-    for kind,title in [('PC','THÂN MÁY'),('BOX','VỎ HỘP')]:
-        token=label_token(record,kind,key)
-        board_serial=(record.get('board_serial') or '').strip()
-        if not board_serial:raise DomainError('Cần ghi nhận serial mainboard trước khi tạo tem.')
-        lines=[title,record['unit'],f"PC: {record['number']:02d}/{record['quantity']:02d}",record['asset_tag'],'S/N Main: '+board_serial]
-        labels.append('<section>'+qr_svg(token)+'<div>'+''.join('<p>'+html.escape(s)+'</p>' for s in lines)+'</div></section>')
+    for record in records:
+        for kind,title in [('PC','THÂN MÁY'),('BOX','VỎ HỘP')]:
+            token=label_token(record,kind,key)
+            board_serial=(record.get('board_serial') or '').strip()
+            if not board_serial:raise DomainError('Cần ghi nhận serial mainboard trước khi tạo tem.')
+            lines=[title,record['unit'],f"PC: {record['number']:02d}/{record['quantity']:02d}",record['asset_tag'],'S/N Main: '+board_serial]
+            labels.append('<section>'+qr_svg(token)+'<div>'+''.join('<p>'+html.escape(s)+'</p>' for s in lines)+'</div></section>')
+    batch_note=f'Lô gồm {len(records)} PC, in liên tục theo số thứ tự; mỗi PC có hai tem liền nhau.'
     return f'''<!doctype html><html lang="vi"><meta charset="utf-8"><title>Tem PC và vỏ hộp</title>
 <style>@page{{size:{width}mm {height}mm;margin:0}}*{{box-sizing:border-box}}body{{margin:0;font-family:Arial,sans-serif}}section{{width:{width}mm;height:{height}mm;padding:2mm;display:flex;align-items:center;gap:1mm;break-after:page;overflow:hidden}}section:last-child{{break-after:auto}}svg{{width:29mm;height:29mm;flex-shrink:0}}div{{flex:1;min-width:0}}p{{margin:0 0 1mm;font-size:8pt;overflow-wrap:anywhere}}p:first-child{{font-weight:bold}}p:nth-child(3){{font-weight:bold;font-size:11pt}}@media screen{{section{{border:1px solid #aaa;margin:10px}}}}@media print{{button,aside{{display:none}}}}</style>
-<button onclick="window.print()">In 2 tem</button><aside>Chọn đúng khổ tem, tỷ lệ 100%, tắt đầu/chân trang. QR chứa thông tin tem đã ký, không chứa key. Bản thử: quét/chụp trong chức năng Đối chiếu tem; không phải liên kết tự mở.</aside>{''.join(labels)}</html>'''
+<button onclick="window.print()">In {len(labels)} tem</button><aside>{html.escape(batch_note)} Chọn đúng khổ tem, tỷ lệ 100%, tắt đầu/chân trang. QR chứa thông tin tem đã ký, không chứa key.</aside>{''.join(labels)}</html>'''
 
 def decode_photo(raw):
     import cv2

@@ -1,5 +1,5 @@
 """Vietnamese guidance for the currently implemented preview, not final policy."""
-ROLE_NAMES = {'QC':'Bộ phận kiểm tra độc lập', 'ADMIN': 'Admin (quản trị)', 'OPERATOR': 'Người quản lý redeem (quy đổi key)', 'KTV': 'KTV (kỹ thuật viên)'}
+ROLE_NAMES = {'QC':'Bộ phận kiểm tra độc lập', 'ADMIN': 'Admin (quản trị)', 'OPERATOR': 'Người quản lý redeem (quy đổi key)', 'KTV': 'KTV (kỹ thuật viên)', 'PRINT':'Trạm in tem'}
 FIELD_NAMES = {
     'id':'Mã hồ sơ', 'project':'Mã dự án', 'project_name':'Tên dự án', 'name':'Tên đơn vị', 'email':'Email',
     'role':'Vai trò', 'active':'Đang được cấp quyền', 'unit_id':'Mã đơn vị',
@@ -25,6 +25,9 @@ ACTION_NAMES = {
     'ACTIVATION_FAILED':'Báo kích hoạt thất bại', 'BOARD_REPLACED':'Ghi thay mainboard',
     'BIND_BOARD_SERIAL':'Gắn serial mainboard vào việc KTV',
     'KTV_LABELS_APPLIED':'KTV xác nhận dán tem và đóng hộp',
+    'QUEUE_LABEL_BATCH':'KTV gửi lô tem vào hàng đợi',
+    'PRINT_LABEL_BATCH':'Trạm in xác nhận in lô tem',
+    'COLLECT_LABEL_BATCH':'KTV xác nhận nhận lô tem',
     'APPROVE_REACTIVATION':'Duyệt kích hoạt lại',
 }
 PAGE_GUIDES = {
@@ -63,7 +66,14 @@ PAGE_GUIDES = {
         'Mở app trên chính PC đang làm, chạy công cụ đọc serial và bấm nút để gắn serial mainboard vào việc được giao.',
         'Cài đúng phiên bản và thực hiện một lượt kích hoạt theo license của PC đó.',
         'Người quản lý tài khoản tham gia đăng nhập; không gửi mật khẩu vào app.',
-        'Kiểm tra trạng thái trên phần mềm rồi gửi kết quả; chỉ sau báo thành công mới in cặp tem PC/hộp của đúng máy.']),
+        'Kiểm tra trạng thái trên phần mềm rồi gửi kết quả. Khi xong lô của đơn vị, ghi serial lên vỏ hộp và chuyển các PC đã thành công sang chờ in.']),
+    'Tem của tôi': ('Gửi lô tem và đối chiếu khi nhận', [
+        'Chỉ chọn PC đã kích hoạt thành công; app ghép mỗi PC với đúng serial mainboard và số thứ tự của đơn vị.',
+        'Ghi serial mainboard lên hộp, chọn các PC cùng đơn vị rồi chuyển lô sang chờ in.',
+        'Khi nhận lô tem đã in, so serial trên hộp với cả cặp tem của PC trước khi dán và đóng hộp.']),
+    'Hàng đợi in': ('Trạm in xử lý theo lô', [
+        'Chọn đúng lô theo đơn vị và KTV. Mỗi PC in hai tem liền nhau theo thứ tự số máy.',
+        'Chỉ xác nhận in xong sau khi máy in đã in hết lô; lô đã in sẽ chuyển cho KTV nhận và đối chiếu.']),
     'Bảo hành': ('Ghi thay mainboard và xét kích hoạt lại', [
         'Admin chọn máy, nhập serial mainboard mới và căn cứ bảo hành.',
         'App giữ serial trước/sau trong nhật ký và chuyển công việc đã thành công sang chờ xét.',
@@ -75,7 +85,7 @@ PAGE_GUIDES = {
         'Nhật ký giữ cả lần kích hoạt lỗi, kể cả khi công việc sau đó đã thành công.']),
     'Người dùng': ('Admin cấp quyền tham gia app', [
         'Nhập email Google đã xác minh và chọn vai trò phù hợp.',
-        'Admin quản lý kho và phân công; người redeem quản lý kiểm tra/tài khoản/redeem; KTV gửi việc của mình.',
+        'Admin quản lý kho và phân công; người redeem quản lý kiểm tra/tài khoản/redeem; KTV gửi lô tem; trạm in chỉ xem và in hàng đợi.',
         'Bản đầu mới hỗ trợ thêm tài khoản; sửa/vô hiệu hóa quyền cần hoàn thiện trước sử dụng thật.']),
 }
 

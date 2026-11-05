@@ -1,5 +1,7 @@
 """Company preparation: plans, stable numbering and independent inspection."""
 from sqlalchemy import Table, Column, String, Integer, ForeignKey, UniqueConstraint, select, insert, update
+from datetime import datetime, timezone
+import uuid
 from .core import Ledger, DomainError, meta, units, devices, jobs, users
 
 plans = Table('preparation_plans', meta,
@@ -14,8 +16,113 @@ inspections = Table('preparation_inspections', meta,
     Column('id', String, ForeignKey('devices.id'), primary_key=True),
     Column('state', String, nullable=False), Column('note', String, nullable=False),
     Column('inspector', String, nullable=False))
+label_batches = Table('label_batches', meta,
+    Column('id', String, primary_key=True),
+    Column('unit_id', String, ForeignKey('units.id'), nullable=False),
+    Column('ktv', String, ForeignKey('users.email'), nullable=False),
+    Column('state', String, nullable=False), Column('created_at', String, nullable=False),
+    Column('printed_at', String), Column('printed_by', String), Column('collected_at', String))
+label_batch_items = Table('label_batch_items', meta,
+    Column('device_id', String, ForeignKey('devices.id'), primary_key=True),
+    Column('batch_id', String, ForeignKey('label_batches.id'), nullable=False))
 
 class PreparationLedger(Ledger):
+    def queue_label_batch(self, actor, unit_id, device_ids, op):
+        ids=list(dict.fromkeys(device_ids or []))
+        if not ids:raise DomainError('Chọn ít nhất một PC đã kích hoạt để đưa vào lô tem.')
+        def fn(c):
+            self._auth(c,actor,{'KTV'})
+            self._get(c,units,unit_id)
+            for device_id in ids:
+                d=self._get(c,devices,device_id)
+                if d['unit_id']!=unit_id:raise DomainError('Một lô tem chỉ gồm PC của cùng đơn vị.')
+                own=c.execute(select(jobs.c.id).where(jobs.c.device_id==device_id,jobs.c.ktv==actor)).first()
+                if not own:raise DomainError('Có PC không được giao cho KTV đang đăng nhập.')
+                linked=c.execute(select(jobs.c.state,jobs.c.ktv).where(jobs.c.device_id==device_id)).all()
+                if not linked or any(state!='SUCCESS' or ktv!=actor for state,ktv in linked):
+                    raise DomainError('Chỉ đưa vào lô các PC đã kích hoạt thành công tất cả license được giao.')
+                board=(d['board_serial'] or '').strip()
+                if not board or board.upper() in {'DEFAULT STRING','TO BE FILLED BY O.E.M.','UNKNOWN','NONE','N/A'}:
+                    raise DomainError('Có PC chưa có serial mainboard hợp lệ.')
+                self._get(c,slots,device_id);self._get(c,plans,unit_id)
+                if c.execute(select(label_batch_items.c.device_id).where(label_batch_items.c.device_id==device_id)).first():
+                    raise DomainError('Có PC đã nằm trong lô tem trước đó; không gửi trùng.')
+            batch_id=str(uuid.uuid4())
+            c.execute(insert(label_batches).values(id=batch_id,unit_id=unit_id,ktv=actor,
+                state='WAITING',created_at=datetime.now(timezone.utc).isoformat()))
+            c.execute(insert(label_batch_items),[{'device_id':device_id,'batch_id':batch_id} for device_id in ids])
+            self._log(c,actor,'QUEUE_LABEL_BATCH',batch_id,{'unit_id':unit_id,'device_ids':ids,'quantity':len(ids)})
+            return batch_id
+        return self._atomic(actor,{'KTV'},op,fn)
+
+    def label_batches_for_ktv(self,actor):
+        with self.engine.connect() as c:
+            self._auth(c,actor,{'KTV'})
+            query=select(label_batches.c.id,label_batches.c.unit_id,label_batches.c.ktv,
+                label_batches.c.state,label_batches.c.created_at,label_batches.c.printed_at,
+                label_batches.c.collected_at,units.c.name.label('unit'),units.c.project_name,
+                units.c.project,label_batch_items.c.device_id).select_from(label_batches.join(units)
+                .join(label_batch_items,label_batch_items.c.batch_id==label_batches.c.id))
+            rows=c.execute(query.where(label_batches.c.ktv==actor).order_by(label_batches.c.created_at.desc())).mappings().all()
+            batches={}
+            for row in rows:
+                b=batches.setdefault(row['id'],{k:row[k] for k in row.keys() if k!='device_id'})
+                b.setdefault('device_ids',[]).append(row['device_id'])
+            return list(batches.values())
+
+    def label_queue_rows(self,actor):
+        with self.engine.connect() as c:
+            self._auth(c,actor,{'ADMIN','PRINT'})
+            query=select(label_batches.c.id.label('batch_id'),label_batches.c.ktv,
+                label_batches.c.state.label('batch_state'),label_batches.c.created_at,
+                units.c.name.label('unit'),units.c.project,units.c.project_name,
+                devices.c.id,devices.c.asset_tag,devices.c.serial,devices.c.board_serial,
+                label_batch_items.c.device_id,slots.c.number,plans.c.quantity).select_from(
+                label_batches.join(units).join(label_batch_items,label_batch_items.c.batch_id==label_batches.c.id)
+                .join(devices,label_batch_items.c.device_id==devices.c.id).join(slots,slots.c.id==devices.c.id)
+                .join(plans,plans.c.id==units.c.id))
+            rows=c.execute(query.where(label_batches.c.state=='WAITING')
+                .order_by(units.c.project,units.c.name,label_batches.c.ktv,slots.c.number)).mappings().all()
+            return [dict(r) for r in rows]
+
+    def label_batch_records(self,actor,batch_id):
+        with self.engine.connect() as c:
+            self._auth(c,actor,{'ADMIN','PRINT'})
+            batch=self._get(c,label_batches,batch_id)
+            if batch['state']!='WAITING':raise DomainError('Lô tem không còn ở trạng thái chờ in.')
+            query=select(devices,units.c.name.label('unit'),units.c.project,
+                units.c.project_name,slots.c.number,plans.c.quantity).select_from(
+                label_batch_items.join(devices,label_batch_items.c.device_id==devices.c.id)
+                .join(units,devices.c.unit_id==units.c.id).join(slots,slots.c.id==devices.c.id)
+                .join(plans,plans.c.id==units.c.id))
+            rows=c.execute(query.where(label_batch_items.c.batch_id==batch_id).order_by(slots.c.number)).mappings().all()
+            return batch,[dict(r) for r in rows]
+
+    def confirm_label_batch_printed(self,actor,batch_id,op):
+        def fn(c):
+            self._auth(c,actor,{'ADMIN','PRINT'})
+            batch=self._get(c,label_batches,batch_id)
+            if batch['state']!='WAITING':raise DomainError('Lô đã được trạm in xử lý hoặc không còn chờ in.')
+            stamp=datetime.now(timezone.utc).isoformat()
+            c.execute(update(label_batches).where(label_batches.c.id==batch_id,label_batches.c.state=='WAITING')
+                .values(state='PRINTED',printed_at=stamp,printed_by=actor))
+            self._log(c,actor,'PRINT_LABEL_BATCH',batch_id,{'unit_id':batch['unit_id'],'ktv':batch['ktv']})
+            return batch_id
+        return self._atomic(actor,{'ADMIN','PRINT'},op,fn)
+
+    def confirm_label_batch_collected(self,actor,batch_id,op):
+        def fn(c):
+            self._auth(c,actor,{'KTV'})
+            batch=self._get(c,label_batches,batch_id)
+            if batch['ktv']!=actor:raise DomainError('Lô tem này thuộc KTV khác.')
+            if batch['state']!='PRINTED':raise DomainError('Lô tem chưa được trạm in xác nhận in xong.')
+            stamp=datetime.now(timezone.utc).isoformat()
+            c.execute(update(label_batches).where(label_batches.c.id==batch_id,label_batches.c.state=='PRINTED')
+                .values(state='COLLECTED',collected_at=stamp))
+            self._log(c,actor,'COLLECT_LABEL_BATCH',batch_id,{'unit_id':batch['unit_id']})
+            return batch_id
+        return self._atomic(actor,{'KTV'},op,fn)
+
     def set_plan(self, actor, unit_id, quantity, op):
         if type(quantity) is not int or quantity < 1:raise DomainError('Số lượng PC phải là số nguyên dương.')
         def fn(c):

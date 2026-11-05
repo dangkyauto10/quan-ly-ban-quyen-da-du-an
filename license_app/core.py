@@ -42,7 +42,7 @@ audit = Table('audit', meta, Column('id', String, primary_key=True),
     Column('details', Text, nullable=False))
 operations = Table('operations', meta, Column('id', String, primary_key=True),
                    Column('actor', String, nullable=False), Column('result', String, nullable=False))
-ROLES = {'ADMIN', 'OPERATOR', 'KTV', 'QC'}
+ROLES = {'ADMIN', 'OPERATOR', 'KTV', 'QC', 'PRINT'}
 PRODUCTS = {'Office', 'Windows', 'Antivirus'}
 
 class DomainError(Exception):
@@ -347,6 +347,7 @@ class Ledger:
         if name not in tables: raise DomainError('Danh sách không hợp lệ.')
         with self.engine.connect() as c:
             role = self._auth(c, actor, ROLES)
+            if role=='PRINT':raise DomainError('Tài khoản trạm in chỉ được truy cập hàng đợi tem.')
             if role == 'QC' and name not in {'jobs','devices','units'}:
                 raise DomainError('Bộ phận kiểm tra chỉ xem hồ sơ máy và công việc.')
             if role == 'KTV':
