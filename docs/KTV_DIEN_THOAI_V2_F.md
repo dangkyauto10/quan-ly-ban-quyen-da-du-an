@@ -15,7 +15,7 @@ SQLite và khóa tem nằm trong thư mục test-data trên máy chạy app, kh�
 3. Mở Đối chiếu tem và kiểm tra. Chụp tem thân PC, rồi tem vỏ hộp. Nếu chưa in tem, dán hai mã thử vào hai ô QR.
 4. App hiển thị ĐÚNG CẶP hoặc SAI CẶP. Cùng loại tem/thiếu một tem thì chưa đủ đối chiếu. Đúng cặp vẫn phải đọc serial trên máy và kiểm tra kỹ thuật.
 5. Bấm Nhận máy / gia hạn 15 phút kiểm tra. Nếu người khác đang giữ máy thì bị chặn. Có thể bấm Trả máy nếu chưa xử lý; Admin có thể thu hồi lượt kiểm tra. Hết hạn phải nhận/gia hạn trước khi gửi.
-6. Nhập serial thực; chọn Đạt/Không đạt, nội dung kiểm tra và xác nhận đã kiểm tra. Bấm Gửi kết quả — đạt thì hoàn tất đóng gói.
+6. Nhập serial mainboard thực; chọn Đạt/Không đạt, nội dung kiểm tra và xác nhận đã kiểm tra. Bấm Gửi kết quả — đạt thì hoàn tất đóng gói.
 7. Đạt: app lưu đóng gói, nhật ký người/thời điểm và thông báo xanh; tự xóa mã của cặp vừa gửi để sẵn sàng máy tiếp theo. Không đạt: lưu lỗi, trả việc về KTV, không đóng gói.
 8. Người khác bấm Cập nhật danh sách máy để thấy kết quả. Chưa có cập nhật tự động theo thời gian thực.
 
@@ -35,3 +35,9 @@ SQLite và khóa tem nằm trong thư mục test-data trên máy chạy app, kh�
 MO_APP_TEST.cmd vẫn dùng test_app.py để chia sẻ trong mạng nội bộ, dữ liệu được giữ khi dừng/mở lại nếu giữ nguyên test-data. HTTP nội bộ không bật camera trực tiếp; điện thoại dùng ảnh chụp hoặc cần người quản trị triển khai HTTPS. Không mở cổng router ra Internet.
 
 Bản F đã kiểm thử bằng mã và trình duyệt mô phỏng, chưa kiểm chứng camera trên điện thoại, máy in tem, mạng Công ty hay tải trên dịch vụ thật. Hai app BẢN QUYỀN và QUẢN LÝ DỰ ÁN vẫn độc lập; không sửa Google Sheet hiện có.
+
+## Luồng KTV đọc serial mainboard trên PC
+
+KTV mở app bằng trình duyệt trên chính PC đang xử lý. Mỗi việc được giao gồm một license cho một PC. Tải gói công cụ đọc serial từ màn hình “Việc của tôi”, giải nén, chạy `START_SERIAL_AGENT.cmd` và giữ cửa sổ công cụ mở. Trở lại app, chọn việc của PC đó rồi bấm “Đọc serial mainboard trên PC này”. Công cụ chỉ đọc `Win32_BaseBoard.SerialNumber` tại máy cục bộ; app lưu serial vào hồ sơ PC và chặn serial đã dùng cho PC khác. Nếu Chrome hỏi quyền mạng cục bộ, chỉ cho phép khi đang ở đúng trang app.
+
+Sau đó KTV thực hiện kích hoạt thật theo license được giao, chọn kết quả và gửi báo cáo. App chuyển thẳng tới cặp tem của PC vừa báo thành công. In đúng cặp QR, dán lên thân PC và hộp vỏ đang đứng cùng nhau, đóng máy; tích xác nhận “Kết thúc PC này và đăng xuất”. App ghi nhật ký rồi đăng xuất để KTV sang PC tiếp theo. QR và dòng S/N trên tem dùng serial mainboard. Nếu BIOS/Windows trả serial rỗng hoặc mặc định, dừng và đối chiếu serial vật lý; không dùng mã giả để tiếp tục.

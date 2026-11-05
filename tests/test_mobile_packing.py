@@ -34,13 +34,13 @@ def test_six_simultaneous_claims_have_one_winner(ready_pc):
 
 def test_atomic_report_pair_validation_and_duplicate(ready_pc):
     ledger,d,key,a,b=ready_pc
-    with pytest.raises(DomainError):ledger.submit_packing('qc@example.test',a,b,key,True,'Đạt',d['serial'],'without-claim')
+    with pytest.raises(DomainError):ledger.submit_packing('qc@example.test',a,b,key,True,'Đạt',d['board_serial'],'without-claim')
     ledger.claim_for_check('qc@example.test',d['id'],'claim')
-    with pytest.raises(DomainError):ledger.submit_packing('qc2@example.test',a,b,key,True,'Đạt',d['serial'],'wrong-owner')
-    with pytest.raises(DomainError):ledger.submit_packing('qc@example.test',a,a,key,True,'Đạt',d['serial'],'same-kind')
+    with pytest.raises(DomainError):ledger.submit_packing('qc2@example.test',a,b,key,True,'Đạt',d['board_serial'],'wrong-owner')
+    with pytest.raises(DomainError):ledger.submit_packing('qc@example.test',a,a,key,True,'Đạt',d['board_serial'],'same-kind')
     with pytest.raises(DomainError):ledger.submit_packing('qc@example.test',a,b,key,True,'Đạt','wrong','wrong-serial')
-    ledger.submit_packing('qc@example.test',a,b,key,True,'Đạt',d['serial'],'submit')
-    ledger.submit_packing('qc@example.test',a,b,key,True,'Đạt',d['serial'],'submit')
+    ledger.submit_packing('qc@example.test',a,b,key,True,'Đạt',d['board_serial'],'submit')
+    ledger.submit_packing('qc@example.test',a,b,key,True,'Đạt',d['board_serial'],'submit')
     with ledger.engine.connect() as c:
         packed=c.execute(select(inspections).where(inspections.c.id==d['id'])).mappings().one()
         events=c.execute(select(audit).where(audit.c.action=='PACK_PC',audit.c.entity==d['id'])).all()
@@ -53,8 +53,8 @@ def test_expired_claim_can_be_taken_and_old_owner_rejected(ready_pc):
     ledger.claim_for_check('qc@example.test',d['id'],'claim')
     with ledger.engine.begin() as c:c.execute(update(claims).where(claims.c.id==d['id']).values(until=0))
     ledger.claim_for_check('qc2@example.test',d['id'],'takeover')
-    with pytest.raises(DomainError):ledger.submit_packing('qc@example.test',a,b,key,True,'Đạt',d['serial'],'expired')
-    ledger.submit_packing('qc2@example.test',a,b,key,False,'Phát hiện lỗi',d['serial'],'fail')
+    with pytest.raises(DomainError):ledger.submit_packing('qc@example.test',a,b,key,True,'Đạt',d['board_serial'],'expired')
+    ledger.submit_packing('qc2@example.test',a,b,key,False,'Phát hiện lỗi',d['board_serial'],'fail')
     assert not ledger.check_claims('admin@example.test')
     assert next(r for r in ledger.rows('admin@example.test','jobs') if r['device_id']==d['id'])['state']=='PENDING'
 
@@ -62,4 +62,4 @@ def test_stale_label_after_plan_change_rejected(ready_pc):
     ledger,d,key,a,b=ready_pc
     ledger.claim_for_check('qc@example.test',d['id'],'claim')
     ledger.set_plan('admin@example.test',d['unit_id'],3,'new-plan')
-    with pytest.raises(DomainError):ledger.submit_packing('qc@example.test',a,b,key,True,'Đạt',d['serial'],'stale')
+    with pytest.raises(DomainError):ledger.submit_packing('qc@example.test',a,b,key,True,'Đạt',d['board_serial'],'stale')

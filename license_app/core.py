@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timezone
 from cryptography.fernet import Fernet
 from sqlalchemy import (create_engine, MetaData, Table, Column, String, Text, Integer,
-                        ForeignKey, UniqueConstraint, select, update, insert, event, delete, inspect)
+                        ForeignKey, UniqueConstraint, select, update, insert, event, delete, inspect, func)
 from sqlalchemy.exc import IntegrityError
 
 meta = MetaData()
@@ -222,9 +222,9 @@ class Ledger:
         return self._atomic(actor, {'ADMIN'}, op, fn)
 
     def add_device(self, actor, unit_id, tag, serial, board, model, op):
-        if any(not x.strip() for x in [tag, serial, board, model]):
-            raise DomainError('Cần mã máy, serial máy, serial mainboard và model.')
-        if any(x.strip().upper() in {'DEFAULT STRING', 'TO BE FILLED BY O.E.M.', 'UNKNOWN', 'NONE'} for x in [serial, board]):
+        if any(not x.strip() for x in [tag, serial, model]):
+            raise DomainError('Cần mã máy, serial máy và model.')
+        if any(x.strip().upper() in {'DEFAULT STRING', 'TO BE FILLED BY O.E.M.', 'UNKNOWN', 'NONE'} for x in [serial] + ([board] if board.strip() else [])):
             raise DomainError('Serial không hợp lệ; xác minh tem vật lý và nhập mã đã đối soát.')
         def fn(c):
             self._get(c, units, unit_id)
@@ -254,6 +254,32 @@ class Ledger:
             return job_id
         return self._atomic(actor, {'ADMIN'}, op, fn)
 
+    def bind_board_serial(self, actor, job_id, board_serial, op):
+        """Bind the serial read on the workstation to its assigned one-PC job."""
+        value = (board_serial or '').strip().upper()
+        if not value or len(value) > 120 or value.upper() in {
+            'DEFAULT STRING', 'TO BE FILLED BY O.E.M.', 'UNKNOWN', 'NONE', 'N/A'
+        }:
+            raise DomainError('Mainboard không trả serial hợp lệ. Kiểm tra serial trên BIOS/tem vật lý.')
+        def fn(c):
+            self._auth(c, actor, {'KTV'})
+            job = self._get(c, jobs, job_id)
+            if job['ktv'] != actor:
+                raise DomainError('Bạn không được giao công việc này.')
+            if job['state'] not in {'PENDING', 'FAILED'}:
+                raise DomainError('Việc này đã hoàn tất, không thể đổi serial mainboard.')
+            device = self._get(c, devices, job['device_id'])
+            duplicate = c.execute(select(devices.c.id, devices.c.asset_tag).where(
+                func.upper(devices.c.board_serial) == value, devices.c.id != device['id'])).first()
+            if duplicate:
+                raise DomainError('Serial mainboard đã gắn với máy ' + duplicate.asset_tag + '.')
+            if device['board_serial'] != value:
+                c.execute(update(devices).where(devices.c.id == device['id']).values(board_serial=value))
+                self._log(c, actor, 'BIND_BOARD_SERIAL', job_id,
+                    {'device_id': device['id'], 'board_serial': value})
+            return value
+        return self._atomic(actor, {'KTV'}, op, fn)
+
     def report(self, actor, job_id, success, error_code, note, evidence, op):
         if not note.strip() or (not success and not error_code.strip()):
             raise DomainError('Ghi thông tin xác minh; trường hợp thất bại cần mã lỗi.')
@@ -264,6 +290,11 @@ class Ledger:
             job = self._get(c, jobs, job_id)
             if role != 'ADMIN' and job['ktv'] != actor:
                 raise DomainError('Bạn không được giao công việc này.')
+            if success:
+                device = self._get(c, devices, job['device_id'])
+                board = (device['board_serial'] or '').strip()
+                if not board or board.upper() in {'DEFAULT STRING', 'TO BE FILLED BY O.E.M.', 'UNKNOWN', 'NONE', 'N/A'}:
+                    raise DomainError('Cần đọc và ghi nhận serial mainboard của PC này trước khi báo kích hoạt thành công.')
             state = 'SUCCESS' if success else 'FAILED'
             changed = c.execute(update(jobs).where(jobs.c.id == job_id, jobs.c.state.in_(['PENDING', 'FAILED']))
                 .values(state=state, error_code=error_code.strip(), note=note.strip(), evidence=evidence))
@@ -322,7 +353,7 @@ class Ledger:
                 if name != 'jobs': raise DomainError('KTV chỉ được xem việc được giao.')
                 stmt = select(jobs, devices.c.asset_tag, devices.c.serial, devices.c.board_serial,
                     devices.c.model, units.c.project, units.c.name.label('unit'), licenses.c.product,
-                    licenses.c.sku, accounts.c.email.label('account')).select_from(
+                    licenses.c.sku, licenses.c.tail, accounts.c.email.label('account')).select_from(
                     jobs.join(devices).join(units).join(licenses, jobs.c.license_id == licenses.c.id)
                     .outerjoin(accounts, licenses.c.account_id == accounts.c.id)).where(jobs.c.ktv == actor)
             else:

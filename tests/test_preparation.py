@@ -42,14 +42,14 @@ def test_real_qr_image_decode(setup_pc):
 def test_inspection_gate_and_rework(setup_pc):
     l,d=setup_pc
     with pytest.raises(DomainError):l.close_package('qc@example.test',d['id'],'too-early')
-    with pytest.raises(DomainError):l.inspect_device('ktv@example.test',d['id'],True,'OK',d['serial'],'bad-qc')
+    with pytest.raises(DomainError):l.inspect_device('ktv@example.test',d['id'],True,'OK',d['board_serial'],'bad-qc')
     with pytest.raises(DomainError):l.inspect_device('qc@example.test',d['id'],True,'OK','wrong','bad-serial')
-    l.inspect_device('qc@example.test',d['id'],False,'Lỗi kỹ thuật',d['serial'],'fail')
+    l.inspect_device('qc@example.test',d['id'],False,'Lỗi kỹ thuật',d['board_serial'],'fail')
     job=next(j for j in l.rows('admin@example.test','jobs') if j['device_id']==d['id'])
     assert job['state']=='PENDING'
     with pytest.raises(DomainError):l.close_package('qc@example.test',d['id'],'still-failed')
     l.report('ktv@example.test',job['id'],True,'','Đã sửa và kiểm tra','','rework')
-    l.inspect_device('qc@example.test',d['id'],True,'Đã kiểm tra đạt',d['serial'],'pass')
+    l.inspect_device('qc@example.test',d['id'],True,'Đã kiểm tra đạt',d['board_serial'],'pass')
     l.close_package('qc@example.test',d['id'],'pack')
     assert l.preparation_rows('qc@example.test')[0]['inspection_state']=='PACKED'
     l.warranty('admin@example.test',d['id'],'NEW-BOARD','Lỗi mainboard','replace')

@@ -61,10 +61,10 @@ class PackingLedger(PreparationLedger):
             # Serialize plan changes with the comparison of printed numbering.
             c.execute(update(units).where(units.c.id==unit['id']).values(name=units.c.name))
             slot=self._get(c,slots,device_id);plan=self._get(c,plans,unit['id'])
-            actual={'id':device_id,'asset_tag':d['asset_tag'],'serial':d['serial'],
+            actual={'id':device_id,'asset_tag':d['asset_tag'],'serial':d['board_serial'],
                 'unit':unit['name'],'project':unit['project'],'number':slot['number'],'quantity':plan['quantity']}
             if any(actual[k]!=matched[k] for k in actual):raise DomainError('Tem đã cũ hoặc không thuộc hồ sơ hiện tại. In lại cả cặp.')
-            if serial.strip()!=d['serial']:raise DomainError('Serial thực không khớp hồ sơ máy.')
+            if serial.strip().upper()!=d['board_serial'].strip().upper():raise DomainError('Serial mainboard thực không khớp hồ sơ máy/tem.')
             claim=c.execute(select(claims).where(claims.c.id==device_id)).mappings().first()
             if not claim or claim['owner']!=actor or claim['until']<=int(time.time()):
                 raise DomainError('Chưa nhận máy hoặc đã hết 15 phút giữ máy. Nhận/gia hạn rồi gửi lại.')

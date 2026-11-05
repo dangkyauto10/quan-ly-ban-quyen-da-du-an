@@ -23,6 +23,8 @@ ACTION_NAMES = {
     'REDEEM_CONFIRMED':'Ghi nhận redeem thành công', 'ADD_DEVICE':'Tạo hồ sơ máy',
     'ASSIGN':'Phân bản quyền và giao việc', 'ACTIVATION_SUCCESS':'Báo kích hoạt thành công',
     'ACTIVATION_FAILED':'Báo kích hoạt thất bại', 'BOARD_REPLACED':'Ghi thay mainboard',
+    'BIND_BOARD_SERIAL':'Gắn serial mainboard vào việc KTV',
+    'KTV_LABELS_APPLIED':'KTV xác nhận dán tem và đóng hộp',
     'APPROVE_REACTIVATION':'Duyệt kích hoạt lại',
 }
 PAGE_GUIDES = {
@@ -57,10 +59,11 @@ PAGE_GUIDES = {
         'KTV được giao xác minh trạng thái tại máy và gửi báo cáo.',
         'Thất bại phải có mã lỗi và mô tả; có thể gửi lại kết quả sau khi xử lý.']),
     'Việc của tôi': ('KTV thực hiện việc được giao', [
-        'Đối chiếu mã tem máy, serial, sản phẩm và email Microsoft trong bảng công việc.',
-        'Cài đúng phiên bản và thực hiện kích hoạt theo loại bản quyền được giao.',
+        'Mỗi việc là một license được giao cho một PC. Làm trọn PC hiện tại rồi mới chuyển PC tiếp theo.',
+        'Mở app trên chính PC đang làm, chạy công cụ đọc serial và bấm nút để gắn serial mainboard vào việc được giao.',
+        'Cài đúng phiên bản và thực hiện một lượt kích hoạt theo license của PC đó.',
         'Người quản lý tài khoản tham gia đăng nhập; không gửi mật khẩu vào app.',
-        'Kiểm tra trạng thái trên phần mềm rồi gửi thành công hoặc mã lỗi và mô tả thất bại.']),
+        'Kiểm tra trạng thái trên phần mềm rồi gửi kết quả; chỉ sau báo thành công mới in cặp tem PC/hộp của đúng máy.']),
     'Bảo hành': ('Ghi thay mainboard và xét kích hoạt lại', [
         'Admin chọn máy, nhập serial mainboard mới và căn cứ bảo hành.',
         'App giữ serial trước/sau trong nhật ký và chuyển công việc đã thành công sang chờ xét.',

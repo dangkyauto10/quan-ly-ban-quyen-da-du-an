@@ -46,6 +46,22 @@ class PreparationLedger(Ledger):
             return device_id
         return self._atomic(actor,{'ADMIN'},op,fn)
 
+    def confirm_labels_applied(self, actor, device_id, op):
+        def fn(c):
+            self._auth(c, actor, {'KTV'})
+            device=self._get(c,devices,device_id)
+            linked=c.execute(select(jobs).where(jobs.c.device_id==device_id)).mappings().all()
+            own=[job for job in linked if job['ktv']==actor]
+            if not own:raise DomainError('PC này không được giao cho tài khoản KTV đang đăng nhập.')
+            if any(job['state']!='SUCCESS' for job in linked):raise DomainError('Chỉ kết thúc sau khi mọi license được giao cho PC đã kích hoạt thành công.')
+            if not device['board_serial'].strip():raise DomainError('PC chưa có serial mainboard trong hồ sơ.')
+            slot=self._get(c,slots,device_id);plan=self._get(c,plans,device['unit_id'])
+            self._log(c,actor,'KTV_LABELS_APPLIED',device_id,{
+                'asset_tag':device['asset_tag'],'board_serial':device['board_serial'],
+                'number':slot['number'],'quantity':plan['quantity']})
+            return device_id
+        return self._atomic(actor,{'KTV'},op,fn)
+
     def preparation_rows(self, actor):
         with self.engine.connect() as c:
             role=self._auth(c,actor,{'ADMIN','OPERATOR','KTV','QC'})
@@ -66,7 +82,7 @@ class PreparationLedger(Ledger):
             self._auth(c,actor,{'QC'})
             d=self._get(c,devices,device_id)
             c.execute(update(devices).where(devices.c.id==device_id).values(model=devices.c.model))
-            if serial.strip()!=d['serial']:raise DomainError('Serial kiểm tra không khớp serial hồ sơ máy.')
+            if serial.strip().upper()!=d['board_serial'].strip().upper():raise DomainError('Serial mainboard kiểm tra không khớp serial hồ sơ máy.')
             linked=c.execute(select(jobs).where(jobs.c.device_id==device_id)).mappings().all()
             if not linked or any(j['state']!='SUCCESS' for j in linked):raise DomainError('Máy chưa hoàn tất kích hoạt tất cả bản quyền được giao.')
             if any(j['ktv']==actor for j in linked):raise DomainError('Người kiểm tra phải độc lập với người kích hoạt.')

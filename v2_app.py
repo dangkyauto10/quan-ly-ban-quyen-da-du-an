@@ -5,14 +5,18 @@ import os
 import secrets
 import uuid
 import tempfile
+import zipfile
 from pathlib import Path
 import streamlit as st
+import streamlit.components.v1 as components
 from cryptography.fernet import Fernet
 from license_app.core import DomainError
 from license_app.packing import PackingLedger as Ledger
 from license_app.demo import seed_demo
 from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
 st.set_page_config(page_title='KEY BẢN QUYỀN',page_icon='assets/key-ban-quyen-icon.svg',layout='wide')
+board_serial_reader = components.declare_component(
+    'board_serial_reader', path=str(Path(__file__).parent / 'license_app' / 'serial_reader'))
 logo_data=base64.b64encode(Path('assets/key-ban-quyen-icon.svg').read_bytes()).decode('ascii')
 logo_src='data:image/svg+xml;base64,'+logo_data
 hero_photo_src='data:image/webp;base64,'+base64.b64encode(Path('assets/hero-tech-operations.webp').read_bytes()).decode('ascii')
@@ -225,6 +229,12 @@ groups={
 }
 groups={name:[item for item in items if item in menus] for name,items in groups.items()}
 groups={name:items for name,items in groups.items() if items}
+post_action_page=st.session_state.pop('post-action-page',None)
+if post_action_page:
+    section_name=next((name for name,items in groups.items() if post_action_page in items),None)
+    if section_name:
+        st.session_state['nav-section']=section_name
+        st.session_state['nav-page-'+section_name]=post_action_page
 st.sidebar.divider()
 section=st.sidebar.selectbox('Nhóm công việc',list(groups),key='nav-section')
 page=st.sidebar.radio('Chức năng',groups[section],key='nav-page-'+section)
@@ -264,16 +274,24 @@ def table(data):
 def pick(label,data,fmt):
     if not data:st.info('Chưa có lựa chọn phù hợp.');return None
     return st.selectbox(label,data,format_func=fmt)
-def run(name,fn,confirmation=None):
+def run(name,fn,confirmation=None,next_page=None,select_record=None):
     token=st.session_state.setdefault('op-'+name,str(uuid.uuid4()))
     try:
         fn(token)
         st.session_state.pop('op-'+name,None)
         if confirmation:st.session_state['report-confirmation']=(actor,confirmation)
+        if next_page:st.session_state['post-action-page']=next_page
+        if select_record:st.session_state['last-activated-device-'+actor]=select_record
         st.rerun()
     except DomainError as e:st.error(str(e))
     except Exception:st.error('Chưa xác nhận lưu thành công. Hãy kiểm tra kết nối và tải lại hồ sơ.')
 def label(r):return f"{r['product']} · {r['sku']} · …{r['tail']} · {LABELS[r['state']]}"
+def serial_agent_archive():
+    bundle=io.BytesIO()
+    with zipfile.ZipFile(bundle,'w',zipfile.ZIP_DEFLATED) as archive:
+        archive.write(Path('tools/SerialAgent.ps1'),'SerialAgent.ps1')
+        archive.write(Path('tools/START_SERIAL_AGENT.cmd'),'START_SERIAL_AGENT.cmd')
+    return bundle.getvalue()
 if page in {'Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'}:
     from license_app.preparation_ui import render
     render(ledger,actor,role,page,os.getenv('APP_MODE')=='demo')
@@ -347,7 +365,7 @@ elif page=='Thiết bị':
     with st.form('device'):
         unit=pick('Đơn vị nhận máy',rows('units'),lambda r:f"{r.get('project_name') or r['project']} · {r['project']} · {r['name']}")
         tag=st.text_input('Mã máy nội bộ');model=st.text_input('Hãng / model')
-        serial=st.text_input('Serial máy / mã tem đã đối soát');board=st.text_input('Serial mainboard / mã đối soát vật lý')
+        serial=st.text_input('Serial máy / mã tem đã đối soát');board=st.text_input('Serial mainboard (để trống nếu KTV sẽ đọc trên PC)')
         if st.form_submit_button('Thêm máy') and unit:run('device',lambda t:ledger.add_device(actor,unit['id'],tag,serial,board,model,t))
     table(rows('devices'))
 elif page=='Phân bổ':
@@ -367,19 +385,57 @@ elif page in ['Kích hoạt','Việc của tôi']:
     if not pending:
         st.info('Không còn công việc chờ báo cáo. Các hồ sơ đã xử lý nằm trong bảng phía trên.')
         st.stop()
-    with st.form('report',clear_on_submit=True):
+    job=None
+    if role=='KTV':
+        st.info('Mỗi việc là một license được giao cho một PC. Hoàn tất PC này, in và dán đúng cặp tem, rồi mới chuyển sang việc tiếp theo.')
+        job=pick('Chọn PC / license đang làm',pending,
+            lambda r:f"{r.get('asset_tag',r['device_id'])} · {r.get('product','')} · {r.get('sku','')} · …{r.get('tail','')} · {r['id'][:8]}")
+        if job:
+            st.download_button('Tải công cụ đọc serial mainboard cho PC này',serial_agent_archive(),
+                'cong_cu_doc_serial_mainboard.zip','application/zip',key='serial-agent-download-'+job['id'])
+            st.caption('Giải nén trên PC đang xử lý, chạy START_SERIAL_AGENT.cmd và để cửa sổ công cụ mở. Sau đó bấm nút đọc bên dưới. Công cụ chỉ đọc serial mainboard, không kích hoạt và không nhận lệnh từ app.')
+            read=board_serial_reader(job_id=job['id'],default=None,key='board-reader-'+job['id'])
+            if isinstance(read,dict) and read.get('ok') and read.get('serial'):
+                serial_value=str(read['serial']).strip()
+                marker=f"board-bound-{actor}-{job['id']}"
+                if st.session_state.get(marker)!=serial_value:
+                    operation_key=f"board-bind-op-{actor}-{job['id']}"
+                    operation=st.session_state.setdefault(operation_key,str(uuid.uuid4()))
+                    try:
+                        ledger.bind_board_serial(actor,job['id'],serial_value,operation)
+                        st.session_state.pop(operation_key,None)
+                        st.session_state[marker]=serial_value
+                        st.rerun()
+                    except DomainError as e:
+                        st.error(str(e))
+            elif isinstance(read,dict) and read.get('ok') is False:
+                st.warning('Chưa nhận được serial. Kiểm tra công cụ đang chạy trên đúng PC và quyền mạng cục bộ của Chrome.')
+            serial_ready=(st.session_state.get(f"board-bound-{actor}-{job['id']}")==job.get('board_serial'))
+            if serial_ready:
+                st.success('Đã đọc và gắn serial mainboard '+job['board_serial']+' với PC / license đang chọn.')
+            else:
+                st.warning('Đọc serial trên chính PC này trước khi gửi báo cáo kích hoạt thành công.')
+    else:
         job=pick('Việc cần báo cáo',pending,lambda r:r.get('asset_tag',r['device_id'])+' · '+r['id'][:8])
-        success=st.radio('Kết quả',['Thành công','Thất bại'])=='Thành công'
+    if role!='KTV' or (job and st.session_state.get(f"board-bound-{actor}-{job['id']}")==job.get('board_serial')):
+      with st.form('report',clear_on_submit=True):
+        result_choice=st.radio('Kết quả',['Thành công','Thất bại'],index=None)
+        success=result_choice=='Thành công'
         error=st.text_input('Mã lỗi nếu thất bại');note=st.text_area('Trạng thái đã kiểm tra / nội dung xử lý')
         evidence=st.text_input('Link HTTPS minh chứng (nếu có; không chứa key hoặc mật khẩu)')
         if st.form_submit_button('Gửi báo cáo') and job:
-            if not note.strip():st.error('Anh/chị cần nhập nội dung đã kiểm tra / xử lý trước khi gửi báo cáo.')
+            if result_choice is None:st.error('Chọn đúng kết quả sau khi đã kiểm tra trạng thái kích hoạt.')
+            elif not note.strip():st.error('Anh/chị cần nhập nội dung đã kiểm tra / xử lý trước khi gửi báo cáo.')
             elif not success and not error.strip():st.error('Báo cáo thất bại cần có mã lỗi.')
             else:
                 machine=job.get('asset_tag',job['device_id'])
                 outcome='Thành công — công việc đã hoàn thành.' if success else 'Thất bại — công việc còn chờ xử lý.'
                 run('report',lambda t:ledger.report(actor,job['id'],success,error,note,evidence,t),
-                    f'Đã lưu báo cáo cho máy {machine}. Kết quả: {outcome} Đã ghi nhật ký.')
+                    f'Đã lưu báo cáo cho máy {machine}. Kết quả: {outcome} Đã ghi nhật ký.',
+                    next_page='In tem PC và vỏ hộp' if role=='KTV' and success else None,
+                    select_record=job['device_id'] if role=='KTV' and success else None)
+      if role=='KTV':
+        st.caption('Sau khi báo kích hoạt thành công, mở “In tem PC và vỏ hộp”, in cặp tem của đúng PC, dán lên thân máy và hộp tương ứng rồi đóng hộp.')
 elif page=='Bảo hành':
     table(rows('devices'))
     if role!='ADMIN':st.info('Admin xác nhận thay mainboard và duyệt kích hoạt lại.');st.stop()
