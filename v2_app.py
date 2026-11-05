@@ -42,7 +42,9 @@ button[kind="primary"],button[kind="primaryFormSubmit"] {background:#087f75;bord
 .step-note {font-size:13px;color:#64748b;line-height:1.5;}
 @media(max-width:640px) {.block-container {padding:1.2rem 1rem 2rem;}.brand-title {font-size:25px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {min-height:0;}}
 </style>''',unsafe_allow_html=True)
-st.markdown('<div class="brand-kicker">BẢN QUYỀN · ĐIỀU PHỐI TRIỂN KHAI</div><div class="brand-title">Quản lý bản quyền</div><div class="brand-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div>',unsafe_allow_html=True)
+st.markdown('<div class="brand-kicker">BẢN QUYỀN · ĐIỀU PHỐI TRIỂN KHAI</div>',unsafe_allow_html=True)
+st.title('Quản lý bản quyền')
+st.markdown('<div class="brand-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div>',unsafe_allow_html=True)
 st.sidebar.markdown('<div class="side-brand">BẢN QUYỀN</div><div class="side-note">Không gian làm việc</div>',unsafe_allow_html=True)
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
