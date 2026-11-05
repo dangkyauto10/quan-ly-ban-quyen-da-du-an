@@ -1,4 +1,5 @@
 import csv
+import base64
 import io
 import os
 import secrets
@@ -11,7 +12,9 @@ from license_app.core import DomainError
 from license_app.packing import PackingLedger as Ledger
 from license_app.demo import seed_demo
 from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
-st.set_page_config(page_title='Bản quyền V2',page_icon='🛡️',layout='wide')
+st.set_page_config(page_title='KEY BẢN QUYỀN',page_icon='assets/key-ban-quyen-icon.svg',layout='wide')
+logo_data=base64.b64encode(Path('assets/key-ban-quyen-icon.svg').read_bytes()).decode('ascii')
+logo_src='data:image/svg+xml;base64,'+logo_data
 st.markdown('''<style>
 :root {color-scheme:light;--ink:#13243b;--teal:#087f75;--mint:#dff6ef;--line:#dce5ef;--muted:#61738a;}
 [data-testid="stAppViewContainer"] {background:radial-gradient(ellipse at 92% 0%,#eaf7f5 0,transparent 28%),#f4f7fb;}
@@ -49,11 +52,13 @@ h1,h2,h3, [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="st
 header[data-testid="stHeader"] {background:rgba(244,247,251,.88);}
 [data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-top:1.2rem;}
 .brand-lockup {display:flex;align-items:center;gap:11px;margin:0 0 20px;}
-.brand-mark {width:37px;height:37px;border-radius:11px;background:#10263d;color:#8cf0d4;display:grid;place-items:center;font-size:18px;font-weight:800;box-shadow:0 5px 14px #10263d24;}
+.brand-mark {width:48px;height:48px;border-radius:14px;background:#10263d;display:grid;place-items:center;box-shadow:0 5px 14px #10263d24;overflow:hidden;}
+.brand-mark img {width:100%;height:100%;object-fit:contain;}
 .brand-kicker {font-size:10px;letter-spacing:1.8px;font-weight:750;color:#087f75;margin:0 0 3px;}
 .brand-note {color:#64748b;font-size:14px;margin:9px 0 25px;}
 .side-brand-row {display:flex;align-items:center;gap:10px;margin:4px 0 3px;}
-.side-mark {width:30px;height:30px;border:1px solid #47cdb5;border-radius:9px;color:#8cf0d4;display:grid;place-items:center;font-size:15px;font-weight:800;}
+.side-mark {width:37px;height:37px;border:1px solid #e0bd48;border-radius:10px;background:#10263d;display:grid;place-items:center;overflow:hidden;}
+.side-mark img {width:100%;height:100%;object-fit:contain;}
 .side-brand {font-size:17px;font-weight:750;letter-spacing:.3px;margin:0;}
 [data-testid="stSidebar"] [role="radio"]:has(input:checked) {background:#dff4ef;border:1px solid #a7ddd1;}
 [data-testid="stSidebar"] [role="radio"]:has(input:checked) p {color:#075f58!important;font-weight:700;}
@@ -81,10 +86,10 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] * {color:#fff!importan
 .step-note {font-size:15px;color:#52657b;line-height:1.55;}
 @media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.brand-title {font-size:25px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 </style>''',unsafe_allow_html=True)
-st.markdown('<div class="brand-lockup"><div class="brand-mark">V⌗</div><div><div class="brand-kicker">V · LICENSE OPERATIONS</div><div style="font-size:12px;color:#61738a">Hệ thống quản lý bản quyền và thiết bị</div></div></div>',unsafe_allow_html=True)
+st.markdown(f'<div class="brand-lockup"><div class="brand-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div><div class="brand-kicker">KEY BẢN QUYỀN</div><div style="font-size:13px;color:#61738a">Quản lý bản quyền và thiết bị</div></div></div>',unsafe_allow_html=True)
 st.title('Quản lý bản quyền')
 st.markdown('<div class="brand-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div>',unsafe_allow_html=True)
-st.sidebar.markdown('<div class="side-brand-row"><div class="side-mark">V⌗</div><div class="side-brand">BẢN QUYỀN</div></div><div class="side-note">ĐIỀU PHỐI THIẾT BỊ</div>',unsafe_allow_html=True)
+st.sidebar.markdown(f'<div class="side-brand-row"><div class="side-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div class="side-brand">KEY BẢN QUYỀN</div></div><div class="side-note">ĐIỀU PHỐI THIẾT BỊ</div>',unsafe_allow_html=True)
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
 def connect(url,key,fp):return Ledger(url,key,fp)
