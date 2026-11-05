@@ -83,16 +83,23 @@ def test_demo_ui(monkeypatch):
     app=AppTest.from_file(str(__import__('pathlib').Path(__file__).resolve().parents[1] / 'v2_app.py')).run(timeout=20)
     assert not app.exception
     assert app.title[0].value=='Quản lý bản quyền'
+    def navigate(page):
+        for group in app.selectbox(key='nav-section').options:
+            app.selectbox(key='nav-section').set_value(group).run()
+            if page in app.sidebar.radio[0].options:
+                app.sidebar.radio[0].set_value(page).run()
+                return
+        raise AssertionError('Missing navigation: '+page)
     for page in ['Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký','Người dùng','Hướng dẫn theo vai trò','Đồng bộ Google Sheet']:
-        app.sidebar.radio[0].set_value(page).run()
+        navigate(page)
         assert not app.exception
     app.sidebar.selectbox[0].set_value('ktv@example.test').run()
     assert not app.exception
     assert app.subheader[0].value=='Việc của tôi'
-    app.sidebar.radio[0].set_value('Hướng dẫn theo vai trò').run()
+    navigate('Hướng dẫn theo vai trò')
     assert not app.exception
     app.sidebar.selectbox[0].set_value('ktv2@example.test').run()
-    app.sidebar.radio[0].set_value('Việc của tôi').run()
+    navigate('Việc của tôi')
     assert not app.exception and not app.dataframe
 
 def test_demo_seed_preserves_user_reports(tmp_path):
