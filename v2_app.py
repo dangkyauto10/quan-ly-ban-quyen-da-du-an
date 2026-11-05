@@ -131,6 +131,22 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain
 .step-audience {display:inline-flex;align-items:center;margin-left:7px;padding:4px 8px;border-radius:999px;background:#eaf0f7;color:#415b75;font-size:10px;font-weight:750;letter-spacing:.04em;vertical-align:middle;}
 .step-card:hover {border-color:#b8cce0;transform:translateY(-5px);box-shadow:0 20px 35px #13243b1c,0 5px 10px #13243b0a;}
 .step-number {background:#eaf3ff;color:#155982;}
+/* Make the navigation rail readable and comfortable to use */
+[data-testid="stSidebar"],[data-testid="stSidebar"] > div:first-child {width:290px!important;min-width:290px!important;max-width:290px!important;}
+[data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding:1.4rem 1rem 1.8rem!important;}
+[data-testid="stSidebar"] .side-brand-row {gap:13px;margin:8px 0 14px;}
+[data-testid="stSidebar"] .side-mark {width:50px;height:50px;flex:0 0 50px;}
+[data-testid="stSidebar"] .side-brand {font-size:17px!important;font-weight:850;letter-spacing:.25px;}
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {font-size:15px!important;line-height:1.5;color:#435b73!important;}
+[data-testid="stSidebar"] label p,[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {font-size:16px!important;line-height:1.45;}
+[data-testid="stSidebar"] [data-testid="stSelectbox"] label p,[data-testid="stSidebar"] [data-testid="stRadio"] label p {font-weight:700;}
+[data-testid="stSidebar"] [data-baseweb="select"] {min-height:48px;border-radius:12px;}
+[data-testid="stSidebar"] [data-baseweb="select"] * {font-size:16px!important;}
+[data-testid="stSidebar"] [role="radiogroup"] {gap:7px;}
+[data-testid="stSidebar"] [role="radio"] {min-height:46px;padding:11px 12px!important;border-radius:12px;}
+[data-testid="stSidebar"] [role="radio"] p {font-size:16px!important;font-weight:600;}
+[data-testid="stSidebar"] [role="radio"]:has(input:checked) {background:linear-gradient(110deg,#dff4ef,#edf9f5);box-shadow:0 5px 12px #0c817410;border-color:#a7ddd1;}
+[data-testid="stSidebar"] [data-testid="stButton"] button {min-height:46px;padding:8px 16px;font-size:15px!important;border-radius:11px;}
 @media(max-width:900px) {.process-breadcrumb {flex-wrap:wrap;}.process-phase {flex:1 1 42%;}}
 @media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.hero-tech {min-height:205px;padding:20px 14px;border-radius:16px;background-position:center 50%;}.hero-content {padding:8px 4px;background:radial-gradient(ellipse at center,#061529d9 0%,#061529a8 65%,transparent 100%);}.hero-tech h1 {font-size:27px!important;}.hero-logo {width:38px;height:38px;}.hero-name {font-size:12px;letter-spacing:1.3px;}.hero-sub,.hero-note {font-size:12px;}.process-breadcrumb {gap:5px;padding:8px;}.process-phase {flex:1 1 calc(50% - 6px);padding:7px 8px;font-size:11px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 @media(prefers-reduced-motion:reduce) {[data-testid="stMetric"],[data-testid="stForm"],[data-testid="stExpander"],.stButton button,.stDownloadButton button,.stLinkButton a,.step-card {transition:none!important;}}
