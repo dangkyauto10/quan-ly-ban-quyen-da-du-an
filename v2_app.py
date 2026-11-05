@@ -42,14 +42,17 @@ h1,h2,h3, [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="st
 [data-testid="stMain"] h1 {text-align:center!important;font-size:46px!important;font-weight:800!important;letter-spacing:.02em!important;text-transform:uppercase;margin:0 auto 12px!important;}
 .hero-tech {position:relative;isolation:isolate;overflow:hidden;min-height:260px;border-radius:22px;border:1px solid #d2a93c;margin:0 0 30px;padding:28px 30px 25px;background:radial-gradient(ellipse at 18% 20%,#28517a 0,transparent 34%),radial-gradient(ellipse at 82% 110%,#916b20 0,transparent 35%),linear-gradient(115deg,#0d1c33 0%,#142a47 58%,#182b43 100%);box-shadow:0 14px 35px #10243a24;color:#fff;text-align:center;}
 .hero-tech:before {content:"";position:absolute;inset:0;z-index:-1;opacity:.52;background-image:radial-gradient(circle at 12% 26%,#f1c552 0 2px,transparent 3px),radial-gradient(circle at 82% 22%,#8ac8ef 0 2px,transparent 3px),radial-gradient(circle at 73% 74%,#f1c552 0 2px,transparent 3px),repeating-linear-gradient(90deg,transparent 0 57px,#8bb4d51c 58px,#8bb4d51c 59px,transparent 60px),repeating-linear-gradient(0deg,transparent 0 47px,#8bb4d512 48px,#8bb4d512 49px,transparent 50px);mask-image:linear-gradient(90deg,#000,transparent 46%,#000);}
-.hero-tech:after {content:"";position:absolute;inset:12px;z-index:-1;border:1px solid #d9b34b33;border-radius:15px;background:linear-gradient(90deg,transparent 0 11%,#d4a82f44 11.1% 11.25%,transparent 11.35% 88%,#87bddd44 88.1% 88.25%,transparent 88.35%),linear-gradient(0deg,transparent 0 18%,#d4a82f33 18.1% 18.25%,transparent 18.35% 79%,#87bddd33 79.1% 79.25%,transparent 79.35%);pointer-events:none;}
+.hero-tech:after {content:"";position:absolute;inset:12px;z-index:-1;border:1px solid #d9b34b33;border-radius:15px;pointer-events:none;}
+.hero-device {position:absolute;z-index:0;top:50%;width:min(27vw,390px);height:auto;transform:translateY(-50%);opacity:.96;filter:drop-shadow(0 14px 14px #020b1866);pointer-events:none;}
+.hero-device-left {left:14px;}
+.hero-device-right {right:14px;}
 .hero-lockup {display:flex;align-items:center;justify-content:center;gap:18px;margin:0 auto 12px;position:relative;z-index:1;}
 .hero-logo {width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 3px 10px #020b18aa);}
 .hero-name {color:#f2c755;font-size:17px;font-weight:800;letter-spacing:2.2px;text-align:left;margin-bottom:5px;}
 .hero-sub {color:#d4e2f2;font-size:15px;text-align:left;}
-.hero-tech h1 {color:#fff!important;font-size:44px!important;letter-spacing:1px!important;margin:12px 0 8px!important;text-shadow:0 2px 16px #020b1880;}
+.hero-tech h1 {position:relative;z-index:1;color:#fff!important;font-size:44px!important;letter-spacing:1px!important;margin:12px 0 8px!important;text-shadow:0 2px 16px #020b1880;}
 .hero-rule {width:86px;height:4px;border-radius:8px;background:linear-gradient(90deg,#d3a323,#ffe79a);margin:0 auto 13px;}
-.hero-note {color:#d3dfed;font-size:15px;}
+.hero-note {position:relative;z-index:1;color:#d3dfed;font-size:15px;}
 [data-testid="stMain"] [data-testid="stMarkdownContainer"] p {color:#33465e!important;font-size:17px;line-height:1.65;}
 [data-testid="stMain"] label, [data-testid="stMain"] label p {color:#33465e!important;font-size:15px!important;}
 [data-testid="stMain"] input, [data-testid="stMain"] textarea {background:#fff!important;color:#18273d!important;border:1px solid #cbd7e4!important;border-radius:8px;}
@@ -100,9 +103,54 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain
 .step-number {font-size:12px;color:#825900;font-weight:800;letter-spacing:1px;background:#fff0bd;border-radius:999px;display:inline-block;padding:5px 10px;}
 .step-title {font-size:21px;font-weight:700;margin:9px 0;color:#14283f;}
 .step-note {font-size:18px;color:#40546c;line-height:1.6;}
-@media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.hero-tech {min-height:205px;padding:20px 14px;border-radius:16px;}.hero-tech h1 {font-size:29px!important;}.hero-logo {width:50px;height:50px;}.hero-name {font-size:14px;letter-spacing:1.3px;}.hero-sub,.hero-note {font-size:13px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
+@media(max-width:900px) {.hero-device {opacity:.32;width:34vw;}}
+@media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.hero-tech {min-height:205px;padding:20px 14px;border-radius:16px;}.hero-device {width:43vw;opacity:.24;}.hero-device-left {left:-34px;}.hero-device-right {right:-34px;}.hero-tech h1 {font-size:29px!important;}.hero-logo {width:50px;height:50px;}.hero-name {font-size:14px;letter-spacing:1.3px;}.hero-sub,.hero-note {font-size:13px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 </style>''',unsafe_allow_html=True)
-st.markdown(f'<section class="hero-tech"><div class="hero-lockup"><img class="hero-logo" src="{logo_src}" alt="Logo KEY BẢN QUYỀN"><div><div class="hero-name">KEY BẢN QUYỀN</div><div class="hero-sub">Quản lý bản quyền và thiết bị</div></div></div><h1>KEY BẢN QUYỀN</h1><div class="hero-rule"></div><div class="hero-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div></section>',unsafe_allow_html=True)
+st.markdown(f'''<section class="hero-tech">
+<svg class="hero-device hero-device-left" viewBox="0 0 390 220" aria-hidden="true">
+<defs>
+<linearGradient id="laptopShell" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f5c954"/><stop offset=".45" stop-color="#9cb9d2"/><stop offset="1" stop-color="#315475"/></linearGradient>
+<linearGradient id="screenGlass" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#53b9d4"/><stop offset=".48" stop-color="#1e5076"/><stop offset="1" stop-color="#10223c"/></linearGradient>
+<linearGradient id="baseMetal" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#f4d477"/><stop offset=".32" stop-color="#839fb9"/><stop offset="1" stop-color="#263f5e"/></linearGradient>
+<filter id="deviceShadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dy="7"/><feComponentTransfer><feFuncA type="linear" slope=".5"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<g filter="url(#deviceShadow)">
+<path d="M76 27 218 12q8-1 11 7l28 91-151 17-37-91q-3-7 7-9Z" fill="url(#laptopShell)" stroke="#dceafa" stroke-opacity=".65" stroke-width="2"/>
+<path d="m82 34 130-14 27 82-130 15Z" fill="url(#screenGlass)" stroke="#d7e7f4" stroke-opacity=".55" stroke-width="2"/>
+<path d="m101 47 91-10M108 62l102-11M115 77l74-8" stroke="#bfeeff" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/>
+<circle cx="171" cy="83" r="20" fill="#f6c94d" fill-opacity=".18"/><circle cx="171" cy="83" r="9" fill="#ffe58d" fill-opacity=".8"/>
+<path d="m161 128 43-5 7 24-45 7Z" fill="#52718e" stroke="#a9c2d7" stroke-opacity=".7" stroke-width="2"/>
+<path d="m115 155 166-23 82 43-171 34-90-45q-6-4 13-9Z" fill="url(#baseMetal)" stroke="#dbe8f5" stroke-width="2"/>
+<path d="m131 157 138-19 48 25-144 25Z" fill="#183653" stroke="#8eb2cf" stroke-opacity=".8" stroke-width="2"/>
+<path d="m145 160 112-16m-101 23 112-17m-99 24 108-16m-95 23 101-16" stroke="#9fc0d8" stroke-opacity=".48" stroke-width="2"/>
+<path d="m182 187 49-8 18 7-49 10Z" fill="#d1e3f0" fill-opacity=".72"/>
+<path d="M49 93 87 87l15 79-39 7Z" fill="url(#baseMetal)" stroke="#f8d775" stroke-width="2"/>
+<path d="m54 101 26-4 11 61-26 5Z" fill="url(#screenGlass)" stroke="#d1e7f7" stroke-opacity=".7"/>
+<path d="m62 111 10-2m-8 10 12-2" stroke="#8eeaff" stroke-width="2" stroke-linecap="round"/>
+<circle cx="71" cy="152" r="2.5" fill="#ffd665"/>
+</g>
+</svg>
+<svg class="hero-device hero-device-right" viewBox="0 0 390 220" aria-hidden="true">
+<defs>
+<linearGradient id="towerFront" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#527da3"/><stop offset=".5" stop-color="#203e60"/><stop offset="1" stop-color="#101e34"/></linearGradient>
+<linearGradient id="towerSide" x1="0" y1="0" x2="1" y2=".7"><stop stop-color="#b6c7d4"/><stop offset=".3" stop-color="#627f9a"/><stop offset="1" stop-color="#263e5b"/></linearGradient>
+<linearGradient id="tabletGlass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5bd0d8"/><stop offset=".42" stop-color="#25688a"/><stop offset="1" stop-color="#142c4a"/></linearGradient>
+<filter id="rightShadow" x="-30%" y="-30%" width="160%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dy="7"/><feComponentTransfer><feFuncA type="linear" slope=".5"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<g filter="url(#rightShadow)">
+<path d="m240 22 75 12v139l-75-16Z" fill="url(#towerSide)" stroke="#d2deeb" stroke-opacity=".8" stroke-width="2"/>
+<path d="m143 39 97-17v135l-97 26Z" fill="url(#towerFront)" stroke="#d2deeb" stroke-opacity=".8" stroke-width="2"/>
+<path d="m158 54 64-11v77l-64 16Z" fill="#10213a" stroke="#88c9eb" stroke-opacity=".65" stroke-width="2"/>
+<circle cx="190" cy="93" r="23" fill="none" stroke="#47bfd5" stroke-opacity=".8" stroke-width="3"/><circle cx="190" cy="93" r="14" fill="none" stroke="#edbd44" stroke-opacity=".9" stroke-width="2"/><circle cx="190" cy="93" r="5" fill="#7ce4ed"/>
+<path d="m250 51 50 8v7l-50-8Zm0 21 50 8v7l-50-8Z" fill="#d6e3ef" fill-opacity=".65"/>
+<circle cx="267" cy="135" r="4" fill="#f6ce59"/><circle cx="282" cy="138" r="4" fill="#66d6df"/>
+<path d="m38 142 153-34 147 47-161 42-139-47q-8-3 0-8Z" fill="#9fb5ca" stroke="#e4edf5" stroke-width="2"/>
+<path d="m55 143 135-29 111 39-133 34Z" fill="url(#tabletGlass)" stroke="#b8d8eb" stroke-width="2"/>
+<path d="m82 145 65-14m-52 23 72-16m-55 25 55-12" stroke="#c4f4ff" stroke-opacity=".58" stroke-width="3" stroke-linecap="round"/>
+<path d="m300 81 27 4v69l-27-5Z" fill="#b7c9d8" stroke="#f5d26a" stroke-width="2"/><path d="m305 88 17 3v51l-17-3Z" fill="url(#tabletGlass)"/><circle cx="314" cy="148" r="2.5" fill="#f9dc81"/>
+</g>
+</svg>
+<div class="hero-lockup"><img class="hero-logo" src="{logo_src}" alt="Logo KEY BẢN QUYỀN"><div><div class="hero-name">KEY BẢN QUYỀN</div><div class="hero-sub">Quản lý bản quyền và thiết bị</div></div></div><h1>KEY BẢN QUYỀN</h1><div class="hero-rule"></div><div class="hero-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div></section>''',unsafe_allow_html=True)
 st.sidebar.markdown(f'<div class="side-brand-row"><div class="side-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div class="side-brand">KEY BẢN QUYỀN</div></div>',unsafe_allow_html=True)
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
