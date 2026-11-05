@@ -16,9 +16,9 @@ st.set_page_config(page_title='KEY BẢN QUYỀN',page_icon='assets/key-ban-quye
 logo_data=base64.b64encode(Path('assets/key-ban-quyen-icon.svg').read_bytes()).decode('ascii')
 logo_src='data:image/svg+xml;base64,'+logo_data
 st.markdown('''<style>
-:root {color-scheme:light;--ink:#13243b;--teal:#087f75;--mint:#dff6ef;--line:#dce5ef;--muted:#61738a;}
-[data-testid="stAppViewContainer"] {background:radial-gradient(ellipse at 92% 0%,#eaf7f5 0,transparent 28%),#f4f7fb;}
-.stApp {background:#f5f7fb;color:#18273d;}
+:root {color-scheme:light;--ink:#13243b;--teal:#9a6a00;--mint:#fff2c7;--line:#dce5ef;--muted:#61738a;}
+[data-testid="stAppViewContainer"] {background:radial-gradient(ellipse at 92% 0%,#fff0c2 0,transparent 24%),#f2f5fa;}
+.stApp {background:#f2f5fa;color:#17263d;}
 .block-container {padding:2.2rem clamp(1.25rem,3vw,3.5rem) 3rem;max-width:none;width:100%;}
 [data-testid="stSidebar"] {background:#edf2f8!important;border-right:1px solid #d8e2ed;}
 [data-testid="stSidebar"] {color:#1b2d45;}
@@ -55,7 +55,7 @@ header[data-testid="stHeader"] {background:rgba(244,247,251,.88);}
 .brand-lockup {display:flex;align-items:center;justify-content:center;gap:18px;margin:8px 0 28px;text-align:left;}
 .brand-mark {width:72px;height:72px;display:grid;place-items:center;overflow:hidden;flex:0 0 72px;}
 .brand-mark img {width:100%;height:100%;object-fit:contain;}
-.brand-kicker {font-size:17px;letter-spacing:2px;font-weight:800;color:#087f75;margin:0 0 5px;}
+.brand-kicker {font-size:17px;letter-spacing:2px;font-weight:800;color:#8b5c00;margin:0 0 5px;}
 .brand-note {color:#64748b;font-size:14px;margin:9px 0 25px;}
 .side-brand-row {display:flex;align-items:center;gap:10px;margin:4px 0 3px;}
 .side-mark {width:37px;height:37px;display:grid;place-items:center;overflow:hidden;}
@@ -70,19 +70,24 @@ div[data-testid="stMetric"] {box-shadow:0 5px 18px #14283f08;}
 .step-title {color:#14283f;}
 .step-card:hover {border-color:#8bd7ca;transform:translateY(-2px);transition:all .18s ease;}
 
-div[data-testid="stMetric"] {background:white;border:1px solid #e1e7ef;border-radius:16px;padding:25px 26px;border-top:4px solid #13a394;min-height:118px;}
+div[data-testid="stMetric"] {background:#fff;border:1px solid #dce3ed;border-radius:16px;padding:25px 26px;border-top:5px solid #d7a820;min-height:132px;box-shadow:0 8px 22px #14283f0d;}
+[data-testid="stHorizontalBlock"] [data-testid="stColumn"]:nth-child(2) div[data-testid="stMetric"] {border-top-color:#3974c6;}
+[data-testid="stHorizontalBlock"] [data-testid="stColumn"]:nth-child(3) div[data-testid="stMetric"] {border-top-color:#148879;}
+[data-testid="stHorizontalBlock"] [data-testid="stColumn"]:nth-child(4) div[data-testid="stMetric"] {border-top-color:#7655ad;}
 [data-testid="stMetricLabel"] {color:#52657b;font-size:16px!important;font-weight:650!important;}
 [data-testid="stMetricValue"], [data-testid="stMetricValue"] div, [data-testid="stMetricValue"] span {color:#14283f!important;font-size:42px!important;font-weight:800!important;line-height:1.1!important;}
 [data-testid="stForm"] {background:#fff;border:1px solid #e1e7ef;border-radius:14px;padding:22px;}
 [data-testid="stDataFrame"], [data-testid="stExpander"] {border-radius:12px;overflow:hidden;}
 .stButton button,.stDownloadButton button,.stLinkButton a {border-radius:9px;min-height:42px;}
-button[kind="primary"],button[kind="primaryFormSubmit"] {background:#087f75!important;border-color:#087f75!important;color:#fff!important;}
+button[kind="primary"],button[kind="primaryFormSubmit"] {background:#122b49!important;border-color:#122b49!important;color:#fff!important;box-shadow:0 4px 12px #122b4926;}
+button[kind="primary"]:hover,button[kind="primaryFormSubmit"]:hover {background:#9a6a00!important;border-color:#9a6a00!important;}
 button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain"] button[kind="primary"] * {color:#fff!important;-webkit-text-fill-color:#fff!important;}
+[data-testid="stMain"] h1:after {content:"";display:block;width:92px;height:5px;border-radius:9px;background:linear-gradient(90deg,#d6a51c,#f4d66e);margin:14px auto 0;}
 .brand-title {font-size:30px;font-weight:750;line-height:1.2;letter-spacing:-1px;margin:0;}
 .side-note {font-size:11px;color:#64748b!important;margin-bottom:24px;letter-spacing:.5px;}
 .page-note {color:#64748b;margin-top:-10px;margin-bottom:24px;font-size:14px;}
-.step-card {background:linear-gradient(145deg,#fff,#f9fcff);border:1px solid #dce5ef;border-radius:15px;padding:22px;height:190px;box-sizing:border-box;margin-bottom:10px;box-shadow:0 8px 22px #14283f0a;}
-.step-number {font-size:11px;color:#087f75;font-weight:750;letter-spacing:1px;}
+.step-card {background:linear-gradient(145deg,#fffdf7,#fff);border:1px solid #e5d8ad;border-left:5px solid #d6a51c;border-radius:14px;padding:22px;height:190px;box-sizing:border-box;margin-bottom:10px;box-shadow:0 8px 22px #14283f0d;}
+.step-number {font-size:12px;color:#825900;font-weight:800;letter-spacing:1px;background:#fff0bd;border-radius:999px;display:inline-block;padding:5px 10px;}
 .step-title {font-size:21px;font-weight:700;margin:9px 0;color:#14283f;}
 .step-note {font-size:17px;color:#52657b;line-height:1.55;}
 @media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.brand-title {font-size:25px;}[data-testid="stMain"] h1 {font-size:30px!important;}.brand-mark {width:56px;height:56px;flex-basis:56px;}.brand-kicker {font-size:14px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
