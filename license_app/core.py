@@ -15,6 +15,10 @@ units = Table('units', meta, Column('id', String, primary_key=True),
               Column('project', String, nullable=False), Column('project_name', String, nullable=False, server_default=''),
               Column('name', String, nullable=False),
               UniqueConstraint('project', 'name'))
+receiving_points = Table('receiving_points',meta,
+    Column('id',String,primary_key=True),Column('unit_id',String,ForeignKey('units.id'),nullable=False),
+    Column('code',String,nullable=False),Column('name',String,nullable=False),Column('pc_quantity',Integer,nullable=False),
+    UniqueConstraint('unit_id','code'))
 users = Table('users', meta, Column('email', String, primary_key=True),
               Column('role', String, nullable=False), Column('active', Integer, nullable=False, default=1))
 accounts = Table('accounts', meta, Column('id', String, primary_key=True),
@@ -29,6 +33,7 @@ licenses = Table('licenses', meta, Column('id', String, primary_key=True),
     Column('reference', String), Column('expires', String))
 devices = Table('devices', meta, Column('id', String, primary_key=True),
     Column('unit_id', String, ForeignKey('units.id'), nullable=False),
+    Column('point_id', String, ForeignKey('receiving_points.id')),
     Column('asset_tag', String, nullable=False, unique=True), Column('serial', String, nullable=False),
     Column('board_serial', String, nullable=False), Column('model', String, nullable=False))
 jobs = Table('jobs', meta, Column('id', String, primary_key=True),
@@ -66,6 +71,9 @@ class Ledger:
         if 'project_name' not in {column['name'] for column in inspect(self.engine).get_columns('units')}:
             with self.engine.begin() as c:
                 c.exec_driver_sql("ALTER TABLE units ADD COLUMN project_name VARCHAR NOT NULL DEFAULT ''")
+        if 'point_id' not in {column['name'] for column in inspect(self.engine).get_columns('devices')}:
+            with self.engine.begin() as c:
+                c.exec_driver_sql("ALTER TABLE devices ADD COLUMN point_id VARCHAR REFERENCES receiving_points(id)")
 
     def bootstrap(self, email):
         """Only seeds the first administrator; subsequent changes need admin authorization."""
@@ -221,15 +229,20 @@ class Ledger:
             return entity
         return self._atomic(actor, {'ADMIN'}, op, fn)
 
-    def add_device(self, actor, unit_id, tag, serial, board, model, op):
+    def add_device(self, actor, unit_id, tag, serial, board, model, op, point_id=None):
         if any(not x.strip() for x in [tag, serial, model]):
             raise DomainError('Cần mã máy, serial máy và model.')
         if any(x.strip().upper() in {'DEFAULT STRING', 'TO BE FILLED BY O.E.M.', 'UNKNOWN', 'NONE'} for x in [serial] + ([board] if board.strip() else [])):
             raise DomainError('Serial không hợp lệ; xác minh tem vật lý và nhập mã đã đối soát.')
         def fn(c):
             self._get(c, units, unit_id)
+            if point_id:
+                point=self._get(c,receiving_points,point_id)
+                if point['unit_id']!=unit_id:raise DomainError('Điểm nhận không thuộc đơn vị được chọn.')
+                point_devices=c.execute(select(func.count()).select_from(devices).where(devices.c.point_id==point_id)).scalar_one()
+                if point_devices>=point['pc_quantity']:raise DomainError('Điểm nhận đã đủ số PC được phân bổ.')
             entity = str(uuid.uuid4())
-            c.execute(insert(devices).values(id=entity, unit_id=unit_id, asset_tag=tag.strip(),
+            c.execute(insert(devices).values(id=entity, unit_id=unit_id, point_id=point_id, asset_tag=tag.strip(),
                 serial=serial.strip(), board_serial=board.strip(), model=model.strip()))
             self._log(c, actor, 'ADD_DEVICE', entity)
             return entity
@@ -244,6 +257,16 @@ class Ledger:
                 account = self._get(c, accounts, row['account_id'])
                 if account['unit_id'] != device['unit_id']:
                     raise DomainError('Tài khoản và máy thuộc hai đơn vị khác nhau.')
+            allocation_table=meta.tables.get('point_license_plans')
+            if device['point_id'] and allocation_table is not None:
+                allocation=c.execute(select(allocation_table.c.quantity).where(
+                    allocation_table.c.point_id==device['point_id'],
+                    allocation_table.c.product==row['product'],allocation_table.c.sku==row['sku'])).scalar_one_or_none()
+                if allocation is None:raise DomainError('Chưa phân bổ SKU này cho xã/điểm nhận PC.')
+                used=c.execute(select(func.count()).select_from(jobs.join(devices,jobs.c.device_id==devices.c.id)
+                    .join(licenses,jobs.c.license_id==licenses.c.id)).where(
+                    devices.c.point_id==device['point_id'],licenses.c.product==row['product'],licenses.c.sku==row['sku'])).scalar_one()
+                if used>=allocation:raise DomainError('Đã dùng hết số lượng SKU được phân bổ cho xã/điểm này.')
             if row['expires'] and row['expires'] < datetime.now(timezone.utc).date().isoformat():
                 raise DomainError('License đã hết hạn.')
             expected = 'REDEEMED' if row['route'] == 'ACCOUNT_REDEEM' else 'VERIFIED'
@@ -342,7 +365,7 @@ class Ledger:
         return self._atomic(actor, {'ADMIN'}, op, fn)
 
     def rows(self, actor, name):
-        tables = {'units': units, 'users': users, 'accounts': accounts, 'licenses': licenses,
+        tables = {'units': units, 'receiving_points': receiving_points, 'users': users, 'accounts': accounts, 'licenses': licenses,
                   'devices': devices, 'jobs': jobs, 'audit': audit}
         if name not in tables: raise DomainError('Danh sách không hợp lệ.')
         with self.engine.connect() as c:
@@ -353,9 +376,11 @@ class Ledger:
             if role == 'KTV':
                 if name != 'jobs': raise DomainError('KTV chỉ được xem việc được giao.')
                 stmt = select(jobs, devices.c.asset_tag, devices.c.serial, devices.c.board_serial,
-                    devices.c.model, units.c.project, units.c.name.label('unit'), licenses.c.product,
+                    devices.c.model, units.c.project, units.c.name.label('unit'),
+                    receiving_points.c.name.label('point'),receiving_points.c.code.label('point_code'),licenses.c.product,
                     licenses.c.sku, licenses.c.tail, accounts.c.email.label('account')).select_from(
                     jobs.join(devices).join(units).join(licenses, jobs.c.license_id == licenses.c.id)
+                    .outerjoin(receiving_points,devices.c.point_id==receiving_points.c.id)
                     .outerjoin(accounts, licenses.c.account_id == accounts.c.id)).where(jobs.c.ktv == actor)
             else:
                 if name == 'users' and role != 'ADMIN': raise DomainError('Chỉ Admin quản lý người dùng.')

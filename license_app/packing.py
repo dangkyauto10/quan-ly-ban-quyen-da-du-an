@@ -58,11 +58,15 @@ class PackingLedger(PreparationLedger):
             c.execute(update(devices).where(devices.c.id==device_id).values(model=devices.c.model))
             d=self._get(c,devices,device_id)
             unit=self._get(c,units,d['unit_id'])
+            point=self._get(c,meta.tables['receiving_points'],d['point_id']) if d['point_id'] else None
             # Serialize plan changes with the comparison of printed numbering.
             c.execute(update(units).where(units.c.id==unit['id']).values(name=units.c.name))
             slot=self._get(c,slots,device_id);plan=self._get(c,plans,unit['id'])
             actual={'id':device_id,'asset_tag':d['asset_tag'],'serial':d['board_serial'],
                 'unit':unit['name'],'project':unit['project'],'number':slot['number'],'quantity':plan['quantity']}
+            if matched.get('v')==3:
+                actual['point']=point['name'] if point else ''
+                actual['point_code']=point['code'] if point else ''
             if any(actual[k]!=matched[k] for k in actual):raise DomainError('Tem đã cũ hoặc không thuộc hồ sơ hiện tại. In lại cả cặp.')
             if serial.strip().upper()!=d['board_serial'].strip().upper():raise DomainError('Serial mainboard thực không khớp hồ sơ máy/tem.')
             claim=c.execute(select(claims).where(claims.c.id==device_id)).mappings().first()

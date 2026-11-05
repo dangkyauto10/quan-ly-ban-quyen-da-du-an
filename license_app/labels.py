@@ -17,7 +17,10 @@ def label_token(record,kind,key):
     if not board_serial:raise DomainError('Cần ghi nhận serial mainboard trước khi tạo tem.')
     data={k:record[k] for k in ['id','asset_tag','unit','project','number','quantity']}
     data['serial']=board_serial
-    data.update(v=2,kind=kind)
+    if record.get('point_id'):
+        data.update(v=3,point=record.get('point') or '',point_code=record.get('point_code') or '')
+    else:data['v']=2
+    data['kind']=kind
     raw=json.dumps(data,ensure_ascii=False,separators=(',',':')).encode()
     body=base64.urlsafe_b64encode(raw).decode().rstrip('=')
     sig=hmac.new(key,body.encode(),hashlib.sha256).hexdigest()
@@ -32,8 +35,9 @@ def read_label(value,key):
         expected=hmac.new(key,body.encode(),hashlib.sha256).hexdigest()
         if not hmac.compare_digest(sig,expected):raise ValueError()
         data=json.loads(base64.urlsafe_b64decode(body+'='*(-len(body)%4)))
-        if data['v']!=2 or data['kind'] not in {'PC','BOX'}:raise ValueError()
+        if data['v'] not in {2,3} or data['kind'] not in {'PC','BOX'}:raise ValueError()
         if any(k not in data for k in ['id','asset_tag','serial','unit','project','number','quantity']):raise ValueError()
+        if data['v']==3 and any(k not in data for k in ['point','point_code']):raise ValueError()
         return data
     except Exception:raise DomainError('Tem không hợp lệ hoặc thuộc phiên bản in khác. Hãy tạo lại tem thử.') from None
 
@@ -41,6 +45,9 @@ def compare_labels(first,second,key):
     a,b=read_label(first,key),read_label(second,key)
     if a['kind']==b['kind']:raise DomainError('CHƯA ĐỦ ĐỐI CHIẾU: cần một tem THÂN MÁY và một tem VỎ HỘP.')
     fields=['id','asset_tag','serial','unit','project','number','quantity']
+    if a['v']==3 or b['v']==3:
+        fields+=['point','point_code']
+        if a['v']!=b['v']:raise DomainError('SAI CẶP: hai tem khác phiên bản hoặc thông tin điểm nhận.')
     if any(a[k]!=b[k] for k in fields):raise DomainError('SAI CẶP: hai tem không cùng hồ sơ máy hoặc thông tin tem đã thay đổi.')
     return a
 
@@ -62,7 +69,9 @@ def print_html_batch(records,key,width=60,height=40):
             token=label_token(record,kind,key)
             board_serial=(record.get('board_serial') or '').strip()
             if not board_serial:raise DomainError('Cần ghi nhận serial mainboard trước khi tạo tem.')
-            lines=[title,record['unit'],f"PC: {record['number']:02d}/{record['quantity']:02d}",record['asset_tag'],'S/N Main: '+board_serial]
+            lines=[title,'ĐƠN VỊ ĐƯỢC CẤP',record['unit']]
+            if record.get('point'):lines.append(record['point'])
+            lines.extend([f"PC: {record['number']:02d}/{record['quantity']:02d}",record['asset_tag'],'S/N Main: '+board_serial])
             labels.append('<section>'+qr_svg(token)+'<div>'+''.join('<p>'+html.escape(s)+'</p>' for s in lines)+'</div></section>')
     batch_note=f'Lô gồm {len(records)} PC, in liên tục theo số thứ tự; mỗi PC có hai tem liền nhau.'
     return f'''<!doctype html><html lang="vi"><meta charset="utf-8"><title>Tem PC và vỏ hộp</title>

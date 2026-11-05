@@ -14,6 +14,7 @@ from license_app.core import DomainError
 from license_app.packing import PackingLedger as Ledger
 from license_app.demo import seed_demo
 from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
+from license_app.recipient_import import delivery_template_xlsx, parse_delivery_xlsx
 st.set_page_config(page_title='KEY BẢN QUYỀN',page_icon='assets/key-ban-quyen-icon.svg',layout='wide')
 board_serial_reader = components.declare_component(
     'board_serial_reader', path=str(Path(__file__).parent / 'license_app' / 'serial_reader'))
@@ -323,12 +324,38 @@ elif page=='Tổng quan':
         st.download_button('Tải báo cáo CSV',buf.getvalue().encode('utf-8-sig'),'bao_cao.csv','text/csv')
 elif page=='Đơn vị & tài khoản':
     if role=='ADMIN':
-        with st.form('unit'):
-            project=st.text_input('Mã dự án');project_name=st.text_input('Tên dự án');name=st.text_input('Tên đơn vị')
-            if st.form_submit_button('Thêm đơn vị'):run('unit',lambda t:ledger.add_unit(actor,project,name,t,project_name=project_name))
-    table(rows('units'))
+        st.markdown('### Đơn vị được cấp · điểm nhận · số lượng thiết bị và license')
+        st.caption('Danh sách này là đầu vào của công đoạn bản quyền: khai báo đơn vị, xã/phường/điểm nhận, số PC tại từng điểm và số lượng theo từng phần mềm/SKU. Sau khi PC được kiểm tra, đóng gói và QC xác nhận, hồ sơ mới chuyển sang QUẢN LÝ DỰ ÁN để vận chuyển, lắp đặt.')
+        st.download_button('Tải mẫu phân bổ Excel (.xlsx)',delivery_template_xlsx(),
+            'mau_phan_bo_don_vi_diem_license.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        st.caption('Mỗi dòng là một SKU tại một điểm; lặp lại thông tin điểm khi có nhiều SKU. Mã dự án + tên đơn vị + mã điểm xác định duy nhất điểm nhận.')
+        uploaded=st.file_uploader('Nạp danh sách đơn vị, điểm và phân bổ',type=['xlsx'],key='recipient-allocation-upload')
+        if uploaded:
+            try:
+                import_rows=parse_delivery_xlsx(uploaded.name,uploaded.getvalue())
+                st.dataframe([{'Mã dự án':r['project'],'Tên dự án':r['project_name'],
+                    'Đơn vị được cấp':r['unit_name'],'Mã điểm':r['point_code'],
+                    'Xã/phường/điểm':r['point_name'],'Số PC':r['pc_quantity'],
+                    'Phần mềm':r['product'] or '—','SKU':r['sku'] or '—',
+                    'License cấp':r['license_quantity'] if r['product'] else '—'} for r in import_rows],
+                    hide_index=True,width='stretch')
+                st.warning('Tệp là danh sách chuẩn cho các điểm có trong tệp. SKU đã gán cho PC không thể bị xóa hoặc giảm dưới số đã gán. Điểm không có trong tệp vẫn được giữ nguyên.')
+                if st.button('Nạp / cập nhật danh sách phân bổ',type='primary',key='import-delivery-plan'):
+                    run('delivery-plan',lambda t:ledger.save_delivery_plan(actor,import_rows,t),
+                        f"Đã lưu danh sách {len(import_rows)} dòng phân bổ. Có thể xem tổng hợp theo điểm bên dưới.")
+            except (ValueError, OSError) as e:st.error(str(e))
+        schedule=ledger.delivery_plan_rows(actor)
+        if schedule:
+            st.markdown('### Danh sách đơn vị được cấp và phân bổ')
+            st.dataframe([{'Mã dự án':r['project'],'Tên dự án':r['project_name'],
+                'Đơn vị được cấp':r['unit'],'Mã điểm':r['code'],'Xã/phường/điểm':r['point'],
+                'Số PC tại điểm':r['pc_quantity'],'Tổng PC của đơn vị':r['unit_pc_total'] or 0,
+                'Phần mềm':r['product'] or '—','SKU':r['sku'] or '—',
+                'License phân bổ':r['license_quantity'] if r['product'] else '—'} for r in schedule],
+                hide_index=True,width='stretch')
+        else:st.info('Chưa có danh sách. Tải mẫu Excel, nhập đơn vị/điểm, số PC và SKU được cấp rồi nạp tại đây.')
     with st.form('account'):
-        unit=pick('Đơn vị',rows('units'),lambda r:f"{r.get('project_name') or r['project']} · {r['project']} · {r['name']}")
+        unit=pick('Đơn vị được cấp',rows('units'),lambda r:f"{r.get('project_name') or r['project']} · {r['project']} · {r['name']}")
         email=st.text_input('Email Microsoft');owner=st.text_input('Người quản lý tài khoản')
         st.caption('App không thu thập mật khẩu hoặc mã MFA.')
         if st.form_submit_button('Thêm tài khoản') and unit:run('account',lambda t:ledger.add_account(actor,unit['id'],email,owner,t))
@@ -365,9 +392,14 @@ elif page=='Thiết bị':
     st.caption('Công cụ đọc serial tại chỗ, không gửi dữ liệu lên mạng. Xem mã trước khi chạy.')
     with st.form('device'):
         unit=pick('Đơn vị nhận máy',rows('units'),lambda r:f"{r.get('project_name') or r['project']} · {r['project']} · {r['name']}")
+        point_rows=rows('receiving_points')
+        point_options=[r for r in point_rows if unit and r['unit_id']==unit['id']]
+        point=pick('Xã/phường/điểm nhận PC',point_options,lambda r:f"{r['code']} · {r['name']} ({r['pc_quantity']} PC)") if point_options else None
         tag=st.text_input('Mã máy nội bộ');model=st.text_input('Hãng / model')
         serial=st.text_input('Serial máy / mã tem đã đối soát');board=st.text_input('Serial mainboard (để trống nếu KTV sẽ đọc trên PC)')
-        if st.form_submit_button('Thêm máy') and unit:run('device',lambda t:ledger.add_device(actor,unit['id'],tag,serial,board,model,t))
+        if st.form_submit_button('Thêm máy') and unit:
+            if not point_options:st.error('Đơn vị này chưa có điểm nhận. Nạp danh sách phân bổ trước khi thêm PC.')
+            elif point:run('device',lambda t:ledger.add_device(actor,unit['id'],tag,serial,board,model,t,point['id']))
     table(rows('devices'))
 elif page=='Phân bổ':
     if role!='ADMIN':st.info('Admin phân license và giao KTV.');st.stop()

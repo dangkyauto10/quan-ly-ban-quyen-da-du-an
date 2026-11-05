@@ -25,6 +25,7 @@ ACTION_NAMES = {
     'ACTIVATION_FAILED':'Báo kích hoạt thất bại', 'BOARD_REPLACED':'Ghi thay mainboard',
     'BIND_BOARD_SERIAL':'Gắn serial mainboard vào việc KTV',
     'KTV_LABELS_APPLIED':'KTV xác nhận dán tem và đóng hộp',
+    'IMPORT_UNIT_PLAN':'Nạp đơn vị, điểm và phân bổ license',
     'QUEUE_LABEL_BATCH':'KTV gửi lô tem vào hàng đợi',
     'PRINT_LABEL_BATCH':'Trạm in xác nhận in lô tem',
     'COLLECT_LABEL_BATCH':'KTV xác nhận nhận lô tem',
@@ -35,10 +36,15 @@ PAGE_GUIDES = {
         'Xem số bản quyền chưa phân bổ, đã giao máy và đã kích hoạt.',
         'Báo cáo CSV (tệp bảng mở được bằng Excel) chỉ chứa thông tin quản lý đã che key.',
         'Số thành công phản ánh báo cáo KTV đã ghi, chưa tự truy vấn trạng thái Microsoft.']),
-    'Đơn vị & tài khoản': ('Lập danh mục đầu vào', [
-        'Admin nhập mã và tên dự án, sau đó khai báo tên đơn vị/điểm thuộc dự án.',
+    'Đơn vị & tài khoản': ('Lập danh mục nhận PC và phân bổ bản quyền', [
+        'Nạp Excel gồm mã/tên dự án, đơn vị được cấp, xã/phường/điểm nhận và số PC tại từng điểm.',
+        'Trong cùng danh sách, phân bổ số license theo từng phần mềm và SKU cho từng điểm; số lượng phải nằm trong kho key đã nhập.',
+        'Công đoạn BẢN QUYỀN kết thúc khi PC được kích hoạt, đối chiếu thiết bị/serial, ghép đúng cặp tem và QC xác nhận đóng gói. Sau đó mới chuyển sang QUẢN LÝ DỰ ÁN để vận chuyển và lắp đặt.',
         'Admin hoặc người quản lý redeem thêm email Microsoft và người phụ trách tài khoản.',
         'Mật khẩu và MFA (xác thực nhiều bước) do người quản lý tài khoản giữ bên ngoài app.']),
+    'Kế hoạch PC theo điểm': ('Theo dõi số PC đã phân bổ theo từng điểm', [
+        'Số PC theo từng điểm lấy từ danh sách Excel ở Đơn vị & tài khoản. Màn hình này theo dõi PC đã khai báo, đánh số tem và QC đóng gói.',
+        'Số tem chạy liên tục theo tổng PC của đơn vị được cấp, kể cả khi đơn vị có nhiều xã/phường/điểm nhận.']),
     'Kho key': ('Nhận bàn giao và kiểm tra', [
         'Admin nhập mã lô, loại phần mềm, phiên bản/SKU, kênh cấp phép và từng key.',
         'Chọn đúng luồng: Office bán lẻ đã xác minh mới đưa vào redeem tài khoản.',
@@ -50,7 +56,7 @@ PAGE_GUIDES = {
         'Chỉ xác nhận tại app sau khi đã thấy đúng sản phẩm trong tài khoản.',
         'Trong chế độ minh họa: chỉ ghi kết quả giả trong app, không dùng key giả trên Microsoft.']),
     'Thiết bị': ('Nhận diện máy để theo dõi', [
-        'Tạo mã tem máy nội bộ ổn định; chọn đúng đơn vị nhận máy.',
+        'Tạo mã tem máy nội bộ ổn định; chọn đúng đơn vị và xã/phường/điểm nhận PC.',
         'Đọc serial máy và mainboard bằng công cụ cục bộ; đối chiếu tem nếu trả mã rỗng/mặc định.',
         'Serial phục vụ theo dõi thiết bị. Tài khoản/license và quy trình nhà cung cấp quyết định kích hoạt.']),
     'Phân bổ': ('Admin giao bản quyền cho máy và KTV', [

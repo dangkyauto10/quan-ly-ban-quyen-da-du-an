@@ -49,29 +49,33 @@ def render(ledger,actor,role,page,is_demo):
     if os.getenv('APP_MODE')=='shared_test':st.caption('Dữ liệu thử lưu chung trên máy chạy app. Điện thoại cùng mạng có thể tải ảnh QR; máy quét USB nhập vào hai ô mã. Camera trực tiếp trên web cần HTTPS.')
     if page=='Kế hoạch PC theo điểm':
         units=ledger.rows(actor,'units')
-        if not units:st.info('Tạo đơn vị trước tại Đơn vị & tài khoản.');return
-        with st.form('pc-plan'):
-            unit=st.selectbox('Điểm / đơn vị',units,format_func=lambda r:f"{r.get('project_name') or r['project']} · {r['project']} · {r['name']}")
-            qty=st.number_input('Số PC cần chuẩn bị',min_value=1,max_value=100000,value=10,step=1)
-            save=st.form_submit_button('Lưu kế hoạch số PC')
-            if save:
-                try:ledger.set_plan(actor,unit['id'],int(qty),secrets.token_hex(16));st.success('Đã lưu kế hoạch số PC.');data=ledger.preparation_rows(actor)
-                except DomainError as e:st.error(str(e))
+        points=ledger.rows(actor,'receiving_points')
+        if not points:st.info('Chưa có điểm nhận. Nạp danh sách đơn vị, xã/phường và số lượng tại Đơn vị & tài khoản.');return
+        st.caption('Số PC theo từng điểm được lấy từ danh sách phân bổ. Số tem PC được đánh liên tục trong phạm vi đơn vị được cấp.')
+        point_rows=[]
+        for point in points:
+            unit=next((u for u in units if u['id']==point['unit_id']),None)
+            devices_at=[r for r in data if r.get('point_code')==point['code'] and r['unit_id']==point['unit_id']]
+            point_rows.append({'Mã dự án':unit['project'] if unit else '',
+                'Đơn vị được cấp':unit['name'] if unit else '', 'Mã điểm':point['code'],
+                'Xã/phường/điểm':point['name'],'PC phân bổ':point['pc_quantity'],
+                'Đã khai báo PC':len(devices_at),'Đã đánh số':sum(bool(r['number']) for r in devices_at),
+                'Đã QC/đóng gói':sum(r['inspection_state']=='PACKED' for r in devices_at)})
+        st.dataframe(point_rows,hide_index=True,width='stretch')
         if data:
-            counts=[]
-            for u in units:
-                ds=[r for r in data if r['unit_id']==u['id']]
-                planned=next((r['quantity'] for r in ds if r['quantity']),None)
-                counts.append({'Điểm':u['name'],'Kế hoạch':planned,'Đã gán số':sum(bool(r['number']) for r in ds),'Đóng gói':sum(r['inspection_state']=='PACKED' for r in ds)})
-            st.dataframe(counts,hide_index=True)
-            st.dataframe([{'Điểm':r['unit'],'Mã máy':r['asset_tag'],'Serial mainboard':r['board_serial'],'Số thứ tự':r['number'],'Tổng PC kế hoạch':r['quantity']} for r in data],hide_index=True)
-            buf=io.StringIO();writer=csv.writer(buf);writer.writerow(['Dự án','Điểm','Mã máy','Serial mainboard','Thứ tự','Tổng PC','Trạng thái kiểm tra'])
+            st.markdown('### Danh sách PC')
+            st.dataframe([{'Đơn vị được cấp':r['unit'],'Xã/phường/điểm':r.get('point') or 'Chưa gán điểm',
+                'Mã máy':r['asset_tag'],'Serial mainboard':r['board_serial'],
+                'Số tem':f"{r['number']}/{r['quantity']}" if r['number'] else 'Chưa đánh số',
+                'Trạng thái kiểm tra':r['inspection_state'] or 'Chưa kiểm tra'} for r in data],hide_index=True,width='stretch')
+            buf=io.StringIO();writer=csv.writer(buf);writer.writerow(['Mã dự án','Đơn vị được cấp','Mã điểm','Xã/phường/điểm','Mã máy','Serial mainboard','Thứ tự','Tổng PC','Trạng thái kiểm tra'])
             for r in data:
-                values=[r['project'],r['unit'],r['asset_tag'],r['board_serial'],r['number'],r['quantity'],r['inspection_state'] or 'Chưa kiểm tra']
+                values=[r['project'],r['unit'],r.get('point_code') or '',r.get('point') or '',r['asset_tag'],r['board_serial'],r['number'],r['quantity'],r['inspection_state'] or 'Chưa kiểm tra']
                 writer.writerow(["'"+v if isinstance(v,str) and v[:1] in '=+-@\t\r' else v for v in values])
             st.download_button('Tải danh sách đối soát PC (CSV — mở bằng Excel)',buf.getvalue().encode('utf-8-sig'),'danh_sach_pc.csv','text/csv')
-            device=st.selectbox('Máy cần cấp số thứ tự',[r for r in data if not r['number']],format_func=lambda r:r['asset_tag']) if any(not r['number'] for r in data) else None
-            if device and st.button('Cấp số thứ tự máy'):
+            unnumbered=[r for r in data if not r['number']]
+            device=st.selectbox('PC cần đánh số tem',unnumbered,format_func=lambda r:f"{r['unit']} · {r.get('point') or 'Chưa gán điểm'} · {r['asset_tag']}") if unnumbered else None
+            if device and st.button('Cấp số thứ tự tem'):
                 try:ledger.number_device(actor,device['id'],secrets.token_hex(16));st.rerun()
                 except DomainError as e:st.error(str(e))
         return
