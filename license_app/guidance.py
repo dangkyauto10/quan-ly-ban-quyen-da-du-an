@@ -37,8 +37,8 @@ PAGE_GUIDES = {
         'Báo cáo CSV (tệp bảng mở được bằng Excel) chỉ chứa thông tin quản lý đã che key.',
         'Số thành công phản ánh báo cáo KTV đã ghi, chưa tự truy vấn trạng thái Microsoft.']),
     'Đơn vị & tài khoản': ('Lập danh mục nhận PC và phân bổ bản quyền', [
-        'Nạp Excel gồm mã/tên dự án, đơn vị được cấp, xã/phường/điểm nhận và số PC tại từng điểm.',
-        'Trong cùng danh sách, phân bổ số license theo từng phần mềm và SKU cho từng điểm; số lượng phải nằm trong kho key đã nhập.',
+        'Nhập mã/tên dự án, đơn vị được cấp, xã/phường/điểm nhận, số PC và quota phần mềm/SKU tại tab 16_KE_HOACH_CAP_PC trong Google Sheet.',
+        'Admin đọc, xem trước rồi xác nhận nạp kế hoạch vào app; số license phải nằm trong kho key đã nhập.',
         'Công đoạn BẢN QUYỀN kết thúc khi PC được kích hoạt, đối chiếu thiết bị/serial, ghép đúng cặp tem và QC xác nhận đóng gói. Sau đó mới chuyển sang QUẢN LÝ DỰ ÁN để vận chuyển và lắp đặt.',
         'Admin hoặc người quản lý redeem thêm email Microsoft và người phụ trách tài khoản.',
         'Mật khẩu và MFA (xác thực nhiều bước) do người quản lý tài khoản giữ bên ngoài app.']),

@@ -5,13 +5,76 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from sqlalchemy import select
-from .core import units, users, accounts, licenses, devices, jobs, audit, DomainError
+from .core import units, receiving_points, users, accounts, licenses, devices, jobs, audit, DomainError
 from .guidance import ROLE_NAMES, ACTION_NAMES
+from .preparation import inspections
 
 SHEET_ID = '1H5j9IK1U7CBef94utPNbhUQ1A31bcQD03yCEaP2L7-U'
+PLAN_TAB = '16_KE_HOACH_CAP_PC'
+PLAN_HEADERS = ['Mã dự án','Tên dự án','Tên đơn vị được cấp','Mã xã/điểm',
+    'Tên xã/phường/đơn vị','Số PC tại điểm','Phần mềm','SKU','Số license được cấp']
 HEADERS = json.loads(Path(__file__).with_name('sheet_schema.json').read_text())
 SYNC_TAB = '15_DONG_BO_APP'
 STATUS_HEADERS = ['Mã lần đồng bộ','Thời điểm','Loại dữ liệu','Nguồn dữ liệu','Số bản ghi nguồn','Kết quả','Ghi chú']
+
+def configured_spreadsheet_id(settings):
+    return settings.get('google_sheets',{}).get('spreadsheet_id',SHEET_ID)
+
+def build_sheets_service(settings):
+    """Build the runtime Google Sheets client from the configured service identity."""
+    import google.auth
+    from google.oauth2.service_account import Credentials
+    from googleapiclient.discovery import build
+    scopes=['https://www.googleapis.com/auth/spreadsheets']
+    info=settings.get('google_service_account')
+    credentials=Credentials.from_service_account_info(dict(info),scopes=scopes) if info else google.auth.default(scopes=scopes)[0]
+    return build('sheets','v4',credentials=credentials,cache_discovery=False)
+
+def _sheet_integer(value,line,label,minimum):
+    if isinstance(value,bool) or value is None or value=='':
+        raise DomainError(f'Dòng {line}: {label} phải là số nguyên từ {minimum} trở lên.')
+    try:
+        number=float(value)
+    except (TypeError,ValueError):
+        raise DomainError(f'Dòng {line}: {label} phải là số nguyên từ {minimum} trở lên.') from None
+    if not number.is_integer() or number<minimum:
+        raise DomainError(f'Dòng {line}: {label} phải là số nguyên từ {minimum} trở lên.')
+    return int(number)
+
+def read_delivery_plan(service,spreadsheet_id):
+    """Read the authoritative unit/point/SKU plan tab without reading any key material."""
+    api=service.spreadsheets()
+    book=api.get(spreadsheetId=spreadsheet_id,fields='sheets(properties(title))').execute()
+    titles={sheet['properties']['title'] for sheet in book.get('sheets',[])}
+    if PLAN_TAB not in titles:raise DomainError('Chưa có tab '+PLAN_TAB+' trong Google Sheet.')
+    values=api.values().get(spreadsheetId=spreadsheet_id,
+        range="'"+PLAN_TAB+"'!A1:I1000",valueRenderOption='FORMULA').execute().get('values',[])
+    if not values or values[0][:len(PLAN_HEADERS)]!=PLAN_HEADERS:
+        raise DomainError('Tiêu đề tab '+PLAN_TAB+' chưa đúng mẫu. Hãy kiểm tra lại các cột trước khi nạp.')
+    records=[]
+    for line,row in enumerate(values[1:],2):
+        cells=list(row[:len(PLAN_HEADERS)])+['']*max(0,len(PLAN_HEADERS)-len(row))
+        if not any(str(value).strip() for value in cells):continue
+        if any(isinstance(value,str) and value.startswith('=') for value in cells):
+            raise DomainError(f'Dòng {line}: không dùng công thức trong tab kế hoạch; nhập giá trị trực tiếp.')
+        project,project_name,unit_name,point_code,point_name=[str(v).strip() for v in cells[:5]]
+        pc_quantity=_sheet_integer(cells[5],line,'Số PC tại điểm',1)
+        product,sku=str(cells[6]).strip(),str(cells[7]).strip()
+        if bool(product)!=bool(sku):raise DomainError(f'Dòng {line}: cần điền đủ Phần mềm và SKU.')
+        license_quantity=0
+        if product:
+            if product not in {'Windows','Office','Antivirus'}:
+                raise DomainError(f'Dòng {line}: Phần mềm phải là Windows, Office hoặc Antivirus.')
+            license_quantity=_sheet_integer(cells[8],line,'Số license được cấp',0)
+            if license_quantity>pc_quantity:
+                raise DomainError(f'Dòng {line}: số license của SKU không thể vượt số PC tại điểm.')
+        elif str(cells[8]).strip():
+            raise DomainError(f'Dòng {line}: để trống Số license nếu chưa điền Phần mềm và SKU.')
+        records.append({'project':project,'project_name':project_name,'unit_name':unit_name,
+            'point_code':point_code,'point_name':point_name,'pc_quantity':pc_quantity,
+            'product':product,'sku':sku,'license_quantity':license_quantity})
+    if not records:raise DomainError('Tab '+PLAN_TAB+' chưa có dòng kế hoạch để nạp.')
+    return records
 
 def ident(kind, value): return 'APP-' + kind + '-' + str(value)
 def scrub(value):
@@ -27,8 +90,8 @@ def make_snapshot(ledger, actor, demo=False):
             if ledger.engine.dialect.name == 'sqlite': c.exec_driver_sql('BEGIN')
             ledger._auth(c, actor, {'ADMIN'})
             data = {}
-            for name, tab in [('units',units),('users',users),('accounts',accounts),
-                              ('licenses',licenses),('devices',devices),('jobs',jobs),('audit',audit)]:
+            for name, tab in [('units',units),('receiving_points',receiving_points),('users',users),('accounts',accounts),
+                              ('licenses',licenses),('devices',devices),('jobs',jobs),('audit',audit),('inspections',inspections)]:
                 safe = [x for x in tab.c if x.name not in {'cipher','fingerprint'}]
                 data[name] = [dict(r) for r in c.execute(select(*safe)).mappings()]
     out = {name: [] for name in HEADERS}
@@ -70,11 +133,19 @@ def make_snapshot(ledger, actor, demo=False):
         row('06_TK_MICROSOFT', **{'Mã tài khoản':ident('TK',r['id']),'Mã đơn vị':ident('DV',r['unit_id']),
             'Email Microsoft':r['email'],'Người sở hữu/quản lý':r['owner'],'Tình trạng xác thực':'Chưa xác minh',
             'MFA (xác thực nhiều bước)':'Chưa xác minh','Trạng thái tài khoản':'Chờ xác minh','Ghi chú':marker})
+    point_by_id={r['id']:r for r in data['receiving_points']}
+    inspection_by_id={r['id']:r for r in data['inspections']}
     for r in data['devices']:
+        point=point_by_id.get(r.get('point_id'))
+        inspection=inspection_by_id.get(r['id'])
+        inspection_state=(inspection or {}).get('state')
+        device_state={'PACKED':'Đã QC và đóng gói','FAILED':'Không đạt — cần xử lý'}.get(inspection_state,'Chưa QC')
         row('08_THIET_BI', **{'Mã máy':ident('MAY',r['id']),'Mã đơn vị':ident('DV',r['unit_id']),
             'Mã tem tài sản':r['asset_tag'],'Hãng / model':r['model'],'Serial máy':r['serial'],
             'Serial mainboard hiện tại':r['board_serial'],'Nguồn lấy serial':'',
-            'Trạng thái thiết bị':'','Ghi chú':marker+'; app chưa lưu nguồn serial/trạng thái thiết bị riêng'})
+            'Trạng thái thiết bị':device_state,'Ghi chú':marker+'; app chưa lưu nguồn serial riêng',
+            'Mã xã/điểm':point['code'] if point else '',
+            'Tên xã/phường/đơn vị':point['name'] if point else ''})
     by_lic={r['id']:r for r in data['licenses']}
     by_job={r['id']:r for r in data['jobs']}
     for r in data['jobs']:

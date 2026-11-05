@@ -1,11 +1,12 @@
-# Đối chiếu Google Sheet nghiên cứu với app V2
+# Đối chiếu Google Sheet với app BẢN QUYỀN
 
 File nghiên cứu:
 https://docs.google.com/spreadsheets/d/1H5j9IK1U7CBef94utPNbhUQ1A31bcQD03yCEaP2L7-U/edit
 
-Đã đọc lại ngày 27-10-2026: tab 14_V_GOP_Y có 13 mục, đều Chờ V chốt,
-cột ý kiến chưa có nội dung. Bản C đã có bộ ghi một chiều theo thao tác Admin; đã ghi mẫu qua kết nối Drive. App runtime chưa cấp quyền Google Cloud.
-Bảng dưới là bản đối chiếu thiết kế, chưa phải cấu hình đồng bộ.
+Ngày 05-11-2026: app dùng kho bảo mật riêng cho key và trạng thái vận hành. Admin
+đọc kế hoạch từ tab 16_KE_HOACH_CAP_PC sau khi xem trước; báo cáo app được ghi
+vào các tab 01–12 bằng thao tác riêng. Tab 14 giữ 11 ý kiến chưa chốt. Cấu hình
+quyền Google runtime cần được kiểm tra trên dịch vụ triển khai trước khi dùng thật.
 
 | Tab nghiên cứu | Phần có trong bản app thử | Phần cần hoàn thiện/chốt |
 |---|---|---|
@@ -25,18 +26,16 @@ Bảng dưới là bản đối chiếu thiết kế, chưa phải cấu hình �
 | 13_TU_DIEN_COT | Giải thích tiếng Việt trong file nghiên cứu | Chuẩn hóa toàn bộ nhãn/cột trong app |
 | 14_V_GOP_Y | File theo dõi quyết định, giữ nguyên khi đồng bộ | Không áp dụng tự động trước khi chốt |
 | 15_DONG_BO_APP | Nhật ký các lần ghi bản xuất | Chưa có lịch tự chạy nền |
+| 16_KE_HOACH_CAP_PC | Kế hoạch PC và quota SKU theo xã/điểm; Admin xác nhận nạp vào app | Không đưa key đầy đủ hoặc thông tin đăng nhập vào tab này |
 
 Bản V2-20261027-B bổ sung nhãn tiếng Việt, trang hướng dẫn theo vai trò và dữ liệu giả xuyên suốt. Kết quả kiểm tra được ghi trong PR. Chưa triển khai Google Cloud hoặc xác minh kích hoạt Microsoft thực tế.
 
 ## Trình tự tiếp tục
 
 1. Anh Vỹ xem cấu trúc và bổ sung cách vận hành; giữ các ô chưa chốt đúng trạng thái.
-2. Xác định Sheet dùng nghiên cứu, báo cáo hay nguồn nhập; chốt chiều đồng bộ và quyền.
-3. Chốt mã liên kết giữa key, tài khoản, license, máy, phân công và lần báo cáo.
-4. Hoàn thiện giao diện theo từ điển cột, minh họa luồng và hướng dẫn theo vai trò.
-5. Kiểm tra lại PostgreSQL (cơ sở dữ liệu quan hệ), đăng nhập Google và phân quyền thật.
-6. Cấu hình Google Cloud cùng chi phí, sao lưu và dữ liệu dùng thử được phê duyệt.
-7. Chỉ đưa key thật vào khi hoàn tất kiểm tra quy trình, quyền và khôi phục dữ liệu.
+2. Cấp quyền Google runtime và thử đọc tab 16, xem trước, xác nhận nạp, rồi xuất báo cáo.
+3. Kiểm thử một dự án nhỏ với nhiều điểm, PC và SKU trước khi mở rộng dữ liệu.
+4. Kiểm tra đồng thời, sao lưu/khôi phục, đăng nhập và phân quyền thật trước khi dùng key thật.
 
 Không nối bảng bằng số dòng, tên người hoặc chỉ serial mainboard. Chưa có kết nối
 Google Cloud để triển khai trực tuyến và chưa tự kiểm chứng kích hoạt Microsoft.

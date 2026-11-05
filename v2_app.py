@@ -1,4 +1,6 @@
 import csv
+import hashlib
+import json
 import base64
 import io
 import os
@@ -14,7 +16,6 @@ from license_app.core import DomainError
 from license_app.packing import PackingLedger as Ledger
 from license_app.demo import seed_demo
 from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
-from license_app.recipient_import import delivery_template_xlsx, parse_delivery_xlsx
 st.set_page_config(page_title='KEY BẢN QUYỀN',page_icon='assets/key-ban-quyen-icon.svg',layout='wide')
 board_serial_reader = components.declare_component(
     'board_serial_reader', path=str(Path(__file__).parent / 'license_app' / 'serial_reader'))
@@ -316,7 +317,7 @@ elif page=='Tổng quan':
             st.markdown(f'<div class="step-card"><div class="step-number">CHẶNG {number}<span class="step-audience">{audience}</span></div><div class="step-title">{title}</div><div class="step-note">{note}</div></div>',unsafe_allow_html=True)
             if target in menus:st.button({'01':'Mở chuẩn bị','02':'Mở redeem / giao việc','03':'Mở việc KTV','04':'Mở kiểm tra'}[number]+'  →',key='shortcut-'+number,on_click=open_page,args=(target,),use_container_width=True,type='primary')
     st.markdown('### Danh sách bản quyền')
-    if not data:st.info('Kho dữ liệu mới chưa có bản quyền. Bắt đầu từ bước 01: thêm đơn vị và tài khoản, sau đó nhập lô key thử nghiệm.')
+    if not data:st.info('Kho dữ liệu chưa có bản quyền. Nhập kế hoạch đơn vị/điểm/SKU tại tab 16 của Google Sheet, nạp vào app, rồi nhập lô key thử nghiệm.')
     else:table(data)
     if data:
         st.bar_chart({LABELS[s]:sum(r['state']==s for r in data) for s in LABELS if any(r['state']==s for r in data)})
@@ -324,36 +325,60 @@ elif page=='Tổng quan':
         st.download_button('Tải báo cáo CSV',buf.getvalue().encode('utf-8-sig'),'bao_cao.csv','text/csv')
 elif page=='Đơn vị & tài khoản':
     if role=='ADMIN':
-        st.markdown('### Đơn vị được cấp · điểm nhận · số lượng thiết bị và license')
-        st.caption('Danh sách này là đầu vào của công đoạn bản quyền: khai báo đơn vị, xã/phường/điểm nhận, số PC tại từng điểm và số lượng theo từng phần mềm/SKU. Sau khi PC được kiểm tra, đóng gói và QC xác nhận, hồ sơ mới chuyển sang QUẢN LÝ DỰ ÁN để vận chuyển, lắp đặt.')
-        st.download_button('Tải mẫu phân bổ Excel (.xlsx)',delivery_template_xlsx(),
-            'mau_phan_bo_don_vi_diem_license.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        st.caption('Mỗi dòng là một SKU tại một điểm; lặp lại thông tin điểm khi có nhiều SKU. Mã dự án + tên đơn vị + mã điểm xác định duy nhất điểm nhận.')
-        uploaded=st.file_uploader('Nạp danh sách đơn vị, điểm và phân bổ',type=['xlsx'],key='recipient-allocation-upload')
-        if uploaded:
+        from license_app.sheet_sync import (PLAN_TAB, PLAN_HEADERS, build_sheets_service,
+            configured_spreadsheet_id, read_delivery_plan)
+        st.markdown('### Nạp kế hoạch từ Google Sheet')
+        st.caption('Google Sheet là nơi nhập đơn vị, xã/điểm nhận, số PC và số lượng theo từng phần mềm/SKU. App đọc kế hoạch sau khi Admin xem trước; key đầy đủ vẫn nằm trong kho bảo mật của app.')
+        target=configured_spreadsheet_id(st.secrets)
+        st.link_button('Mở file kế hoạch Google Sheet','https://docs.google.com/spreadsheets/d/'+target+'/edit')
+        st.caption('Tab nguồn: '+PLAN_TAB+' · mỗi dòng là một điểm nhận và một SKU; để trống Phần mềm/SKU nếu chỉ khai báo điểm.')
+        preview_key='sheet-plan-preview-'+actor
+        if os.getenv('APP_MODE') in {'demo','shared_test','team_test'}:
+            st.info('Chế độ minh họa không đọc kế hoạch thật từ Google Sheet.')
+        elif st.button('Đọc và xem trước kế hoạch từ Sheet',type='primary',key='read-delivery-plan'):
             try:
-                import_rows=parse_delivery_xlsx(uploaded.name,uploaded.getvalue())
-                st.dataframe([{'Mã dự án':r['project'],'Tên dự án':r['project_name'],
-                    'Đơn vị được cấp':r['unit_name'],'Mã điểm':r['point_code'],
-                    'Xã/phường/điểm':r['point_name'],'Số PC':r['pc_quantity'],
-                    'Phần mềm':r['product'] or '—','SKU':r['sku'] or '—',
-                    'License cấp':r['license_quantity'] if r['product'] else '—'} for r in import_rows],
-                    hide_index=True,width='stretch')
-                st.warning('Tệp là danh sách chuẩn cho các điểm có trong tệp. SKU đã gán cho PC không thể bị xóa hoặc giảm dưới số đã gán. Điểm không có trong tệp vẫn được giữ nguyên.')
-                if st.button('Nạp / cập nhật danh sách phân bổ',type='primary',key='import-delivery-plan'):
-                    run('delivery-plan',lambda t:ledger.save_delivery_plan(actor,import_rows,t),
-                        f"Đã lưu danh sách {len(import_rows)} dòng phân bổ. Có thể xem tổng hợp theo điểm bên dưới.")
-            except (ValueError, OSError) as e:st.error(str(e))
+                records=read_delivery_plan(build_sheets_service(st.secrets),target)
+                digest=hashlib.sha256(json.dumps(records,ensure_ascii=False,sort_keys=True).encode()).hexdigest()
+                st.session_state[preview_key]={'records':records,'digest':digest,'target':target}
+                st.rerun()
+            except DomainError as e:st.error(str(e))
+            except Exception:st.error('Không đọc được kế hoạch. Kiểm tra quyền xem file Google Sheet và kết nối Google Sheets của app.')
+        preview=st.session_state.get(preview_key)
+        if preview and preview['target']==target:
+            records=preview['records']
+            st.dataframe([{'Mã dự án':r['project'],'Tên dự án':r['project_name'],
+                'Đơn vị được cấp':r['unit_name'],'Mã xã/điểm':r['point_code'],
+                'Tên xã/phường/đơn vị':r['point_name'],'Số PC tại điểm':r['pc_quantity'],
+                'Phần mềm':r['product'] or '—','SKU':r['sku'] or '—',
+                'Số license':r['license_quantity'] if r['product'] else '—'} for r in records],
+                hide_index=True,width='stretch')
+            st.warning('Khi nạp, app cập nhật các điểm có trong Sheet. Điểm không có trong Sheet vẫn được giữ. Không thể giảm quota SKU xuống thấp hơn số license đã gán cho PC.')
+            if st.button('Nạp kế hoạch đã xem vào app',type='primary',key='apply-delivery-plan'):
+                try:
+                    current=read_delivery_plan(build_sheets_service(st.secrets),target)
+                    digest=hashlib.sha256(json.dumps(current,ensure_ascii=False,sort_keys=True).encode()).hexdigest()
+                    if digest!=preview['digest']:
+                        st.error('Sheet đã thay đổi sau khi xem trước. Hãy đọc lại kế hoạch rồi nạp.')
+                        st.session_state.pop(preview_key,None)
+                    else:
+                        operation=st.session_state.setdefault('op-sheet-plan-'+actor,str(uuid.uuid4()))
+                        ledger.save_delivery_plan(actor,current,operation)
+                        st.session_state.pop('op-sheet-plan-'+actor,None)
+                        st.session_state.pop(preview_key,None)
+                        st.success('Đã nạp kế hoạch từ Google Sheet vào app.')
+                        st.rerun()
+                except DomainError as e:st.error(str(e))
+                except Exception:st.error('Chưa nạp được kế hoạch. Dữ liệu trong app chưa được xác nhận cập nhật; hãy tải lại và kiểm tra kết nối.')
         schedule=ledger.delivery_plan_rows(actor)
         if schedule:
-            st.markdown('### Danh sách đơn vị được cấp và phân bổ')
+            st.markdown('### Kế hoạch đã nạp vào app')
             st.dataframe([{'Mã dự án':r['project'],'Tên dự án':r['project_name'],
-                'Đơn vị được cấp':r['unit'],'Mã điểm':r['code'],'Xã/phường/điểm':r['point'],
+                'Đơn vị được cấp':r['unit'],'Mã xã/điểm':r['code'],'Tên xã/phường/điểm':r['point'],
                 'Số PC tại điểm':r['pc_quantity'],'Tổng PC của đơn vị':r['unit_pc_total'] or 0,
                 'Phần mềm':r['product'] or '—','SKU':r['sku'] or '—',
-                'License phân bổ':r['license_quantity'] if r['product'] else '—'} for r in schedule],
+                'Số license':r['license_quantity'] if r['product'] else '—'} for r in schedule],
                 hide_index=True,width='stretch')
-        else:st.info('Chưa có danh sách. Tải mẫu Excel, nhập đơn vị/điểm, số PC và SKU được cấp rồi nạp tại đây.')
+        else:st.info('Chưa có kế hoạch được nạp. Nhập danh sách tại tab 16_KE_HOACH_CAP_PC rồi bấm đọc và nạp.')
     with st.form('account'):
         unit=pick('Đơn vị được cấp',rows('units'),lambda r:f"{r.get('project_name') or r['project']} · {r['project']} · {r['name']}")
         email=st.text_input('Email Microsoft');owner=st.text_input('Người quản lý tài khoản')
@@ -510,29 +535,23 @@ elif page=='Hướng dẫn theo vai trò':
             for index,step in enumerate(steps,1):st.write(f'{index}. {step}')
     st.caption('Chữ dùng trong app: Admin = quản trị; KTV = kỹ thuật viên; redeem = quy đổi key; license = giấy phép bản quyền; serial = số nhận dạng; SKU = mã phiên bản sản phẩm.')
 elif page=='Đồng bộ Google Sheet':
-    from license_app.sheet_sync import make_snapshot, sync_with_service, SHEET_ID
-    st.write('Đồng bộ một chiều app → các tab dữ liệu. Dòng có mã bắt đầu APP- do app cập nhật; ghi ý kiến ở tab 14_V_GOP_Y.')
+    from license_app.sheet_sync import (make_snapshot, sync_with_service, build_sheets_service,
+        configured_spreadsheet_id)
+    st.write('Kế hoạch đầu vào được đọc từ tab 16_KE_HOACH_CAP_PC; báo cáo xử lý được ghi từ app sang các tab dữ liệu.')
     st.caption('Chỉ xuất key đã che. Mật khẩu, key gốc và nội dung kho mã hóa không được xuất.')
     snapshot=make_snapshot(ledger,actor,demo=os.getenv('APP_MODE') in {'demo','shared_test','team_test'})
     st.write('Số bản ghi có thể xuất:',sum(len(r) for r in snapshot['tables'].values()))
     st.download_button('Tải bản dữ liệu để đối chiếu (JSON — tệp dữ liệu có cấu trúc)',
         __import__('json').dumps(snapshot,ensure_ascii=False,indent=2),'ban_quyen_dong_bo.json','application/json')
-    st.link_button('Mở Google Sheet nghiên cứu','https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/edit')
+    target=configured_spreadsheet_id(st.secrets)
+    st.link_button('Mở Google Sheet','https://docs.google.com/spreadsheets/d/'+target+'/edit')
     if os.getenv('APP_MODE') in {'demo','shared_test','team_test'}:
         st.info('Phiên demo cá nhân chỉ cho xem/xuất dữ liệu giả. Bản minh họa dùng chung được B ghi riêng vào Sheet để anh Vỹ nghiên cứu.')
     else:
-        cfg=st.secrets.get('google_sheets',{})
-        target=cfg.get('spreadsheet_id',SHEET_ID)
         st.caption('Đích đồng bộ: '+target)
         if st.button('Đồng bộ báo cáo lên Google Sheet',type='primary'):
             try:
-                import google.auth
-                from google.oauth2.service_account import Credentials
-                from googleapiclient.discovery import build
-                scopes=['https://www.googleapis.com/auth/spreadsheets']
-                info=st.secrets.get('google_service_account')
-                credentials=Credentials.from_service_account_info(dict(info),scopes=scopes) if info else google.auth.default(scopes=scopes)[0]
-                count=sync_with_service(build('sheets','v4',credentials=credentials,cache_discovery=False),target,snapshot)
+                count=sync_with_service(build_sheets_service(st.secrets),target,snapshot)
                 st.success(f'Đã đồng bộ {count} bản ghi. Xem thời điểm tại tab 15_DONG_BO_APP.')
             except DomainError as err:st.error(str(err))
             except Exception:st.error('Chưa đồng bộ được. Kiểm tra Google Sheets API, danh tính chạy app và quyền Người chỉnh sửa trên đúng file Sheet. Dữ liệu app vẫn đã lưu; có thể đồng bộ lại.')

@@ -19,6 +19,6 @@ Kiểm tra: `python -m pytest -q tests` (pytest cài riêng).
 
 Bản B thêm nhãn tiếng Việt, hướng dẫn theo vai trò và ví dụ 2 license cùng tài khoản, 2 máy, 1 kết quả thành công/1 kết quả lỗi. Xem docs/HUONG_DAN_THANH_VIEN.md và docs/DOI_CHIEU_GOOGLE_SHEET.md.
 
-Bản C thêm xuất/đồng bộ báo cáo một chiều app → Google Sheet cho Admin. Đã ghi một
-bản minh họa 37 bản ghi qua kết nối Drive; app trực tuyến chưa được triển khai/cấp quyền.
-Xem `docs/DONG_BO_GOOGLE_SHEET.md`. Dòng APP- do app quản lý, góp ý giữ tại tab 14.
+Bản tiếp theo đọc kế hoạch đơn vị/điểm/SKU từ tab `16_KE_HOACH_CAP_PC` sau khi Admin
+xem trước và xác nhận; báo cáo vận hành đi từ app sang các tab dữ liệu. Kho key đầy
+đủ vẫn ở kho bảo mật riêng. Xem `docs/DONG_BO_GOOGLE_SHEET.md`.

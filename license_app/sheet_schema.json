@@ -82,7 +82,9 @@
     "Serial mainboard hiện tại",
     "Nguồn lấy serial",
     "Trạng thái thiết bị",
-    "Ghi chú"
+    "Ghi chú",
+    "Mã xã/điểm",
+    "Tên xã/phường/đơn vị"
   ],
   "09_PHAN_BO": [
     "Mã phân bổ",

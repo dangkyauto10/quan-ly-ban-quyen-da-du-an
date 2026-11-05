@@ -48,6 +48,8 @@ class PreparationLedger(Ledger):
                 raise DomainError('Các dòng cùng điểm phải thống nhất đơn vị, tên xã/điểm và số PC.')
             points[point_key]=point_value
             if bool(product)!=bool(sku):raise DomainError('Mỗi dòng hàng hóa cần có cả loại sản phẩm và SKU.')
+            if product and product not in {'Windows','Office','Antivirus'}:
+                raise DomainError('Phần mềm phải là Windows, Office hoặc Antivirus.')
             if product and (type(license_qty) is not int or license_qty<0):
                 raise DomainError('Số lượng license theo SKU phải là số nguyên từ 0 trở lên.')
             if product and license_qty>pc_qty:

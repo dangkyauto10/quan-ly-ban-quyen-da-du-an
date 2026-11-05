@@ -51,13 +51,14 @@ chưa tự kích hoạt Office dựa trên serial hoặc tự kiểm chứng Mic
 ## Đọc kết quả và tra cứu
 
 CSV (tệp bảng mở bằng Excel) từ Tổng quan đã loại key gốc khỏi báo cáo.
-Mã hồ sơ trong app là UUID (mã định danh ứng dụng tự sinh); các mã mẫu dễ đọc trong
-Google Sheet chỉ để minh họa liên kết. Chưa dùng các mã này để tự đồng bộ hai chiều.
+Tab 16_KE_HOACH_CAP_PC trong Google Sheet là nguồn nhập kế hoạch PC/SKU sau khi
+Admin xem trước và xác nhận. Các tab báo cáo nhận dữ liệu app khi Admin bấm đồng bộ.
+Mã hồ sơ trong app vẫn là mã nội bộ; không dùng số dòng trong Sheet làm mã liên kết.
 UTC là giờ quốc tế; cách hiển thị giờ chính thức sẽ chốt trong yêu cầu vận hành.
 
 ## Nội dung còn chờ anh Vỹ chốt
 
-Đồng bộ Google Sheet, ảnh bắt buộc, bước Admin duyệt báo cáo, thu hồi/giao lại, phạm vi
+Ảnh bắt buộc, bước Admin duyệt báo cáo, thu hồi/giao lại, phạm vi
 theo dự án, bản quyền nhiều seat (suất thiết bị) và thủ tục chuyển máy.
 Hướng dẫn này chưa biến các đề xuất đó thành quy tắc vận hành chính thức.
 
