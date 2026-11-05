@@ -21,7 +21,7 @@ st.markdown('''<style>
 [data-testid="stAppViewContainer"] {background:radial-gradient(ellipse at 92% 0%,#fff0c2 0,transparent 24%),#f2f5fa;}
 .stApp {background:#f2f5fa;color:#17263d;}
 .block-container {padding:2.2rem clamp(1.25rem,3vw,3.5rem) 3rem;max-width:none;width:100%;}
-[data-testid="stSidebar"] {background:#edf2f8!important;border-right:1px solid #d8e2ed;}
+[data-testid="stSidebar"] {background:#edf2f8!important;border-right:0!important;}
 [data-testid="stSidebar"] {color:#1b2d45;}
 [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
 [data-testid="stSidebar"] label p,
@@ -41,15 +41,21 @@ st.markdown('''<style>
 [data-testid="stSidebar"] hr {border-color:#344359;}
 h1,h2,h3, [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="stMain"] h3, [data-testid="stMain"] p {letter-spacing:-.015em;color:#14283f!important;}
 [data-testid="stMain"] h1 {text-align:center!important;font-size:46px!important;font-weight:800!important;letter-spacing:.02em!important;text-transform:uppercase;margin:0 auto 12px!important;}
-.hero-tech {position:relative;isolation:isolate;overflow:hidden;min-height:260px;border-radius:22px;border:1px solid #d2a93c;margin:0 0 30px;padding:28px 30px 25px;background-image:linear-gradient(90deg,#07132644 0%,#07132630 30%,#07132636 70%,#07132644 100%),var(--hero-photo);background-size:cover;background-position:center 53%;box-shadow:0 14px 35px #10243a24;color:#fff;text-align:center;}
-.hero-tech:after {content:"";position:absolute;inset:12px;z-index:-1;border:1px solid #d9b34b33;border-radius:15px;pointer-events:none;}
-.hero-lockup {display:flex;align-items:center;justify-content:center;gap:18px;margin:0 auto 12px;position:relative;z-index:1;}
-.hero-logo {width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 3px 10px #020b18aa);}
-.hero-name {color:#f2c755;font-size:17px;font-weight:800;letter-spacing:2.2px;text-align:left;margin-bottom:5px;}
-.hero-sub {color:#d4e2f2;font-size:15px;text-align:left;}
-.hero-tech h1 {position:relative;z-index:1;color:#fff!important;font-size:44px!important;letter-spacing:1px!important;margin:12px 0 8px!important;text-shadow:0 2px 16px #020b1880;}
-.hero-rule {width:86px;height:4px;border-radius:8px;background:linear-gradient(90deg,#d3a323,#ffe79a);margin:0 auto 13px;}
-.hero-note {position:relative;z-index:1;color:#d3dfed;font-size:15px;}
+.hero-tech {position:relative;isolation:isolate;overflow:hidden;min-height:260px;border-radius:24px;border:0;margin:0 0 30px;padding:28px 30px 25px;background-image:linear-gradient(90deg,#07132644 0%,#07132630 30%,#07132636 70%,#07132644 100%),var(--hero-photo);background-size:cover;background-position:center 53%;box-shadow:0 18px 42px #10243a2b;color:#fff;text-align:center;}
+.hero-content {position:relative;z-index:1;max-width:680px;margin:0 auto;text-align:center;padding:4px 16px 2px;border-radius:24px;background:radial-gradient(ellipse at center,#061529c9 0%,#061529a6 52%,transparent 100%);}
+.hero-lockup {display:flex;align-items:center;justify-content:center;gap:13px;margin:0 auto 6px;}
+.hero-logo {width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 3px 10px #020b18aa);}
+.hero-name {color:#f2c755;font-size:15px;font-weight:800;letter-spacing:2px;text-align:left;margin-bottom:3px;}
+.hero-sub {color:#d4e2f2;font-size:13px;text-align:left;}
+.hero-tech h1 {position:relative;z-index:1;color:#fff!important;font-size:39px!important;line-height:1.14!important;font-weight:850!important;letter-spacing:.015em!important;margin:9px auto 10px!important;text-shadow:0 3px 22px #020b18c9;max-width:650px;}
+.hero-note {position:relative;z-index:1;color:#e3edfa;font-size:14px;font-weight:550;text-shadow:0 2px 12px #020b18;}
+.process-breadcrumb {display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;margin:0 0 18px;border-radius:16px;background:linear-gradient(110deg,#e7eff8,#f5f8fc);box-shadow:inset 0 1px #fff,0 8px 20px #14283f0a;}
+.process-phase {flex:1;display:flex;align-items:center;gap:9px;min-width:0;padding:8px 11px;border-radius:12px;color:#65768a;font-size:13px;font-weight:650;background:#ffffff75;}
+.process-phase.active {color:#102a46;background:linear-gradient(140deg,#fff,#edf8ff);box-shadow:0 7px 15px #10243a1a,0 0 0 1px #acd3ed;}
+.process-phase.prior {color:#65768a;background:#eef3f8;}
+.process-phase b {display:grid;place-items:center;flex:0 0 27px;height:27px;border-radius:9px;background:#dce6f0;color:#34506d;font-size:11px;}
+.process-phase.active b {background:#163957;color:#fff;}
+.process-phase.prior b {background:#e0e8f0;color:#52677d;}
 [data-testid="stMain"] [data-testid="stMarkdownContainer"] p {color:#33465e!important;font-size:17px;line-height:1.65;}
 [data-testid="stMain"] label, [data-testid="stMain"] label p {color:#33465e!important;font-size:15px!important;}
 [data-testid="stMain"] input, [data-testid="stMain"] textarea {background:#fff!important;color:#18273d!important;border:1px solid #cbd7e4!important;border-radius:8px;}
@@ -103,10 +109,14 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain
 @media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.hero-tech {min-height:205px;padding:20px 14px;border-radius:16px;background-position:center 50%;}.hero-tech h1 {font-size:29px!important;}.hero-logo {width:50px;height:50px;}.hero-name {font-size:14px;letter-spacing:1.3px;}.hero-sub,.hero-note {font-size:13px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 /* Raised, consistent surfaces across dashboard and workflow pages */
 [data-testid="stSidebar"] {box-shadow:8px 0 28px #10243a0b;z-index:3;}
+[data-testid="stSidebar"] hr {display:none;}
 [data-testid="stMain"] h2 {font-weight:760!important;margin-top:1.35rem!important;margin-bottom:.35rem!important;}
 [data-testid="stMain"] h3 {font-weight:720!important;margin-top:1rem!important;}
 [data-testid="stMetric"] {position:relative;overflow:hidden;background:linear-gradient(145deg,#fff,#f8fbff)!important;box-shadow:0 10px 24px #13243b12,0 2px 5px #13243b08!important;transition:transform .18s ease,box-shadow .18s ease;}
 [data-testid="stMetric"]:hover {transform:translateY(-4px);box-shadow:0 18px 32px #13243b1c,0 4px 8px #13243b0c!important;}
+[data-testid="stHorizontalBlock"]:has(.step-card) {gap:14px;padding:12px;border-radius:22px;background:linear-gradient(130deg,#eaf1f8,#f4f8fc);box-shadow:inset 0 1px #fff,0 10px 25px #13243b0b;}
+[data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) {gap:12px;padding:4px 2px;}
+[data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) [data-testid="stMetric"] {border-top:1px solid #dce3ed!important;}
 [data-testid="stForm"] {background:linear-gradient(145deg,#fff 0%,#fbfdff 100%)!important;border:1px solid #dce6f0!important;border-radius:18px!important;padding:24px!important;box-shadow:0 12px 28px #13243b10,0 2px 5px #13243b08!important;transition:transform .18s ease,box-shadow .18s ease;}
 [data-testid="stForm"]:hover {transform:translateY(-2px);box-shadow:0 17px 34px #13243b16,0 3px 8px #13243b0a!important;}
 [data-testid="stDataFrame"], [data-testid="stTable"] {border:1px solid #dce5ef;border-radius:14px!important;box-shadow:0 10px 24px #13243b10;overflow:hidden;}
@@ -117,12 +127,16 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain
 [data-testid="stMain"] [data-baseweb="select"] {border-radius:10px;}
 .stButton button,.stDownloadButton button,.stLinkButton a {box-shadow:0 5px 12px #14283f14;transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;}
 .stButton button:hover,.stDownloadButton button:hover,.stLinkButton a:hover {transform:translateY(-2px);box-shadow:0 9px 18px #14283f20;filter:brightness(1.04);}
-.step-card {background:linear-gradient(145deg,#fff 0%,#f7fbff 100%);border-color:#d9e3ef;border-left:5px solid #e1ae21;box-shadow:0 12px 26px #13243b12,0 2px 5px #13243b08;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
+.step-card {position:relative;overflow:hidden;background:radial-gradient(ellipse at 100% 0%,#eaf7ff 0%,transparent 44%),linear-gradient(145deg,#fff 0%,#f7fbff 100%);border:1px solid #d9e3ef;border-radius:16px;border-left-width:1px;box-shadow:0 12px 26px #13243b12,0 2px 5px #13243b08;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
+.step-audience {display:inline-flex;align-items:center;margin-left:7px;padding:4px 8px;border-radius:999px;background:#eaf0f7;color:#415b75;font-size:10px;font-weight:750;letter-spacing:.04em;vertical-align:middle;}
 .step-card:hover {border-color:#b8cce0;transform:translateY(-5px);box-shadow:0 20px 35px #13243b1c,0 5px 10px #13243b0a;}
+.step-number {background:#eaf3ff;color:#155982;}
+@media(max-width:900px) {.process-breadcrumb {flex-wrap:wrap;}.process-phase {flex:1 1 42%;}}
+@media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.hero-tech {min-height:205px;padding:20px 14px;border-radius:16px;background-position:center 50%;}.hero-content {padding:8px 4px;background:radial-gradient(ellipse at center,#061529d9 0%,#061529a8 65%,transparent 100%);}.hero-tech h1 {font-size:27px!important;}.hero-logo {width:38px;height:38px;}.hero-name {font-size:12px;letter-spacing:1.3px;}.hero-sub,.hero-note {font-size:12px;}.process-breadcrumb {gap:5px;padding:8px;}.process-phase {flex:1 1 calc(50% - 6px);padding:7px 8px;font-size:11px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 @media(prefers-reduced-motion:reduce) {[data-testid="stMetric"],[data-testid="stForm"],[data-testid="stExpander"],.stButton button,.stDownloadButton button,.stLinkButton a,.step-card {transition:none!important;}}
 </style>''',unsafe_allow_html=True)
 st.markdown(f'''<section class="hero-tech" style="--hero-photo:url('{hero_photo_src}')">
-<div class="hero-lockup"><img class="hero-logo" src="{logo_src}" alt="Logo KEY BẢN QUYỀN"><div><div class="hero-name">KEY BẢN QUYỀN</div><div class="hero-sub">Quản lý bản quyền và thiết bị</div></div></div><h1>KEY BẢN QUYỀN</h1><div class="hero-rule"></div><div class="hero-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div></section>''',unsafe_allow_html=True)
+<div class="hero-content"><div class="hero-lockup"><img class="hero-logo" src="{logo_src}" alt="Logo KEY BẢN QUYỀN"><div><div class="hero-name">KEY BẢN QUYỀN</div><div class="hero-sub">Điều phối bản quyền và thiết bị</div></div></div><h1>TỪ KHO KEY ĐẾN MÁY SẴN SÀNG BÀN GIAO</h1><div class="hero-note">Nhận key → Redeem → Giao KTV → Kích hoạt · In tem QR → QC đóng gói</div></div></section>''',unsafe_allow_html=True)
 st.sidebar.markdown(f'<div class="side-brand-row"><div class="side-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div class="side-brand">KEY BẢN QUYỀN</div></div>',unsafe_allow_html=True)
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
@@ -201,6 +215,12 @@ page=st.sidebar.radio('Chức năng',groups[section],key='nav-page-'+section)
 st.sidebar.divider()
 st.sidebar.caption('V2 · Giao diện sáng · 05/11/2026')
 st.subheader(page)
+flow_phases=[('01','Chuẩn bị'),('02','Redeem & giao việc'),('03','Kích hoạt & in QR'),('04','Quét & đóng gói')]
+flow_stage={'Đơn vị & tài khoản':0,'Kế hoạch PC theo điểm':0,'Kho key':0,'Redeem Office':1,'Thiết bị':1,'Phân bổ':1,'Kích hoạt':2,'Việc của tôi':2,'In tem PC và vỏ hộp':2,'Đối chiếu tem và kiểm tra':3}
+if page in flow_stage:
+    current=flow_stage[page]
+    flow_html=''.join(f'<div class="process-phase {"active" if i==current else "prior" if i<current else ""}"><b>{number}</b><span>{title}</span></div>' for i,(number,title) in enumerate(flow_phases))
+    st.markdown(f'<div class="process-breadcrumb">{flow_html}</div>',unsafe_allow_html=True)
 page_notes={
     'Tổng quan':'Theo dõi kho bản quyền và chọn bước tiếp theo trong quy trình.',
     'Đơn vị & tài khoản':'Khai báo nơi nhận PC và tài khoản Microsoft quản lý sản phẩm.',
@@ -244,19 +264,21 @@ if page in {'Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối ch
 elif page=='Tổng quan':
     data=rows('licenses'); cols=st.columns(4)
     for col,title,n in zip(cols,['Đã nhận','Chưa phân bổ','Đã giao máy','Đã kích hoạt'],[len(data),sum(r['state'] in {'RECEIVED','VERIFIED','REDEEMED'} for r in data),sum(r['state']=='ASSIGNED' for r in data),sum(r['state']=='ACTIVATED' for r in data)]):col.metric(title,n)
-    st.markdown('### Luồng xử lý bản quyền')
-    st.caption('Mỗi PC đi qua bốn bước. Chọn nút trên thẻ để mở đúng màn hình thao tác.')
-    steps=[('01','Chuẩn bị','Đơn vị, số lượng PC, key và tài khoản.','Đơn vị & tài khoản'),('02','Redeem & giao việc','Admin ghi nhận redeem và phân công KTV.','Phân bổ'),('03','Kích hoạt · in tem QR','KTV báo kết quả; in tem PC và vỏ hộp theo số thứ tự.','Kích hoạt'),('04','Quét · kiểm tra · đóng gói','QC đối chiếu cặp QR, đơn vị và số lượng thiết bị.','Đối chiếu tem và kiểm tra')]
+    st.markdown('### Một quy trình · Bốn chặng')
+    st.caption('Từ lúc nhận key đến khi QC xác nhận đủ cặp tem PC và hộp; mỗi chặng có màn hình thao tác riêng.')
+    step2_target='Redeem Office' if role=='ADMIN' else 'Phân bổ'
+    step3_target='Việc của tôi' if role=='KTV' else 'Kích hoạt'
+    steps=[('01','Chuẩn bị','Đơn vị, số lượng PC, key và tài khoản.','Đơn vị & tài khoản','ADMIN'),('02','Redeem & giao việc','Ghi nhận redeem, gắn license với máy và giao KTV.',step2_target,'ADMIN'),('03','Kích hoạt · in tem QR','KTV báo kết quả; in tem PC và vỏ hộp đúng số thứ tự.',step3_target,'KTV'),('04','Quét · kiểm tra · đóng gói','QC quét hai tem, đối chiếu máy, đơn vị và số lượng.','Đối chiếu tem và kiểm tra','QC')]
     def open_page(target):
         for group,items in groups.items():
             if target in items:
                 st.session_state['nav-section']=group
                 st.session_state['nav-page-'+group]=target
                 return
-    for col,(number,title,note,target) in zip(st.columns(4),steps):
+    for col,(number,title,note,target,audience) in zip(st.columns(4),steps):
         with col:
-            st.markdown(f'<div class="step-card"><div class="step-number">BƯỚC {number}</div><div class="step-title">{title}</div><div class="step-note">{note}</div></div>',unsafe_allow_html=True)
-            if target in menus:st.button({'01':'Mở chuẩn bị','02':'Mở giao việc','03':'Mở kích hoạt','04':'Mở kiểm tra'}[number]+'  →',key='shortcut-'+number,on_click=open_page,args=(target,),use_container_width=True,type='primary')
+            st.markdown(f'<div class="step-card"><div class="step-number">CHẶNG {number}<span class="step-audience">{audience}</span></div><div class="step-title">{title}</div><div class="step-note">{note}</div></div>',unsafe_allow_html=True)
+            if target in menus:st.button({'01':'Mở chuẩn bị','02':'Mở redeem / giao việc','03':'Mở việc KTV','04':'Mở kiểm tra'}[number]+'  →',key='shortcut-'+number,on_click=open_page,args=(target,),use_container_width=True,type='primary')
     st.markdown('### Danh sách bản quyền')
     if not data:st.info('Kho dữ liệu mới chưa có bản quyền. Bắt đầu từ bước 01: thêm đơn vị và tài khoản, sau đó nhập lô key thử nghiệm.')
     else:table(data)
