@@ -18,7 +18,11 @@ SYNC_TAB = '15_DONG_BO_APP'
 STATUS_HEADERS = ['Mã lần đồng bộ','Thời điểm','Loại dữ liệu','Nguồn dữ liệu','Số bản ghi nguồn','Kết quả','Ghi chú']
 
 def configured_spreadsheet_id(settings):
-    return settings.get('google_sheets',{}).get('spreadsheet_id',SHEET_ID)
+    try:
+        return settings.get('google_sheets',{}).get('spreadsheet_id',SHEET_ID)
+    except Exception:
+        # Streamlit raises when secrets.toml is absent (for example in AppTest/demo).
+        return SHEET_ID
 
 def build_sheets_service(settings):
     """Build the runtime Google Sheets client from the configured service identity."""
