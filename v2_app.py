@@ -305,11 +305,11 @@ elif page=='Tổng quan':
 elif page=='Đơn vị & tài khoản':
     if role=='ADMIN':
         with st.form('unit'):
-            project=st.text_input('Mã dự án');name=st.text_input('Tên đơn vị')
-            if st.form_submit_button('Thêm đơn vị'):run('unit',lambda t:ledger.add_unit(actor,project,name,t))
+            project=st.text_input('Mã dự án');project_name=st.text_input('Tên dự án');name=st.text_input('Tên đơn vị')
+            if st.form_submit_button('Thêm đơn vị'):run('unit',lambda t:ledger.add_unit(actor,project,name,t,project_name=project_name))
     table(rows('units'))
     with st.form('account'):
-        unit=pick('Đơn vị',rows('units'),lambda r:r['project']+' · '+r['name'])
+        unit=pick('Đơn vị',rows('units'),lambda r:f"{r.get('project_name') or r['project']} · {r['project']} · {r['name']}")
         email=st.text_input('Email Microsoft');owner=st.text_input('Người quản lý tài khoản')
         st.caption('App không thu thập mật khẩu hoặc mã MFA.')
         if st.form_submit_button('Thêm tài khoản') and unit:run('account',lambda t:ledger.add_account(actor,unit['id'],email,owner,t))
@@ -345,7 +345,7 @@ elif page=='Thiết bị':
     st.download_button('Tải công cụ đọc serial PowerShell',Path('tools/Get-DeviceIdentity.ps1').read_bytes(),'Get-DeviceIdentity.ps1')
     st.caption('Công cụ đọc serial tại chỗ, không gửi dữ liệu lên mạng. Xem mã trước khi chạy.')
     with st.form('device'):
-        unit=pick('Đơn vị nhận máy',rows('units'),lambda r:r['project']+' · '+r['name'])
+        unit=pick('Đơn vị nhận máy',rows('units'),lambda r:f"{r.get('project_name') or r['project']} · {r['project']} · {r['name']}")
         tag=st.text_input('Mã máy nội bộ');model=st.text_input('Hãng / model')
         serial=st.text_input('Serial máy / mã tem đã đối soát');board=st.text_input('Serial mainboard / mã đối soát vật lý')
         if st.form_submit_button('Thêm máy') and unit:run('device',lambda t:ledger.add_device(actor,unit['id'],tag,serial,board,model,t))

@@ -7,12 +7,13 @@ import uuid
 from datetime import datetime, timezone
 from cryptography.fernet import Fernet
 from sqlalchemy import (create_engine, MetaData, Table, Column, String, Text, Integer,
-                        ForeignKey, UniqueConstraint, select, update, insert, event, delete)
+                        ForeignKey, UniqueConstraint, select, update, insert, event, delete, inspect)
 from sqlalchemy.exc import IntegrityError
 
 meta = MetaData()
 units = Table('units', meta, Column('id', String, primary_key=True),
-              Column('project', String, nullable=False), Column('name', String, nullable=False),
+              Column('project', String, nullable=False), Column('project_name', String, nullable=False, server_default=''),
+              Column('name', String, nullable=False),
               UniqueConstraint('project', 'name'))
 users = Table('users', meta, Column('email', String, primary_key=True),
               Column('role', String, nullable=False), Column('active', Integer, nullable=False, default=1))
@@ -60,6 +61,11 @@ class Ledger:
             raise ValueError('FINGERPRINT_KEY cần ít nhất 32 ký tự')
         self.fingerprint_key = fingerprint_key.encode()
         meta.create_all(self.engine)
+        # create_all does not add columns to an existing ledger. Keep old Neon/SQLite
+        # databases readable while introducing the separate project display name.
+        if 'project_name' not in {column['name'] for column in inspect(self.engine).get_columns('units')}:
+            with self.engine.begin() as c:
+                c.exec_driver_sql("ALTER TABLE units ADD COLUMN project_name VARCHAR NOT NULL DEFAULT ''")
 
     def bootstrap(self, email):
         """Only seeds the first administrator; subsequent changes need admin authorization."""
@@ -138,11 +144,12 @@ class Ledger:
             return email
         return self._atomic(actor,{'ADMIN'},op,fn)
 
-    def add_unit(self, actor, project, name, op):
-        if not project.strip() or not name.strip(): raise DomainError('Nhập đủ dự án và đơn vị.')
+    def add_unit(self, actor, project, name, op, project_name=None):
+        project_name = (project_name or project).strip()
+        if not project.strip() or not project_name or not name.strip(): raise DomainError('Nhập đủ mã dự án, tên dự án và đơn vị.')
         def fn(c):
             entity = str(uuid.uuid4())
-            c.execute(insert(units).values(id=entity, project=project.strip(), name=name.strip()))
+            c.execute(insert(units).values(id=entity, project=project.strip(), project_name=project_name, name=name.strip()))
             self._log(c, actor, 'ADD_UNIT', entity)
             return entity
         return self._atomic(actor, {'ADMIN'}, op, fn)

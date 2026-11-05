@@ -29,7 +29,7 @@ def render(ledger,actor,role,page,is_demo):
         units=ledger.rows(actor,'units')
         if not units:st.info('Tạo đơn vị trước tại Đơn vị & tài khoản.');return
         with st.form('pc-plan'):
-            unit=st.selectbox('Điểm / đơn vị',units,format_func=lambda r:r['project']+' · '+r['name'])
+            unit=st.selectbox('Điểm / đơn vị',units,format_func=lambda r:f"{r.get('project_name') or r['project']} · {r['project']} · {r['name']}")
             qty=st.number_input('Số PC cần chuẩn bị',min_value=1,max_value=100000,value=10,step=1)
             save=st.form_submit_button('Lưu kế hoạch số PC')
             if save:

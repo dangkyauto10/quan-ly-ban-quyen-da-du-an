@@ -2,7 +2,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 import pytest
 from cryptography.fernet import Fernet
-from sqlalchemy import select
+from sqlalchemy import create_engine, select
 from license_app.core import Ledger, DomainError, licenses
 
 def op():return str(uuid.uuid4())
@@ -11,7 +11,7 @@ def setup(tmp_path):
     l=Ledger(f'sqlite:///{tmp_path}/ledger.db',Fernet.generate_key().decode(),'a'*48)
     l.bootstrap('admin@test.example')
     for email,role in [('vy@test.example','OPERATOR'),('ktv@test.example','KTV'),('other@test.example','KTV')]:l.add_user('admin@test.example',email,role,op())
-    u=l.add_unit('admin@test.example','DA1','Unit A',op())
+    u=l.add_unit('admin@test.example','DA1','Unit A',op(),project_name='Project A')
     a=l.add_account('vy@test.example',u,'office@test.example','Owner',op())
     d=l.add_device('admin@test.example',u,'PC1','SN1','BOARD1','Model',op())
     return l,u,a,d
@@ -76,6 +76,27 @@ def test_wrong_unit_and_invalid_state(setup):
     d=l.add_device('admin@test.example',u,'PC2','SN2','BOARD2','Model',op())
     with pytest.raises(DomainError):l.assign('admin@test.example',entity,d,'ktv@test.example',op())
     with pytest.raises(DomainError):l.redeem('admin@test.example',entity,a,'Again',op())
+
+def test_unit_keeps_project_name_separate(setup):
+    l,_,_,_=setup
+    unit=l.rows('admin@test.example','units')[0]
+    assert unit['project']=='DA1'
+    assert unit['project_name']=='Project A'
+    assert unit['name']=='Unit A'
+
+def test_existing_ledger_migrates_project_name_column(tmp_path):
+    url=f'sqlite:///{tmp_path}/legacy.db'
+    engine=create_engine(url)
+    with engine.begin() as c:
+        c.exec_driver_sql('CREATE TABLE units (id VARCHAR PRIMARY KEY, project VARCHAR NOT NULL, name VARCHAR NOT NULL)')
+        c.exec_driver_sql("INSERT INTO units (id, project, name) VALUES ('old-1', 'OLD-CODE', 'Old unit')")
+    l=Ledger(url,Fernet.generate_key().decode(),'a'*48)
+    l.bootstrap('admin@test.example')
+    old=next(r for r in l.rows('admin@test.example','units') if r['id']=='old-1')
+    assert old['project_name']==''
+    new=l.add_unit('admin@test.example','NEW-CODE','New unit',op(),project_name='New project')
+    created=next(r for r in l.rows('admin@test.example','units') if r['id']==new)
+    assert created['project_name']=='New project'
 
 def test_demo_ui(monkeypatch):
     monkeypatch.setenv('APP_MODE','demo')

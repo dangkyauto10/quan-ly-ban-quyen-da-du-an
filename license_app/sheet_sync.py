@@ -39,6 +39,7 @@ def make_snapshot(ledger, actor, demo=False):
         return ident('SP',hashlib.sha256(raw.encode()).hexdigest()[:16])
     for r in data['units']:
         row('01_DU_AN_DON_VI', **{'Mã đơn vị':ident('DV',r['id']),'Mã dự án':r['project'],
+            'Tên dự án':r.get('project_name') or r['project'],
             'Tên đơn vị':r['name'],'Trạng thái':'Đang dùng','Ghi chú':marker})
     for r in data['users']:
         row('02_NGUOI_DUNG', **{'Mã người dùng':ident('ND',r['email']),'Email đăng nhập':r['email'],

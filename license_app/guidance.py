@@ -1,7 +1,7 @@
 """Vietnamese guidance for the currently implemented preview, not final policy."""
 ROLE_NAMES = {'QC':'Bộ phận kiểm tra độc lập', 'ADMIN': 'Admin (quản trị)', 'OPERATOR': 'Người quản lý redeem (quy đổi key)', 'KTV': 'KTV (kỹ thuật viên)'}
 FIELD_NAMES = {
-    'id':'Mã hồ sơ', 'project':'Mã dự án', 'name':'Tên đơn vị', 'email':'Email',
+    'id':'Mã hồ sơ', 'project':'Mã dự án', 'project_name':'Tên dự án', 'name':'Tên đơn vị', 'email':'Email',
     'role':'Vai trò', 'active':'Đang được cấp quyền', 'unit_id':'Mã đơn vị',
     'owner':'Người quản lý tài khoản', 'batch':'Mã lô bàn giao', 'product':'Phần mềm',
     'sku':'Phiên bản / SKU (mã sản phẩm)', 'channel':'Kênh cấp phép', 'route':'Cách xử lý',
@@ -31,7 +31,7 @@ PAGE_GUIDES = {
         'Báo cáo CSV (tệp bảng mở được bằng Excel) chỉ chứa thông tin quản lý đã che key.',
         'Số thành công phản ánh báo cáo KTV đã ghi, chưa tự truy vấn trạng thái Microsoft.']),
     'Đơn vị & tài khoản': ('Lập danh mục đầu vào', [
-        'Admin tạo đơn vị thuộc dự án trước.',
+        'Admin nhập mã và tên dự án, sau đó khai báo tên đơn vị/điểm thuộc dự án.',
         'Admin hoặc người quản lý redeem thêm email Microsoft và người phụ trách tài khoản.',
         'Mật khẩu và MFA (xác thực nhiều bước) do người quản lý tài khoản giữ bên ngoài app.']),
     'Kho key': ('Nhận bàn giao và kiểm tra', [
@@ -80,7 +80,8 @@ def display_record(record, statuses):
     """Translate a safe record without changing underlying storage/API field names."""
     mapped = {}
     for key, value in record.items():
-        if key == 'state': value = statuses.get(value, value)
+        if key == 'project_name' and not value: value = record.get('project', '')
+        elif key == 'state': value = statuses.get(value, value)
         elif key == 'role': value = ROLE_NAMES.get(value, value)
         elif key == 'active': value = 'Có' if value else 'Không'
         elif key == 'route': value = {'DIRECT':'Kích hoạt theo nhà cung cấp', 'ACCOUNT_REDEEM':'Redeem vào tài khoản Microsoft'}.get(value,value)

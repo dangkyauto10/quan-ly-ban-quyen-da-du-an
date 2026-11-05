@@ -8,7 +8,7 @@ def seed_demo(ledger):
     ledger.add_user(admin, 'qc@example.test', 'QC', 'seed-qc')
     for n in range(2,7):
         ledger.add_user(admin, f'qc{n}@example.test', 'QC', f'seed-qc-{n}')
-    unit = ledger.add_unit(admin, 'DU_AN_THU', 'Đơn vị minh họa', 'seed-unit')
+    unit = ledger.add_unit(admin, 'DU_AN_THU', 'Đơn vị minh họa', 'seed-unit', project_name='Dự án minh họa')
     account = ledger.add_account(operator, unit, 'office@example.test', 'Người quản lý đơn vị mẫu', 'seed-account')
     for i, key in enumerate([
         'AAAAA-BBBBB-CCCCC-DDDDD-EEEEE',

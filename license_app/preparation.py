@@ -49,7 +49,7 @@ class PreparationLedger(Ledger):
     def preparation_rows(self, actor):
         with self.engine.connect() as c:
             role=self._auth(c,actor,{'ADMIN','OPERATOR','KTV','QC'})
-            query=select(devices,units.c.name.label('unit'),units.c.project,
+            query=select(devices,units.c.name.label('unit'),units.c.project,units.c.project_name,
                 slots.c.number,plans.c.quantity,inspections.c.state.label('inspection_state')).select_from(
                 devices.join(units).outerjoin(slots,slots.c.id==devices.c.id)
                 .outerjoin(plans,plans.c.id==units.c.id).outerjoin(inspections,inspections.c.id==devices.c.id))
