@@ -39,6 +39,7 @@ st.markdown('''<style>
 [data-testid="stSidebar"] [role="radio"] {padding:8px 6px;border-radius:8px;}
 [data-testid="stSidebar"] hr {border-color:#344359;}
 h1,h2,h3, [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="stMain"] h3, [data-testid="stMain"] p {letter-spacing:-.015em;color:#14283f!important;}
+[data-testid="stMain"] h1 {text-align:center!important;font-size:46px!important;font-weight:800!important;letter-spacing:.02em!important;text-transform:uppercase;margin:0 auto 12px!important;}
 [data-testid="stMain"] [data-testid="stMarkdownContainer"] p {color:#33465e!important;font-size:17px;line-height:1.65;}
 [data-testid="stMain"] label, [data-testid="stMain"] label p {color:#33465e!important;font-size:15px!important;}
 [data-testid="stMain"] input, [data-testid="stMain"] textarea {background:#fff!important;color:#18273d!important;border:1px solid #cbd7e4!important;border-radius:8px;}
@@ -51,10 +52,10 @@ h1,h2,h3, [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="st
 [data-testid="stExpander"] summary {font-size:15px!important;}
 header[data-testid="stHeader"] {background:rgba(244,247,251,.88);}
 [data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-top:1.2rem;}
-.brand-lockup {display:flex;align-items:center;gap:11px;margin:0 0 20px;}
-.brand-mark {width:48px;height:48px;display:grid;place-items:center;overflow:hidden;}
+.brand-lockup {display:flex;align-items:center;justify-content:center;gap:18px;margin:8px 0 28px;text-align:left;}
+.brand-mark {width:72px;height:72px;display:grid;place-items:center;overflow:hidden;flex:0 0 72px;}
 .brand-mark img {width:100%;height:100%;object-fit:contain;}
-.brand-kicker {font-size:10px;letter-spacing:1.8px;font-weight:750;color:#087f75;margin:0 0 3px;}
+.brand-kicker {font-size:17px;letter-spacing:2px;font-weight:800;color:#087f75;margin:0 0 5px;}
 .brand-note {color:#64748b;font-size:14px;margin:9px 0 25px;}
 .side-brand-row {display:flex;align-items:center;gap:10px;margin:4px 0 3px;}
 .side-mark {width:37px;height:37px;display:grid;place-items:center;overflow:hidden;}
@@ -70,8 +71,8 @@ div[data-testid="stMetric"] {box-shadow:0 5px 18px #14283f08;}
 .step-card:hover {border-color:#8bd7ca;transform:translateY(-2px);transition:all .18s ease;}
 
 div[data-testid="stMetric"] {background:white;border:1px solid #e1e7ef;border-radius:16px;padding:25px 26px;border-top:4px solid #13a394;min-height:118px;}
-[data-testid="stMetricLabel"] {color:#64748b;}
-[data-testid="stMetricValue"] {color:#14283f;font-weight:700;}
+[data-testid="stMetricLabel"] {color:#52657b;font-size:16px!important;font-weight:650!important;}
+[data-testid="stMetricValue"], [data-testid="stMetricValue"] div, [data-testid="stMetricValue"] span {color:#14283f!important;font-size:42px!important;font-weight:800!important;line-height:1.1!important;}
 [data-testid="stForm"] {background:#fff;border:1px solid #e1e7ef;border-radius:14px;padding:22px;}
 [data-testid="stDataFrame"], [data-testid="stExpander"] {border-radius:12px;overflow:hidden;}
 .stButton button,.stDownloadButton button,.stLinkButton a {border-radius:9px;min-height:42px;}
@@ -84,10 +85,10 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain
 .step-number {font-size:11px;color:#087f75;font-weight:750;letter-spacing:1px;}
 .step-title {font-size:21px;font-weight:700;margin:9px 0;color:#14283f;}
 .step-note {font-size:17px;color:#52657b;line-height:1.55;}
-@media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.brand-title {font-size:25px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
+@media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.brand-title {font-size:25px;}[data-testid="stMain"] h1 {font-size:30px!important;}.brand-mark {width:56px;height:56px;flex-basis:56px;}.brand-kicker {font-size:14px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 </style>''',unsafe_allow_html=True)
-st.markdown(f'<div class="brand-lockup"><div class="brand-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div><div class="brand-kicker">KEY BẢN QUYỀN</div><div style="font-size:13px;color:#61738a">Quản lý bản quyền và thiết bị</div></div></div>',unsafe_allow_html=True)
-st.title('Quản lý bản quyền')
+st.markdown(f'<div class="brand-lockup"><div class="brand-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div><div class="brand-kicker">KEY BẢN QUYỀN</div><div style="font-size:16px;color:#52657b">Quản lý bản quyền và thiết bị</div></div></div>',unsafe_allow_html=True)
+st.title('KEY BẢN QUYỀN')
 st.markdown('<div class="brand-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div>',unsafe_allow_html=True)
 st.sidebar.markdown(f'<div class="side-brand-row"><div class="side-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div class="side-brand">KEY BẢN QUYỀN</div></div>',unsafe_allow_html=True)
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
