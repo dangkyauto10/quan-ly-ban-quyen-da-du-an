@@ -40,6 +40,16 @@ st.markdown('''<style>
 [data-testid="stSidebar"] hr {border-color:#344359;}
 h1,h2,h3, [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="stMain"] h3, [data-testid="stMain"] p {letter-spacing:-.015em;color:#14283f!important;}
 [data-testid="stMain"] h1 {text-align:center!important;font-size:46px!important;font-weight:800!important;letter-spacing:.02em!important;text-transform:uppercase;margin:0 auto 12px!important;}
+.hero-tech {position:relative;isolation:isolate;overflow:hidden;min-height:260px;border-radius:22px;border:1px solid #d2a93c;margin:0 0 30px;padding:28px 30px 25px;background:radial-gradient(ellipse at 18% 20%,#28517a 0,transparent 34%),radial-gradient(ellipse at 82% 110%,#916b20 0,transparent 35%),linear-gradient(115deg,#0d1c33 0%,#142a47 58%,#182b43 100%);box-shadow:0 14px 35px #10243a24;color:#fff;text-align:center;}
+.hero-tech:before {content:"";position:absolute;inset:0;z-index:-1;opacity:.52;background-image:radial-gradient(circle at 12% 26%,#f1c552 0 2px,transparent 3px),radial-gradient(circle at 82% 22%,#8ac8ef 0 2px,transparent 3px),radial-gradient(circle at 73% 74%,#f1c552 0 2px,transparent 3px),repeating-linear-gradient(90deg,transparent 0 57px,#8bb4d51c 58px,#8bb4d51c 59px,transparent 60px),repeating-linear-gradient(0deg,transparent 0 47px,#8bb4d512 48px,#8bb4d512 49px,transparent 50px);mask-image:linear-gradient(90deg,#000,transparent 46%,#000);}
+.hero-tech:after {content:"";position:absolute;inset:12px;z-index:-1;border:1px solid #d9b34b33;border-radius:15px;background:linear-gradient(90deg,transparent 0 11%,#d4a82f44 11.1% 11.25%,transparent 11.35% 88%,#87bddd44 88.1% 88.25%,transparent 88.35%),linear-gradient(0deg,transparent 0 18%,#d4a82f33 18.1% 18.25%,transparent 18.35% 79%,#87bddd33 79.1% 79.25%,transparent 79.35%);pointer-events:none;}
+.hero-lockup {display:flex;align-items:center;justify-content:center;gap:18px;margin:0 auto 12px;position:relative;z-index:1;}
+.hero-logo {width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 3px 10px #020b18aa);}
+.hero-name {color:#f2c755;font-size:17px;font-weight:800;letter-spacing:2.2px;text-align:left;margin-bottom:5px;}
+.hero-sub {color:#d4e2f2;font-size:15px;text-align:left;}
+.hero-tech h1 {color:#fff!important;font-size:44px!important;letter-spacing:1px!important;margin:12px 0 8px!important;text-shadow:0 2px 16px #020b1880;}
+.hero-rule {width:86px;height:4px;border-radius:8px;background:linear-gradient(90deg,#d3a323,#ffe79a);margin:0 auto 13px;}
+.hero-note {color:#d3dfed;font-size:15px;}
 [data-testid="stMain"] [data-testid="stMarkdownContainer"] p {color:#33465e!important;font-size:17px;line-height:1.65;}
 [data-testid="stMain"] label, [data-testid="stMain"] label p {color:#33465e!important;font-size:15px!important;}
 [data-testid="stMain"] input, [data-testid="stMain"] textarea {background:#fff!important;color:#18273d!important;border:1px solid #cbd7e4!important;border-radius:8px;}
@@ -82,7 +92,7 @@ div[data-testid="stMetric"] {background:#fff;border:1px solid #dce3ed;border-rad
 button[kind="primary"],button[kind="primaryFormSubmit"] {background:#122b49!important;border-color:#122b49!important;color:#fff!important;box-shadow:0 4px 12px #122b4926;}
 button[kind="primary"]:hover,button[kind="primaryFormSubmit"]:hover {background:#9a6a00!important;border-color:#9a6a00!important;}
 button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain"] button[kind="primary"] * {color:#fff!important;-webkit-text-fill-color:#fff!important;}
-[data-testid="stMain"] h1:after {content:"";display:block;width:92px;height:5px;border-radius:9px;background:linear-gradient(90deg,#d6a51c,#f4d66e);margin:14px auto 0;}
+
 .brand-title {font-size:30px;font-weight:750;line-height:1.2;letter-spacing:-1px;margin:0;}
 .side-note {font-size:11px;color:#64748b!important;margin-bottom:24px;letter-spacing:.5px;}
 .page-note {color:#64748b;margin-top:-10px;margin-bottom:24px;font-size:14px;}
@@ -90,11 +100,9 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain
 .step-number {font-size:12px;color:#825900;font-weight:800;letter-spacing:1px;background:#fff0bd;border-radius:999px;display:inline-block;padding:5px 10px;}
 .step-title {font-size:21px;font-weight:700;margin:9px 0;color:#14283f;}
 .step-note {font-size:17px;color:#52657b;line-height:1.55;}
-@media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.brand-title {font-size:25px;}[data-testid="stMain"] h1 {font-size:30px!important;}.brand-mark {width:56px;height:56px;flex-basis:56px;}.brand-kicker {font-size:14px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
+@media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.hero-tech {min-height:205px;padding:20px 14px;border-radius:16px;}.hero-tech h1 {font-size:29px!important;}.hero-logo {width:50px;height:50px;}.hero-name {font-size:14px;letter-spacing:1.3px;}.hero-sub,.hero-note {font-size:13px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 </style>''',unsafe_allow_html=True)
-st.markdown(f'<div class="brand-lockup"><div class="brand-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div><div class="brand-kicker">KEY BẢN QUYỀN</div><div style="font-size:16px;color:#52657b">Quản lý bản quyền và thiết bị</div></div></div>',unsafe_allow_html=True)
-st.title('KEY BẢN QUYỀN')
-st.markdown('<div class="brand-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div>',unsafe_allow_html=True)
+st.markdown(f'<section class="hero-tech"><div class="hero-lockup"><img class="hero-logo" src="{logo_src}" alt="Logo KEY BẢN QUYỀN"><div><div class="hero-name">KEY BẢN QUYỀN</div><div class="hero-sub">Quản lý bản quyền và thiết bị</div></div></div><h1>KEY BẢN QUYỀN</h1><div class="hero-rule"></div><div class="hero-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div></section>',unsafe_allow_html=True)
 st.sidebar.markdown(f'<div class="side-brand-row"><div class="side-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div class="side-brand">KEY BẢN QUYỀN</div></div>',unsafe_allow_html=True)
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
