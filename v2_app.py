@@ -52,14 +52,14 @@ h1,h2,h3, [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="st
 header[data-testid="stHeader"] {background:rgba(244,247,251,.88);}
 [data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-top:1.2rem;}
 .brand-lockup {display:flex;align-items:center;gap:11px;margin:0 0 20px;}
-.brand-mark {width:48px;height:48px;border-radius:14px;background:#10263d;display:grid;place-items:center;box-shadow:0 5px 14px #10263d24;overflow:hidden;}
+.brand-mark {width:48px;height:48px;display:grid;place-items:center;overflow:hidden;}
 .brand-mark img {width:100%;height:100%;object-fit:contain;}
 .brand-kicker {font-size:10px;letter-spacing:1.8px;font-weight:750;color:#087f75;margin:0 0 3px;}
 .brand-note {color:#64748b;font-size:14px;margin:9px 0 25px;}
 .side-brand-row {display:flex;align-items:center;gap:10px;margin:4px 0 3px;}
-.side-mark {width:37px;height:37px;border:1px solid #e0bd48;border-radius:10px;background:#10263d;display:grid;place-items:center;overflow:hidden;}
+.side-mark {width:37px;height:37px;display:grid;place-items:center;overflow:hidden;}
 .side-mark img {width:100%;height:100%;object-fit:contain;}
-.side-brand {font-size:17px;font-weight:750;letter-spacing:.3px;margin:0;}
+.side-brand {font-size:13px;font-weight:800;letter-spacing:.15px;margin:0;white-space:nowrap;}
 [data-testid="stSidebar"] [role="radio"]:has(input:checked) {background:#dff4ef;border:1px solid #a7ddd1;}
 [data-testid="stSidebar"] [role="radio"]:has(input:checked) p {color:#075f58!important;font-weight:700;}
 [data-testid="stSidebar"] [data-testid="stSelectbox"] {margin-top:2px;}
@@ -89,7 +89,7 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] * {color:#fff!importan
 st.markdown(f'<div class="brand-lockup"><div class="brand-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div><div class="brand-kicker">KEY BẢN QUYỀN</div><div style="font-size:13px;color:#61738a">Quản lý bản quyền và thiết bị</div></div></div>',unsafe_allow_html=True)
 st.title('Quản lý bản quyền')
 st.markdown('<div class="brand-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div>',unsafe_allow_html=True)
-st.sidebar.markdown(f'<div class="side-brand-row"><div class="side-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div class="side-brand">KEY BẢN QUYỀN</div></div><div class="side-note">ĐIỀU PHỐI THIẾT BỊ</div>',unsafe_allow_html=True)
+st.sidebar.markdown(f'<div class="side-brand-row"><div class="side-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div class="side-brand">KEY BẢN QUYỀN</div></div>',unsafe_allow_html=True)
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
 def connect(url,key,fp):return Ledger(url,key,fp)
