@@ -5,9 +5,11 @@ from .core import DomainError,meta,devices,jobs,units
 from .preparation import PreparationLedger,plans,slots,inspections
 from .labels import compare_labels
 
-claims=Table('packing_claims',meta,
-    Column('id',String,ForeignKey('devices.id'),primary_key=True),
-    Column('owner',String,nullable=False),Column('until',Integer,nullable=False))
+claims = meta.tables.get('packing_claims')
+if claims is None:
+    claims = Table('packing_claims',meta,
+        Column('id',String,ForeignKey('devices.id'),primary_key=True),
+        Column('owner',String,nullable=False),Column('until',Integer,nullable=False))
 
 class PackingLedger(PreparationLedger):
     def claim_for_check(self,actor,device_id,op):
