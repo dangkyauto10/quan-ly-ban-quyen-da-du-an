@@ -13,7 +13,8 @@ from license_app.demo import seed_demo
 from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
 st.set_page_config(page_title='Bản quyền V2',page_icon='🛡️',layout='wide')
 st.markdown('''<style>
-:root {color-scheme:light;}
+:root {color-scheme:light;--ink:#13243b;--teal:#087f75;--mint:#dff6ef;--line:#dce5ef;--muted:#61738a;}
+[data-testid="stAppViewContainer"] {background:radial-gradient(ellipse at 92% 0%,#eaf7f5 0,transparent 28%),#f4f7fb;}
 .stApp {background:#f5f7fb;color:#18273d;}
 .block-container {padding-top:4.5rem;max-width:1400px;padding-bottom:3rem;}
 [data-testid="stSidebar"] {background:#101f36;}
@@ -35,6 +36,23 @@ st.markdown('''<style>
 [data-testid="stSidebar"] [role="radio"] {padding:8px 6px;border-radius:8px;}
 [data-testid="stSidebar"] hr {border-color:#344359;}
 h1,h2,h3 {letter-spacing:-.035em;color:#14283f;}
+[data-testid="stMainBlockContainer"] {max-width:1480px;}
+header[data-testid="stHeader"] {background:rgba(244,247,251,.88);}
+.brand-lockup {display:flex;align-items:center;gap:11px;margin:0 0 20px;}
+.brand-mark {width:37px;height:37px;border-radius:11px;background:#10263d;color:#8cf0d4;display:grid;place-items:center;font-size:18px;font-weight:800;box-shadow:0 5px 14px #10263d24;}
+.brand-kicker {font-size:10px;letter-spacing:1.8px;font-weight:750;color:#087f75;margin:0 0 3px;}
+.brand-note {color:#64748b;font-size:14px;margin:9px 0 25px;}
+.side-brand-row {display:flex;align-items:center;gap:10px;margin:4px 0 3px;}
+.side-mark {width:30px;height:30px;border:1px solid #47cdb5;border-radius:9px;color:#8cf0d4;display:grid;place-items:center;font-size:15px;font-weight:800;}
+.side-brand {font-size:17px;font-weight:750;letter-spacing:.3px;margin:0;}
+[data-testid="stSidebar"] [role="radio"]:has(input:checked) {background:#193b50;border:1px solid #2a786f;}
+[data-testid="stSidebar"] [role="radio"]:has(input:checked) p {color:#8cf0d4!important;font-weight:700;}
+[data-testid="stSidebar"] [data-testid="stSelectbox"] {margin-top:2px;}
+div[data-testid="stMetric"] {box-shadow:0 5px 18px #14283f08;}
+.step-card {box-shadow:0 5px 18px #14283f08;}
+.step-number {display:flex;align-items:center;gap:6px;}
+.step-title {color:#14283f;}
+.step-card:hover {border-color:#8bd7ca;transform:translateY(-2px);transition:all .18s ease;}
 div[data-testid="stMetric"] {background:white;border:1px solid #e1e7ef;border-radius:14px;padding:20px 22px;border-top:3px solid #13a394;}
 [data-testid="stMetricLabel"] {color:#64748b;}
 [data-testid="stMetricValue"] {color:#14283f;font-weight:700;}
@@ -42,10 +60,7 @@ div[data-testid="stMetric"] {background:white;border:1px solid #e1e7ef;border-ra
 [data-testid="stDataFrame"], [data-testid="stExpander"] {border-radius:12px;overflow:hidden;}
 .stButton button,.stDownloadButton button,.stLinkButton a {border-radius:9px;min-height:42px;}
 button[kind="primary"],button[kind="primaryFormSubmit"] {background:#087f75;border-color:#087f75;color:white;}
-.brand-kicker {font-size:11px;letter-spacing:2px;font-weight:700;color:#087f75;margin-bottom:7px;}
 .brand-title {font-size:30px;font-weight:750;line-height:1.2;letter-spacing:-1px;margin:0;}
-.brand-note {color:#64748b;font-size:14px;margin:9px 0 25px;}
-.side-brand {font-size:19px;font-weight:750;letter-spacing:.5px;margin-bottom:4px;}
 .side-note {font-size:12px;color:#9eafc6!important;margin-bottom:24px;}
 .page-note {color:#64748b;margin-top:-10px;margin-bottom:24px;font-size:14px;}
 .step-card {background:#fff;border:1px solid #e1e7ef;border-radius:12px;padding:16px;height:178px;box-sizing:border-box;margin-bottom:10px;}
@@ -54,10 +69,10 @@ button[kind="primary"],button[kind="primaryFormSubmit"] {background:#087f75;bord
 .step-note {font-size:13px;color:#64748b;line-height:1.5;}
 @media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.brand-title {font-size:25px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 </style>''',unsafe_allow_html=True)
-st.markdown('<div class="brand-kicker">BẢN QUYỀN · ĐIỀU PHỐI TRIỂN KHAI</div>',unsafe_allow_html=True)
+st.markdown('<div class="brand-lockup"><div class="brand-mark">V⌗</div><div><div class="brand-kicker">V · LICENSE OPERATIONS</div><div style="font-size:12px;color:#61738a">Hệ thống quản lý bản quyền và thiết bị</div></div></div>',unsafe_allow_html=True)
 st.title('Quản lý bản quyền')
 st.markdown('<div class="brand-note">Quản lý tập trung · Theo dõi từng PC · Đối chiếu tem và đóng gói</div>',unsafe_allow_html=True)
-st.sidebar.markdown('<div class="side-brand">BẢN QUYỀN</div><div class="side-note">Không gian làm việc</div>',unsafe_allow_html=True)
+st.sidebar.markdown('<div class="side-brand-row"><div class="side-mark">V⌗</div><div class="side-brand">BẢN QUYỀN</div></div><div class="side-note">ĐIỀU PHỐI THIẾT BỊ</div>',unsafe_allow_html=True)
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
 def connect(url,key,fp):return Ledger(url,key,fp)
@@ -122,7 +137,7 @@ groups={
     'Tổng quan':['Tổng quan'],
     '01 · Chuẩn bị & bản quyền':['Đơn vị & tài khoản','Kế hoạch PC theo điểm','Kho key','Redeem Office'],
     '02 · Giao việc & kích hoạt':['Thiết bị','Phân bổ','Kích hoạt','Việc của tôi'],
-    '03 · Tem & kiểm tra':['In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'],
+    '03 · Tem QR & kiểm tra':['In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra'],
     '04 · Bảo hành & lịch sử':['Bảo hành','Nhật ký'],
     'Quản trị':['Người dùng','Đồng bộ Google Sheet'],
     'Hướng dẫn':['Hướng dẫn theo vai trò'],
@@ -178,8 +193,8 @@ if page in {'Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối ch
 elif page=='Tổng quan':
     data=rows('licenses'); cols=st.columns(4)
     for col,title,n in zip(cols,['Đã nhận','Chưa phân bổ','Đã giao máy','Đã kích hoạt'],[len(data),sum(r['state'] in {'RECEIVED','VERIFIED','REDEEMED'} for r in data),sum(r['state']=='ASSIGNED' for r in data),sum(r['state']=='ACTIVATED' for r in data)]):col.metric(title,n)
-    st.markdown('### Quy trình triển khai')
-    steps=[('01','Chuẩn bị','Đơn vị, số lượng PC, key và tài khoản.','Đơn vị & tài khoản'),('02','Redeem & giao việc','Admin ghi nhận redeem và phân công KTV.','Phân bổ'),('03','Kích hoạt & in tem','KTV báo cáo kết quả và in cặp tem.','Kích hoạt'),('04','Kiểm tra & đóng gói','QC đối chiếu hai tem và kiểm tra thiết bị.','Đối chiếu tem và kiểm tra')]
+    st.markdown('### Luồng xử lý bản quyền')
+    steps=[('01','Chuẩn bị','Đơn vị, số lượng PC, key và tài khoản.','Đơn vị & tài khoản'),('02','Redeem & giao việc','Admin ghi nhận redeem và phân công KTV.','Phân bổ'),('03','Kích hoạt · in tem QR','KTV báo kết quả; in tem PC và vỏ hộp theo số thứ tự.','Kích hoạt'),('04','Quét · kiểm tra · đóng gói','QC đối chiếu cặp QR, đơn vị và số lượng thiết bị.','Đối chiếu tem và kiểm tra')]
     def open_page(target):
         for group,items in groups.items():
             if target in items:
