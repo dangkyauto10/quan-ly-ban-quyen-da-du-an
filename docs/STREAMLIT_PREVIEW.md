@@ -1,43 +1,47 @@
-# Bản thử trực tuyến BẢN QUYỀN
+# Kiểm thử trực tuyến app BẢN QUYỀN
 
-Triển khai theo cách mở app Streamlit bằng đường link, giống hình thức sử dụng
-app QUẢN LÝ DỰ ÁN. Đây là bản thử dữ liệu giả, chưa phải hệ thống vận hành thật.
+App thử dùng Streamlit Community Cloud. Cấu hình đang theo repo
+`dangkyauto10/quan-ly-ban-quyen-da-du-an`, nhánh `v2-preview-20261027` và tệp
+khởi chạy `preview_app.py`.
 
-## Cấu hình tạo app trên Streamlit Community Cloud
+## Hai chế độ chạy
 
-| Mục | Giá trị |
-|---|---|
-| Repository (kho mã nguồn) | dangkyauto10/quan-ly-ban-quyen-da-du-an |
-| Branch (nhánh mã chạy thử) | v2-preview-20261027 |
-| Main file path (tệp khởi chạy) | preview_app.py |
-| Python | 3.12 |
-| Secrets (bí mật cấu hình) | Để trống cho bản thử này |
+- `team_test`: dữ liệu giả dùng chung để thử giao diện/quy trình. Không đọc hoặc
+  ghi Google Sheet và dữ liệu có thể mất khi dịch vụ khởi động lại.
+- Đăng nhập thật: bật `web_login_enabled=true`, dùng Google OAuth và PostgreSQL
+  thử riêng. Dữ liệu lưu bền hơn; chỉ dùng key giả trong giai đoạn kiểm thử.
 
-Tệp requirements.txt ở gốc kho đã dẫn đến requirements-v2.txt để cài thư viện V2.
-Sau khi dịch vụ xác nhận triển khai thành công mới lấy đường link thực tế để gửi V.
-Không suy đoán địa chỉ app từ tên kho mã.
+Không để chế độ thử dùng chung truy cập kho hoặc dữ liệu của dự án khác.
 
-## V kiểm tra theo thứ tự
+## Kết nối Google Sheet
 
-1. Chọn Admin (quản trị): xem Tổng quan, Kho key, Thiết bị và Phân bổ.
-2. Chọn Người redeem (quy đổi key): đối chiếu hai license (giấy phép) giả
-   thuộc cùng tài khoản Microsoft. Không đưa key giả lên Microsoft.
-3. Chọn KTV (kỹ thuật viên) có việc: báo lại thành công cho công việc đang lỗi.
-4. Chuyển về Admin: kiểm tra kết quả và Nhật ký.
-5. Chọn KTV khác: xác nhận không thấy công việc của KTV trước.
-6. Thử Bảo hành: ghi serial (số nhận dạng) mainboard mới rồi kiểm tra
-   hồ sơ chờ duyệt kích hoạt lại và lịch sử serial cũ/mới.
-7. Trong bản thử cục bộ, tab kế hoạch Sheet bị tắt; kiểm tra luồng nhập ở preview
-   sau khi cấu hình tài khoản Google runtime.
+App dùng Google Sheets API với danh tính service account trong cấu hình
+`google_service_account` hoặc Application Default Credentials của môi trường.
+Google Sheets API phải bật và email service account phải được chia sẻ với quyền
+Editor trên đúng file. Bí mật không được đưa vào GitHub, chat hay tài liệu.
 
-Mỗi phiên trình duyệt có dữ liệu riêng; đổi vai trò trong cùng phiên để kiểm tra
-liên tục. Phiên mới hoặc máy khác không thấy thay đổi của phiên trước.
-Không nhập key thật hoặc thông tin tài khoản thật. Đây chưa phải kiểm thử đăng nhập
-hay chia sẻ dữ liệu giữa nhiều người.
+Trong app đăng nhập thật, Admin có thể đọc/xem trước rồi xác nhận nạp tab
+`16_KE_HOACH_CAP_PC` và `17_TAI_KHOAN_MS`; app xuất báo cáo vào tabs `01–12` và
+ghi kết quả tại `15_DONG_BO_APP`. Chế độ `team_test` không thực hiện các kết nối này.
 
-## Phần còn phải hoàn thiện trước vận hành
+## Trình tự kiểm thử nghiệp vụ
 
-Bản hiện tại giữ kho key và trạng thái vận hành trong cơ sở dữ liệu riêng; Admin nạp
-kế hoạch nhận PC từ tab 16 trong Google Sheet và xuất báo cáo app sang các tab dữ liệu.
-Luồng Google cần tài khoản runtime có quyền trên file. Chưa dùng key thật trước khi
-kiểm tra đăng nhập, phân quyền, đồng thời và khôi phục dữ liệu trên môi trường chạy.
+1. Dùng dữ liệu giả: nạp kế hoạch một dự án có Windows, Office và Antivirus;
+   kiểm tra dự án, đơn vị, điểm, số PC, SKU và quota.
+2. Nạp danh sách email Microsoft thử tại tab 17; kiểm tra xem trước, trùng email,
+   sai tên dự án/đơn vị và nạp lặp không tạo tài khoản trùng.
+3. Nhập key giả riêng cho từng loại; Office Retail đi theo redeem Microsoft giả,
+   Windows/Antivirus đi theo luồng của nhà cung cấp.
+4. Admin giao tài khoản Office đã redeem và từng license cho đúng KTV. Một KTV
+   theo trọn một PC từ kích hoạt tới serial, hai tem, nhận tem và đóng hộp.
+5. Kiểm tra trạm in USB, quét hai QR bằng điện thoại, xác minh đơn vị/PC/serial,
+   thử sai cặp và để QC độc lập xác nhận.
+6. Thử một hồ sơ bảo hành thay mainboard; kiểm tra serial cũ/mới, lần kích hoạt,
+   tem mới và nhật ký.
+7. Với môi trường đăng nhập thật và cơ sở dữ liệu thử riêng, xác nhận đồng bộ
+   báo cáo sang Sheet rồi đọc lại header, dòng `APP-` và log ở tab 15.
+
+Không dùng key thật hoặc tài khoản Microsoft thật để kiểm thử quy trình. App không
+tự redeem hay tự xác minh trạng thái kích hoạt với Microsoft/nhà cung cấp; KTV ghi
+kết quả sau khi kiểm tra thực tế. Trước khi mở dùng thật cần nghiệm thu đăng nhập,
+quyền KTV/QC, cơ sở dữ liệu dùng chung, quyền Sheet và khả năng sao lưu/khôi phục.
