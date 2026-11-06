@@ -589,7 +589,7 @@ elif page=='Người dùng':
         email=st.text_input('Email Google đã xác minh');new_role=st.selectbox('Quyền',['KTV','QC','OPERATOR','PRINT','ADMIN'],format_func=ROLE_NAMES.get)
         if st.form_submit_button('Cấp quyền'):run('user',lambda t:ledger.add_user(actor,email,new_role,t))
 elif page=='Hướng dẫn theo vai trò':
-    st.info('Hướng dẫn dự thảo cho chức năng hiện có. Cách vận hành chính thức sẽ cập nhật sau khi anh Vỹ chốt các mục góp ý.')
+    st.info('Hướng dẫn thao tác theo vai trò trong luồng BẢN QUYỀN: nhận key, redeem phù hợp, giao KTV, kích hoạt, in tem, QC và theo dõi bảo hành.')
     sequences={
         'ADMIN':['Người dùng','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký'],
         'OPERATOR':['Đơn vị & tài khoản','Kho key','Kích hoạt','Nhật ký'],
@@ -614,7 +614,7 @@ elif page=='Đồng bộ Google Sheet':
     target=configured_spreadsheet_id(st.secrets)
     st.link_button('Mở Google Sheet','https://docs.google.com/spreadsheets/d/'+target+'/edit')
     if os.getenv('APP_MODE') in {'demo','shared_test','team_test'}:
-        st.info('Phiên demo cá nhân chỉ cho xem/xuất dữ liệu giả. Bản minh họa dùng chung được B ghi riêng vào Sheet để anh Vỹ nghiên cứu.')
+        st.info('Chế độ minh họa chỉ dùng dữ liệu giả và không đọc hoặc ghi Google Sheet dùng chung.')
     else:
         st.caption('Đích đồng bộ: '+target)
         if st.button('Đồng bộ báo cáo lên Google Sheet',type='primary'):
