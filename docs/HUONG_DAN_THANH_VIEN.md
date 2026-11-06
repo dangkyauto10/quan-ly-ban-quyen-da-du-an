@@ -1,21 +1,23 @@
-# Hướng dẫn thành viên — dự thảo nghiệp vụ 27-10-2026
+# Hướng dẫn thành viên — kiểm thử nghiệp vụ BẢN QUYỀN
 
-Tài liệu mô tả các chức năng bản V2 thử hiện có. Bản hướng dẫn chính thức, ảnh minh họa
-và quy tắc phối hợp giữa các sheet sẽ hoàn thiện sau khi anh Vỹ chốt cách vận hành.
+App theo dõi Windows, Microsoft Office và Antivirus (diệt virus) riêng theo key,
+SKU, license và luồng kích hoạt. Google Sheet là đầu vào có xem trước/xác nhận và
+nơi nhận báo cáo; cơ sở dữ liệu app giữ trạng thái xử lý chính.
 
 ## Admin (người quản trị)
 
 1. Tại Người dùng: nhập email Google đã xác minh; chọn quản trị, người quản lý redeem
 (quy đổi key) hoặc KTV (kỹ thuật viên).
-2. Tại Đơn vị & tài khoản: tạo dự án/đơn vị, đăng ký email Microsoft và người quản lý.
-Mật khẩu và MFA (xác thực nhiều bước) do người quản lý tài khoản giữ ngoài app.
+2. Tại Google Sheet, nhập tab 16 theo đơn vị/điểm/SKU và tab 17 theo email Microsoft
+và người quản lý. Trong app, đọc, xem trước rồi xác nhận nạp. Mật khẩu và MFA
+(xác thực nhiều bước) do người quản lý tài khoản giữ ngoài app.
 3. Tại Kho key: nhập mã lô, phần mềm, phiên bản/SKU (mã phân biệt sản phẩm), kênh cấp
 phép và key, mỗi dòng một key. Lô có key trùng sẽ bị từ chối, không ghi dở dang.
 4. Giao người kiểm tra đối chiếu chứng từ, sản phẩm và điều kiện sử dụng; ghi căn cứ.
 5. Tại Thiết bị: tạo mã tem máy nội bộ, chọn đơn vị, nhập serial (số nhận dạng), model
 (kiểu máy). Công cụ đọc serial tại PC (máy tính) chỉ đọc và hiển thị thông tin cục bộ.
 6. Tại Phân bổ: chọn bản quyền sẵn sàng, máy nhận và KTV. Với Office đã redeem, tài
-khoản Microsoft phải cùng đơn vị với máy nhận.
+khoản Microsoft phải cùng đơn vị với máy nhận và được giao cho KTV phụ trách.
 7. Tại Kích hoạt: theo dõi kết quả KTV, tiếp nhận mã lỗi và phân công hỗ trợ.
 8. Tại Bảo hành: chọn máy, lưu serial mainboard (bo mạch chủ) mới và căn cứ; kiểm tra
 quyền xử lý theo license (giấy phép bản quyền), ghi căn cứ duyệt rồi giao kích hoạt lại.
@@ -50,15 +52,14 @@ chưa tự kích hoạt Office dựa trên serial hoặc tự kiểm chứng Mic
 
 ## Đọc kết quả và tra cứu
 
-CSV (tệp bảng mở bằng Excel) từ Tổng quan đã loại key gốc khỏi báo cáo.
-Tab 16_KE_HOACH_CAP_PC trong Google Sheet là nguồn nhập kế hoạch PC/SKU sau khi
-Admin xem trước và xác nhận. Các tab báo cáo nhận dữ liệu app khi Admin bấm đồng bộ.
-Mã hồ sơ trong app vẫn là mã nội bộ; không dùng số dòng trong Sheet làm mã liên kết.
-UTC là giờ quốc tế; cách hiển thị giờ chính thức sẽ chốt trong yêu cầu vận hành.
+CSV (tệp bảng mở bằng Excel) và đồng bộ Google Sheet không chứa key gốc. Tab 16–17
+được app đọc sau khi Admin xem trước/xác nhận; app xuất báo cáo vào tabs 01–12 và
+ghi lần đồng bộ ở tab 15. Sửa báo cáo trong Sheet không sửa trạng thái chính trong app.
+UTC là giờ quốc tế; kiểm thử thời gian theo nhật ký app.
 
 ## Nội dung còn chờ anh Vỹ chốt
 
-Ảnh bắt buộc, bước Admin duyệt báo cáo, thu hồi/giao lại, phạm vi
-theo dự án, bản quyền nhiều seat (suất thiết bị) và thủ tục chuyển máy.
-Hướng dẫn này chưa biến các đề xuất đó thành quy tắc vận hành chính thức.
+Phương thức kích hoạt thực tế, khả năng đọc serial theo từng model mainboard, quyền
+chuyển máy của từng SKU và chính sách lưu trữ/sao lưu vẫn phải đối chiếu nhà cung cấp
+và môi trường triển khai. Không dùng key thật cho tới khi nghiệm thu các mục đó.
 
