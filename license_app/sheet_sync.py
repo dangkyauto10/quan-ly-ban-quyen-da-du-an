@@ -29,11 +29,17 @@ def configured_spreadsheet_id(settings):
 def build_sheets_service(settings):
     """Build the runtime Google Sheets client from the configured service identity."""
     import google.auth
+    from google.auth.exceptions import DefaultCredentialsError
     from google.oauth2.service_account import Credentials
     from googleapiclient.discovery import build
     scopes=['https://www.googleapis.com/auth/spreadsheets']
     info=settings.get('google_service_account')
-    credentials=Credentials.from_service_account_info(dict(info),scopes=scopes) if info else google.auth.default(scopes=scopes)[0]
+    if info:
+        credentials=Credentials.from_service_account_info(dict(info),scopes=scopes)
+    else:
+        try:credentials=google.auth.default(scopes=scopes)[0]
+        except DefaultCredentialsError:
+            raise DomainError('Chưa cấu hình danh tính Google Sheets cho app. Thêm [google_service_account] trong Secrets và chia sẻ Sheet quyền Editor cho email service account.') from None
     return build('sheets','v4',credentials=credentials,cache_discovery=False)
 
 def _sheet_integer(value,line,label,minimum):
