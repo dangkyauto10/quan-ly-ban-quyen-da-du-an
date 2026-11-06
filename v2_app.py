@@ -521,7 +521,7 @@ elif page in ['Kích hoạt','Việc của tôi']:
                     st.warning('Chưa nhận được serial. Kiểm tra công cụ đang chạy trên đúng PC và quyền mạng cục bộ của Chrome.')
                 serial_ready=(st.session_state.get(f"board-bound-{actor}-{job['id']}")==job.get('board_serial'))
                 if serial_ready:
-                    st.success('Đã đọc và gắn serial mainboard '+job['board_serial']+' với PC / license đang chọn.')
+                    st.success(('Đã gắn serial giả ' if os.getenv('APP_MODE')=='activation_demo' else 'Đã đọc và gắn serial mainboard ')+job['board_serial']+' với PC / license đang chọn.')
                 else:
                     st.warning('Đọc serial trên chính PC này trước khi gửi báo cáo kích hoạt thành công.')
     else:
