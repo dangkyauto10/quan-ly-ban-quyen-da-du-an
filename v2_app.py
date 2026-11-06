@@ -14,7 +14,7 @@ import streamlit.components.v1 as components
 from cryptography.fernet import Fernet
 from license_app.core import DomainError
 from license_app.packing import PackingLedger as Ledger
-from license_app.demo import seed_demo
+from license_app.demo import seed_demo, seed_activation_demo
 from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
 st.set_page_config(page_title='KEY BẢN QUYỀN',page_icon='assets/key-ban-quyen-icon.svg',layout='wide')
 board_serial_reader = components.declare_component(
@@ -163,9 +163,10 @@ st.sidebar.markdown(f'<div class="side-brand-row"><div class="side-mark"><img sr
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
 def connect(url,key,fp):return Ledger(url,key,fp)
-if os.getenv('APP_MODE','production') in {'demo','shared_test','team_test'}:
-    shared_test=os.getenv('APP_MODE') in {'shared_test','team_test'}
-    st.warning('DỮ LIỆU GIẢ DÙNG CHUNG · Chọn danh tính thử, chưa phải đăng nhập thật. Chỉ thử nghiệp vụ; bản trực tuyến có thể mất dữ liệu/tem khi khởi động lại hoặc triển khai lại.' if shared_test else 'DỮ LIỆU GIẢ · Chỉ nhập key thử. Mỗi phiên trình duyệt có dữ liệu minh họa riêng.')
+if os.getenv('APP_MODE','production') in {'demo','shared_test','team_test','activation_demo'}:
+    shared_test=os.getenv('APP_MODE') in {'shared_test','team_test','activation_demo'}
+    activation_demo=os.getenv('APP_MODE')=='activation_demo'
+    st.warning('MÔ PHỎNG KÍCH HOẠT · Chỉ dùng PC, key và tài khoản giả. Không kết nối Microsoft, không tiêu hao key thật, không ghi vào Google Sheet dữ liệu thật. PC và KTV mẫu dùng chung trong môi trường thử.' if activation_demo else 'DỮ LIỆU GIẢ DÙNG CHUNG · Chọn danh tính thử, chưa phải đăng nhập thật. Chỉ thử nghiệp vụ; bản trực tuyến có thể mất dữ liệu/tem khi khởi động lại hoặc triển khai lại.' if shared_test else 'DỮ LIỆU GIẢ · Chỉ nhập key thử. Mỗi phiên trình duyệt có dữ liệu minh họa riêng.')
     if shared_test:
         from license_app.shared_test import shared_config
         st.session_state.config=shared_config()
@@ -173,13 +174,13 @@ if os.getenv('APP_MODE','production') in {'demo','shared_test','team_test'}:
         demo_path=Path(tempfile.gettempdir()) / f'license-demo-{uuid.uuid4()}.db'
         st.session_state.config=('sqlite:///'+demo_path.as_posix(),Fernet.generate_key().decode(),secrets.token_urlsafe(48))
     ledger=connect(*st.session_state.config)
-    if not shared_test:seed_demo(ledger)
-    else:
+    if shared_test:
         @st.cache_resource
-        def seed_shared(url,key,fp):
-            seed_demo(connect(url,key,fp))
+        def seed_shared(url,key,fp,activation=False):
+            (seed_activation_demo if activation else seed_demo)(connect(url,key,fp))
             return True
-        seed_shared(*st.session_state.config)
+        seed_shared(*st.session_state.config,activation=activation_demo)
+    else:seed_demo(ledger)
     demo_people={'admin@example.test':'Admin (quản trị) mẫu','vy@example.test':'Người redeem (quy đổi key) mẫu','ktv@example.test':'KTV (kỹ thuật viên) có việc','ktv2@example.test':'KTV khác — chưa có việc','qc@example.test':'Bộ phận kiểm tra độc lập mẫu'}
     demo_people.update({f'qc{n}@example.test':f'Người kiểm tra số {n} — mẫu' for n in range(2,7)})
     actor=st.sidebar.selectbox('Xem thử vai trò',list(demo_people),format_func=demo_people.get)
@@ -297,7 +298,7 @@ def serial_agent_archive():
     return bundle.getvalue()
 if page in {'Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra','Tem của tôi','Hàng đợi in'}:
     from license_app.preparation_ui import render
-    render(ledger,actor,role,page,os.getenv('APP_MODE')=='demo')
+    render(ledger,actor,role,page,os.getenv('APP_MODE') in {'demo','activation_demo'})
 elif page=='Tổng quan':
     data=rows('licenses'); cols=st.columns(4)
     for col,title,n in zip(cols,['Đã nhận','Chưa phân bổ','Đã giao máy','Đã kích hoạt'],[len(data),sum(r['state'] in {'RECEIVED','VERIFIED','REDEEMED'} for r in data),sum(r['state']=='ASSIGNED' for r in data),sum(r['state']=='ACTIVATED' for r in data)]):col.metric(title,n)
@@ -494,30 +495,35 @@ elif page in ['Kích hoạt','Việc của tôi']:
         job=pick('Chọn PC / license đang làm',pending,
             lambda r:f"{r.get('asset_tag',r['device_id'])} · {r.get('product','')} · {r.get('sku','')} · …{r.get('tail','')} · {r['id'][:8]}")
         if job:
-            st.download_button('Tải công cụ đọc serial mainboard cho PC này',serial_agent_archive(),
-                'cong_cu_doc_serial_mainboard.zip','application/zip',key='serial-agent-download-'+job['id'])
-            st.caption('Giải nén trên PC đang xử lý, chạy START_SERIAL_AGENT.cmd và để cửa sổ công cụ mở. Sau đó bấm nút đọc bên dưới. Công cụ chỉ đọc serial mainboard, không kích hoạt và không nhận lệnh từ app.')
-            read=board_serial_reader(job_id=job['id'],default=None,key='board-reader-'+job['id'])
-            if isinstance(read,dict) and read.get('ok') and read.get('serial'):
-                serial_value=str(read['serial']).strip()
+            if os.getenv('APP_MODE')=='activation_demo':
                 marker=f"board-bound-{actor}-{job['id']}"
-                if st.session_state.get(marker)!=serial_value:
-                    operation_key=f"board-bind-op-{actor}-{job['id']}"
-                    operation=st.session_state.setdefault(operation_key,str(uuid.uuid4()))
-                    try:
-                        ledger.bind_board_serial(actor,job['id'],serial_value,operation)
-                        st.session_state.pop(operation_key,None)
-                        st.session_state[marker]=serial_value
-                        st.rerun()
-                    except DomainError as e:
-                        st.error(str(e))
-            elif isinstance(read,dict) and read.get('ok') is False:
-                st.warning('Chưa nhận được serial. Kiểm tra công cụ đang chạy trên đúng PC và quyền mạng cục bộ của Chrome.')
-            serial_ready=(st.session_state.get(f"board-bound-{actor}-{job['id']}")==job.get('board_serial'))
-            if serial_ready:
-                st.success('Đã đọc và gắn serial mainboard '+job['board_serial']+' với PC / license đang chọn.')
+                st.session_state[marker]=job.get('board_serial')
+                st.info('PC và serial đang hiển thị là dữ liệu giả. Chế độ mô phỏng bỏ qua công cụ đọc serial trên máy thật.')
             else:
-                st.warning('Đọc serial trên chính PC này trước khi gửi báo cáo kích hoạt thành công.')
+                st.download_button('Tải công cụ đọc serial mainboard cho PC này',serial_agent_archive(),
+                    'cong_cu_doc_serial_mainboard.zip','application/zip',key='serial-agent-download-'+job['id'])
+                st.caption('Giải nén trên PC đang xử lý, chạy START_SERIAL_AGENT.cmd và để cửa sổ công cụ mở. Sau đó bấm nút đọc bên dưới. Công cụ chỉ đọc serial mainboard, không kích hoạt và không nhận lệnh từ app.')
+                read=board_serial_reader(job_id=job['id'],default=None,key='board-reader-'+job['id'])
+                if isinstance(read,dict) and read.get('ok') and read.get('serial'):
+                    serial_value=str(read['serial']).strip()
+                    marker=f"board-bound-{actor}-{job['id']}"
+                    if st.session_state.get(marker)!=serial_value:
+                        operation_key=f"board-bind-op-{actor}-{job['id']}"
+                        operation=st.session_state.setdefault(operation_key,str(uuid.uuid4()))
+                        try:
+                            ledger.bind_board_serial(actor,job['id'],serial_value,operation)
+                            st.session_state.pop(operation_key,None)
+                            st.session_state[marker]=serial_value
+                            st.rerun()
+                        except DomainError as e:
+                            st.error(str(e))
+                elif isinstance(read,dict) and read.get('ok') is False:
+                    st.warning('Chưa nhận được serial. Kiểm tra công cụ đang chạy trên đúng PC và quyền mạng cục bộ của Chrome.')
+                serial_ready=(st.session_state.get(f"board-bound-{actor}-{job['id']}")==job.get('board_serial'))
+                if serial_ready:
+                    st.success('Đã đọc và gắn serial mainboard '+job['board_serial']+' với PC / license đang chọn.')
+                else:
+                    st.warning('Đọc serial trên chính PC này trước khi gửi báo cáo kích hoạt thành công.')
     else:
         job=pick('Việc cần báo cáo',pending,lambda r:r.get('asset_tag',r['device_id'])+' · '+r['id'][:8])
     if role!='KTV' or (job and st.session_state.get(f"board-bound-{actor}-{job['id']}")==job.get('board_serial')):
@@ -607,7 +613,7 @@ elif page=='Đồng bộ Google Sheet':
         configured_spreadsheet_id)
     st.write('Kế hoạch đầu vào được đọc từ tab 16_KE_HOACH_CAP_PC; báo cáo xử lý được ghi từ app sang các tab dữ liệu.')
     st.caption('Chỉ xuất key đã che. Mật khẩu, key gốc và nội dung kho mã hóa không được xuất.')
-    snapshot=make_snapshot(ledger,actor,demo=os.getenv('APP_MODE') in {'demo','shared_test','team_test'})
+    snapshot=make_snapshot(ledger,actor,demo=os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'})
     st.write('Số bản ghi có thể xuất:',sum(len(r) for r in snapshot['tables'].values()))
     st.download_button('Tải bản dữ liệu để đối chiếu (JSON — tệp dữ liệu có cấu trúc)',
         __import__('json').dumps(snapshot,ensure_ascii=False,indent=2),'ban_quyen_dong_bo.json','application/json')
