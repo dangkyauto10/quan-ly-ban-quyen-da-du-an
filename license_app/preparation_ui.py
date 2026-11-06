@@ -101,6 +101,13 @@ def render(ledger,actor,role,page,is_demo):
         else:st.info('Chưa có PC mới đủ điều kiện gửi tem. Hoàn tất kích hoạt và cấp số thứ tự trước.')
         st.markdown('### Lô tem của tôi')
         if not existing:st.info('Chưa có lô gửi hoặc in.')
+        latest_collected={}
+        for batch in existing:
+            if batch['state']=='COLLECTED':
+                for device_id in batch['device_ids']:
+                    old=latest_collected.get(device_id)
+                    if old is None or (batch.get('collected_at') or batch['created_at'])>(old.get('collected_at') or old['created_at']):
+                        latest_collected[device_id]=batch
         for batch in existing:
             names={r['id']:r['asset_tag'] for r in data}
             with st.container(border=True):
@@ -122,6 +129,12 @@ def render(ledger,actor,role,page,is_demo):
                         state=record.get('ktv_completion_state') or ''
                         if state=='QC_PASSED':
                             st.success(f"{record['asset_tag']} · {record['number']}/{record['quantity']} — đã QC đạt")
+                            continue
+                        if state=='READY_QC':
+                            st.info(f"{record['asset_tag']} · đã bàn giao QC, chờ kết quả.")
+                            continue
+                        if latest_collected.get(device_id,{}).get('id')!=batch['id']:
+                            st.caption(f"{record['asset_tag']} · cặp tem thuộc lô cũ; dùng lô in lại mới nhất để xác nhận.")
                             continue
                         with st.form('pc-close-'+device_id):
                             st.write(f"{record['asset_tag']} · {record['number']}/{record['quantity']} · đơn vị {record['unit']}")

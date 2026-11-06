@@ -218,6 +218,7 @@ class Ledger:
         ktv=ktv.lower().strip()
         def fn(c):
             account=self._get(c,accounts,account_id)
+            c.execute(update(accounts).where(accounts.c.id==account_id).values(owner=accounts.c.owner))
             self._auth(c,ktv,{'KTV'})
             prior=c.execute(select(account_assignments).where(account_assignments.c.account_id==account_id,
                 account_assignments.c.released_at.is_(None))).mappings().first()
@@ -234,6 +235,7 @@ class Ledger:
     def release_account_from_ktv(self,actor,account_id,op):
         def fn(c):
             account=self._get(c,accounts,account_id)
+            c.execute(update(accounts).where(accounts.c.id==account_id).values(owner=accounts.c.owner))
             active=c.execute(select(account_assignments).where(account_assignments.c.account_id==account_id,
                 account_assignments.c.released_at.is_(None))).mappings().first()
             if not active:raise DomainError('Tài khoản chưa được giao cho KTV.')
@@ -367,6 +369,7 @@ class Ledger:
         def fn(c):
             row = self._get(c, licenses, entity)
             device = self._get(c, devices, device_id)
+            c.execute(update(devices).where(devices.c.id==device_id).values(model=devices.c.model))
             self._auth(c, ktv, {'KTV'})
             if row['account_id']:
                 account = self._get(c, accounts, row['account_id'])
