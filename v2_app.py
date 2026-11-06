@@ -392,7 +392,7 @@ elif page=='Đơn vị & tài khoản':
         except DomainError as e:st.error(str(e))
         except Exception:st.error('Không đọc được tab tài khoản. Kiểm tra quyền Google Sheet và kết nối của app.')
     account_preview=st.session_state.get(account_preview_key)
-    if account_preview and account_preview['target']==target:
+    if role=='ADMIN' and account_preview and account_preview['target']==target:
         st.dataframe([{'Mã dự án':r['project'],'Tên dự án':r['project_name'],'Đơn vị được cấp':r['unit_name'],
             'Email Microsoft':r['email'],'Người quản lý':r['owner']} for r in account_preview['records']],hide_index=True,width='stretch')
         if st.button('Nạp danh sách đã xem vào app',type='primary',key='apply-account-roster'):
@@ -409,24 +409,25 @@ elif page=='Đơn vị & tài khoản':
                     st.success(f"Đã thêm {result['added']} tài khoản; {result['unchanged']} dòng đã có sẵn.");st.rerun()
             except DomainError as e:st.error(str(e))
             except Exception:st.error('Chưa nạp được danh sách; dữ liệu app chưa xác nhận cập nhật.')
-    st.markdown('### Giao tài khoản đã redeem cho KTV')
     account_rows=ledger.account_assignment_rows(actor)
-    redeemed_ids={r['account_id'] for r in rows('licenses') if r.get('account_id') and r['state'] in {'REDEEMED','ASSIGNED','ACTIVATED','WARRANTY_REVIEW'}}
-    eligible=[r for r in account_rows if r['id'] in redeemed_ids]
-    if eligible:
-        account=st.selectbox('Tài khoản Microsoft',eligible,format_func=lambda r:f"{r['project']} · {r['unit']} · {r['email']} · {r['ktv'] or 'Chưa giao'}",key='account-handoff')
-        ktvs=[r for r in rows('users') if r['role']=='KTV' and r['active']]
-        if account['ktv']:
-            st.info('Đang giao cho KTV: '+account['ktv'])
-            if st.button('Thu hồi giao tài khoản',key='release-account'):
-                try:ledger.release_account_from_ktv(actor,account['id'],str(uuid.uuid4()));st.success('Đã ghi nhận thu hồi.');st.rerun()
-                except DomainError as e:st.error(str(e))
-        elif ktvs:
-            ktv=st.selectbox('KTV nhận tài khoản',[r['email'] for r in ktvs],key='account-ktv')
-            if st.button('Giao tài khoản Microsoft cho KTV',type='primary',key='assign-account'):
-                try:ledger.assign_account_to_ktv(actor,account['id'],ktv,str(uuid.uuid4()));st.success('Đã giao tài khoản cho KTV.');st.rerun()
-                except DomainError as e:st.error(str(e))
-    else:st.info('Tài khoản sẽ xuất hiện tại đây sau khi được redeem vào Microsoft.')
+    if role=='ADMIN':
+        st.markdown('### Giao tài khoản đã redeem cho KTV')
+        redeemed_ids={r['account_id'] for r in rows('licenses') if r.get('account_id') and r['state'] in {'REDEEMED','ASSIGNED','ACTIVATED','WARRANTY_REVIEW'}}
+        eligible=[r for r in account_rows if r['id'] in redeemed_ids]
+        if eligible:
+            account=st.selectbox('Tài khoản Microsoft',eligible,format_func=lambda r:f"{r['project']} · {r['unit']} · {r['email']} · {r['ktv'] or 'Chưa giao'}",key='account-handoff')
+            ktvs=[r for r in rows('users') if r['role']=='KTV' and r['active']]
+            if account['ktv']:
+                st.info('Đang giao cho KTV: '+account['ktv'])
+                if st.button('Thu hồi giao tài khoản',key='release-account'):
+                    try:ledger.release_account_from_ktv(actor,account['id'],str(uuid.uuid4()));st.success('Đã ghi nhận thu hồi.');st.rerun()
+                    except DomainError as e:st.error(str(e))
+            elif ktvs:
+                ktv=st.selectbox('KTV nhận tài khoản',[r['email'] for r in ktvs],key='account-ktv')
+                if st.button('Giao tài khoản Microsoft cho KTV',type='primary',key='assign-account'):
+                    try:ledger.assign_account_to_ktv(actor,account['id'],ktv,str(uuid.uuid4()));st.success('Đã giao tài khoản cho KTV.');st.rerun()
+                    except DomainError as e:st.error(str(e))
+        else:st.info('Tài khoản sẽ xuất hiện tại đây sau khi được redeem vào Microsoft.')
     st.markdown('### Danh sách tài khoản')
     table(account_rows)
 elif page=='Kho key':
