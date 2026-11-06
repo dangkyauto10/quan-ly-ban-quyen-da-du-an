@@ -334,7 +334,7 @@ elif page=='Đơn vị & tài khoản':
         st.link_button('Mở file kế hoạch Google Sheet','https://docs.google.com/spreadsheets/d/'+target+'/edit')
         st.caption('Tab nguồn: '+PLAN_TAB+' · mỗi dòng là một điểm nhận và một SKU; để trống Phần mềm/SKU nếu chỉ khai báo điểm.')
         preview_key='sheet-plan-preview-'+actor
-        if os.getenv('APP_MODE') in {'demo','shared_test','team_test'}:
+        if os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'}:
             st.info('Chế độ minh họa không đọc kế hoạch thật từ Google Sheet.')
         elif st.button('Đọc và xem trước kế hoạch từ Sheet',type='primary',key='read-delivery-plan'):
             try:
@@ -383,7 +383,7 @@ elif page=='Đơn vị & tài khoản':
     st.markdown('### Nạp danh sách tài khoản Microsoft theo lô')
     st.caption('Nguồn là tab 17_TAI_KHOAN_MS, đối chiếu Mã dự án + Tên đơn vị được cấp với tab 16. Chỉ nhập email và người quản lý; không đưa mật khẩu hoặc MFA vào Sheet.')
     account_preview_key='sheet-account-preview-'+actor
-    if os.getenv('APP_MODE') in {'demo','shared_test','team_test'}:
+    if os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'}:
         st.info('Chế độ minh họa không đọc danh sách tài khoản thật từ Google Sheet.')
     elif st.button('Đọc và xem trước danh sách tài khoản',key='read-account-roster'):
         try:
@@ -619,7 +619,7 @@ elif page=='Đồng bộ Google Sheet':
         __import__('json').dumps(snapshot,ensure_ascii=False,indent=2),'ban_quyen_dong_bo.json','application/json')
     target=configured_spreadsheet_id(st.secrets)
     st.link_button('Mở Google Sheet','https://docs.google.com/spreadsheets/d/'+target+'/edit')
-    if os.getenv('APP_MODE') in {'demo','shared_test','team_test'}:
+    if os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'}:
         st.info('Chế độ minh họa chỉ dùng dữ liệu giả và không đọc hoặc ghi Google Sheet dùng chung.')
     else:
         st.caption('Đích đồng bộ: '+target)
