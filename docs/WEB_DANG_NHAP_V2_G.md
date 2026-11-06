@@ -11,10 +11,11 @@ Mục tiêu: thành viên mở cùng link HTTPS, đăng nhập Google và dùng 
 - Chỉ Admin xem key gốc và redeem. KTV chỉ thấy việc của mình; QC kiểm tra/đóng gói độc lập.
 - Khóa mã hóa, phát hiện trùng và ký QR lấy từ Secrets, không tự sinh trong đĩa tạm. Giữ nguyên khóa khi triển khai lại.
 
-## Hai kết nối cần chuẩn bị trước khi bật
+## Các kết nối cần chuẩn bị trước khi bật
 
 1. Google OAuth Web client (ứng dụng đăng nhập Google). Tạo/cấu hình trong Google Auth Platform: thông tin ứng dụng, đối tượng được dùng, client kiểu Web application. Redirect URI phải chính xác https://DIA_CHI_APP_V2/oauth2callback. Nếu ứng dụng ở chế độ thử của Google, thêm các tài khoản thử theo giao diện Google trước. Không dùng mật khẩu Microsoft hay tài khoản dịch vụ để thay OAuth client.
 2. PostgreSQL riêng, lưu trữ bền vững, có sao lưu do dịch vụ quản lý. Lấy URL gồm host, database, username/password; mật khẩu trong URL phải được mã hóa URL đúng. Dùng sslmode=require hoặc xác minh chứng chỉ. Không dùng SQLite trên đĩa Streamlit cho dữ liệu thật. Kiểm tra chi phí/giới hạn của dịch vụ trước khi tạo tài nguyên.
+3. Google Sheets API và service account riêng cho app. Đưa các trường JSON service account vào mục `[google_service_account]` trong Secrets; chia sẻ đúng file Google Sheet với email `client_email`, quyền Editor. OAuth client dùng để đăng nhập Google không tự cấp quyền Sheets API cho app.
 
 Không nhập URL chứa mật khẩu hoặc client_secret vào chat, GitHub, ảnh chụp, ghi chú hay file chia sẻ cho KTV.
 
@@ -27,6 +28,7 @@ Dùng .streamlit/web.secrets.example.toml làm cấu trúc, thay tất cả plac
 - app.fingerprint_key và qr_signing_key: hai bí mật ngẫu nhiên riêng ít nhất 32 ký tự, giữ ổn định.
 - app.admin_email: email Google thật của quản trị đầu tiên.
 - auth: redirect_uri chính xác, cookie_secret ngẫu nhiên ít nhất 32 ký tự, client_id/client_secret do Google cấp và metadata URL Google trong mẫu.
+- google_service_account: các trường từ JSON service account; giữ nguyên private key, không gửi cho B hoặc dán vào chat/GitHub. Sheet cần được chia sẻ cho đúng email service account.
 - web_login_enabled=true: bước chuyển sang đăng nhập thật tại cùng preview_app.py. Bản dùng thật bắt đầu ở kho rỗng, không chuyển các key/máy giả tự động.
 
 Bản dùng Secrets [app] hoạt động trên Streamlit Community Cloud. Triển khai Cloud Run có thể dùng DATABASE_URL, LICENSE_ENCRYPTION_KEY, FINGERPRINT_KEY, BOOTSTRAP_ADMIN_EMAIL và QR_SIGNING_KEY từ môi trường; auth vẫn theo cấu hình Streamlit.
