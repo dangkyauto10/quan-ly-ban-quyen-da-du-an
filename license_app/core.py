@@ -184,20 +184,21 @@ class Ledger:
         seen=set()
         for row in records or []:
             project=str(row.get('project') or '').strip()
+            project_name=str(row.get('project_name') or '').strip()
             unit_name=str(row.get('unit_name') or '').strip()
             email=str(row.get('email') or '').strip().lower()
             owner=str(row.get('owner') or '').strip()
-            if not project or not unit_name or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',email):
-                raise DomainError('Mỗi dòng cần mã dự án, tên đơn vị được cấp và email Microsoft hợp lệ.')
+            if not project or not project_name or not unit_name or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',email):
+                raise DomainError('Mỗi dòng cần mã/tên dự án, tên đơn vị được cấp và email Microsoft hợp lệ.')
             if email in seen:raise DomainError('Email Microsoft bị lặp trong danh sách nhập.')
-            seen.add(email);cleaned.append((project,unit_name,email,owner or 'Chưa ghi người quản lý'))
+            seen.add(email);cleaned.append((project,project_name,unit_name,email,owner or 'Chưa ghi người quản lý'))
         if not cleaned:raise DomainError('Tab tài khoản chưa có dòng hợp lệ để nạp.')
         def fn(c):
             added=0;unchanged=0
-            for project,unit_name,email,owner in cleaned:
+            for project,project_name,unit_name,email,owner in cleaned:
                 unit=c.execute(select(units).where(units.c.project==project,units.c.name==unit_name)).mappings().first()
                 if not unit:raise DomainError(f'Chưa có đơn vị {unit_name} thuộc dự án {project}; hãy nạp kế hoạch trước.')
-                if unit['project_name'] and unit['project_name']!=str(row.get('project_name') or '').strip():
+                if unit['project_name'] and unit['project_name']!=project_name:
                     raise DomainError(f'Tên dự án của {unit_name} không khớp tab kế hoạch. Hãy cập nhật kế hoạch trước khi nạp tài khoản.')
                 prior=c.execute(select(accounts).where(accounts.c.email==email)).mappings().first()
                 if prior:
