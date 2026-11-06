@@ -26,3 +26,8 @@ riêng dán cặp tem, đối serial và đóng hộp. Lịch sử bảo hành/l
 Báo cáo đi từ app sang các tab dữ liệu, còn kho key đầy đủ vẫn ở kho bảo mật riêng.
 Xem `docs/DONG_BO_GOOGLE_SHEET.md`.
 
+Tab 16 quản lý quota riêng theo Windows, Office và Antivirus. Tab 17 chỉ nhập danh
+sách tài khoản Microsoft dùng cho Office Retail đã redeem; Windows và Antivirus
+theo SKU và luồng kích hoạt của nhà cung cấp. Sheet là đầu vào đã xác nhận và báo cáo
+một chiều từ app, còn trạng thái vận hành chính được giữ trong cơ sở dữ liệu app.
+
