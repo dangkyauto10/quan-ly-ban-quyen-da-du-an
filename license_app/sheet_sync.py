@@ -1,4 +1,4 @@
-"""Admin-only, one-way safe report upserts. Manual research rows are never removed."""
+"""Admin-only, one-way report upserts. Non-app rows are never overwritten or removed."""
 import hashlib
 import json
 import re
@@ -222,7 +222,7 @@ def make_snapshot(ledger, actor, demo=False):
     return {'created_at':datetime.now(timezone.utc).isoformat(),'demo':demo,'tables':out}
 
 def plan_sync(snapshot, properties, live_values, tables):
-    """Upsert APP- rows only. Keep human/template rows and all guide/feedback tabs."""
+    """Upsert APP- rows only. Keep human-entered rows and input tabs untouched."""
     props={r['title']:r for r in properties}
     requests=[]
     for name, rows in snapshot['tables'].items():
@@ -286,7 +286,7 @@ def status_request(snapshot, sheet_id):
     count=sum(len(r) for r in snapshot['tables'].values())
     values=['SYNC-'+snapshot['created_at'],snapshot['created_at'],
         'MINH_HỌA' if snapshot['demo'] else 'THỰC_TẾ', 'V2-20261027-C',str(count),'Đã ghi từ app',
-        'Một chiều app → Sheet. Các dòng APP- thuộc app; giữ dòng mẫu và góp ý của V.']
+        'Một chiều app → Sheet. Các dòng APP- thuộc app; giữ nguyên dòng mẫu và dữ liệu nhập tay.']
     return {'appendCells':{'sheetId':sheet_id,'rows':[{'values':[{'userEnteredValue':{'stringValue':x},
         'userEnteredFormat':{'wrapStrategy':'WRAP','textFormat':{'fontFamily':'Arial','fontSize':11,'bold':False}}}
         for x in values]}],'fields':'userEnteredValue,userEnteredFormat'}}
