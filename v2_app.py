@@ -163,6 +163,7 @@ st.sidebar.markdown(f'<div class="side-brand-row"><div class="side-mark"><img sr
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
 def connect(url,key,fp):return Ledger(url,key,fp)
+activation_demo=os.getenv('APP_MODE')=='activation_demo' or activation_demo
 if os.getenv('APP_MODE','production') in {'demo','shared_test','team_test','activation_demo'}:
     shared_test=os.getenv('APP_MODE') in {'shared_test','team_test','activation_demo'}
     activation_demo=os.getenv('APP_MODE')=='activation_demo'
@@ -209,6 +210,28 @@ else:
     try:
         ledger=connect(url,key,fp);ledger.bootstrap(admin)
     except Exception:st.error('Không kết nối được kho dữ liệu. Liên hệ quản trị.');st.stop()
+    try:authenticated_role=ledger.role(actor)
+    except DomainError:authenticated_role=None
+    if authenticated_role=='ADMIN':
+        use_activation_demo=st.sidebar.checkbox('Mở môi trường mô phỏng',key='open-activation-demo')
+        if use_activation_demo:
+            from license_app.shared_test import shared_config
+            os.environ['LICENSE_TEST_DATA_DIR']=str(Path(__file__).with_name('activation-test-data'))
+            @st.cache_resource
+            def activation_test_ledger(test_url,test_key,test_fp):
+                test_ledger=connect(test_url,test_key,test_fp)
+                seed_activation_demo(test_ledger)
+                return test_ledger
+            ledger=activation_test_ledger(*shared_config())
+            actor=st.sidebar.selectbox('Xem thử vai trò',[
+                'admin@example.test','vy@example.test','ktv@example.test',
+                'ktv2@example.test','qc@example.test'],
+                format_func=lambda email:{'admin@example.test':'Admin mẫu',
+                    'vy@example.test':'Người redeem mẫu','ktv@example.test':'KTV mẫu',
+                    'ktv2@example.test':'KTV khác — chưa có việc',
+                    'qc@example.test':'QC mẫu'}[email],key='activation-demo-persona')
+            activation_demo=True
+            st.warning('MÔ PHỎNG KÍCH HOẠT · Kho dữ liệu thử riêng. Không kết nối Microsoft, không dùng key thật, không đọc/ghi Google Sheet. Bỏ chọn “Mở môi trường mô phỏng” để quay lại dữ liệu ứng dụng.')
 try:role=ledger.role(actor)
 except DomainError:
     st.info('Tài khoản chưa được cấp quyền hoặc đã tạm dừng. Liên hệ Admin để được phân công.')
@@ -298,7 +321,7 @@ def serial_agent_archive():
     return bundle.getvalue()
 if page in {'Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra','Tem của tôi','Hàng đợi in'}:
     from license_app.preparation_ui import render
-    render(ledger,actor,role,page,os.getenv('APP_MODE') in {'demo','activation_demo'})
+    render(ledger,actor,role,page,os.getenv('APP_MODE') in {'demo','activation_demo'} or activation_demo)
 elif page=='Tổng quan':
     data=rows('licenses'); cols=st.columns(4)
     for col,title,n in zip(cols,['Đã nhận','Chưa phân bổ','Đã giao máy','Đã kích hoạt'],[len(data),sum(r['state'] in {'RECEIVED','VERIFIED','REDEEMED'} for r in data),sum(r['state']=='ASSIGNED' for r in data),sum(r['state']=='ACTIVATED' for r in data)]):col.metric(title,n)
@@ -334,7 +357,7 @@ elif page=='Đơn vị & tài khoản':
         st.link_button('Mở file kế hoạch Google Sheet','https://docs.google.com/spreadsheets/d/'+target+'/edit')
         st.caption('Tab nguồn: '+PLAN_TAB+' · mỗi dòng là một điểm nhận và một SKU; để trống Phần mềm/SKU nếu chỉ khai báo điểm.')
         preview_key='sheet-plan-preview-'+actor
-        if os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'}:
+        if os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'} or activation_demo:
             st.info('Chế độ minh họa không đọc kế hoạch thật từ Google Sheet.')
         elif st.button('Đọc và xem trước kế hoạch từ Sheet',type='primary',key='read-delivery-plan'):
             try:
@@ -383,7 +406,7 @@ elif page=='Đơn vị & tài khoản':
     st.markdown('### Nạp danh sách tài khoản Microsoft theo lô')
     st.caption('Nguồn là tab 17_TAI_KHOAN_MS, đối chiếu Mã dự án + Tên đơn vị được cấp với tab 16. Chỉ nhập email và người quản lý; không đưa mật khẩu hoặc MFA vào Sheet.')
     account_preview_key='sheet-account-preview-'+actor
-    if os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'}:
+    if os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'} or activation_demo:
         st.info('Chế độ minh họa không đọc danh sách tài khoản thật từ Google Sheet.')
     elif st.button('Đọc và xem trước danh sách tài khoản',key='read-account-roster'):
         try:
@@ -613,13 +636,13 @@ elif page=='Đồng bộ Google Sheet':
         configured_spreadsheet_id)
     st.write('Kế hoạch đầu vào được đọc từ tab 16_KE_HOACH_CAP_PC; báo cáo xử lý được ghi từ app sang các tab dữ liệu.')
     st.caption('Chỉ xuất key đã che. Mật khẩu, key gốc và nội dung kho mã hóa không được xuất.')
-    snapshot=make_snapshot(ledger,actor,demo=os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'})
+    snapshot=make_snapshot(ledger,actor,demo=os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'} or activation_demo)
     st.write('Số bản ghi có thể xuất:',sum(len(r) for r in snapshot['tables'].values()))
     st.download_button('Tải bản dữ liệu để đối chiếu (JSON — tệp dữ liệu có cấu trúc)',
         __import__('json').dumps(snapshot,ensure_ascii=False,indent=2),'ban_quyen_dong_bo.json','application/json')
     target=configured_spreadsheet_id(st.secrets)
     st.link_button('Mở Google Sheet','https://docs.google.com/spreadsheets/d/'+target+'/edit')
-    if os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'}:
+    if os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'} or activation_demo:
         st.info('Chế độ minh họa chỉ dùng dữ liệu giả và không đọc hoặc ghi Google Sheet dùng chung.')
     else:
         st.caption('Đích đồng bộ: '+target)
