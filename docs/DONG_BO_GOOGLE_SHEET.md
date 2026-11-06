@@ -10,8 +10,10 @@ Google Sheet: https://docs.google.com/spreadsheets/d/1H5j9IK1U7CBef94utPNbhUQ1A3
   số lượng theo điểm và tổng quota so với kho key.
 - Tab `17_TAI_KHOAN_MS` là danh sách email Microsoft nhập theo lô, theo Mã dự án và
   Tên đơn vị được cấp. Admin xem trước và xác nhận nạp sau khi kế hoạch tab 16 đã có.
-- App giữ key đầy đủ, dữ liệu đăng nhập Microsoft và trạng thái xử lý trong kho
-  bảo mật riêng. Không ghi key, mật khẩu hoặc MFA lên Sheet.
+- App quản lý Windows, Office và Antivirus (diệt virus) theo sản phẩm/SKU, key,
+  phương thức kích hoạt và license riêng. Key đầy đủ được mã hóa trong kho app.
+  Tab 17 chỉ đưa email Microsoft và người quản lý vào app; app không lưu mật khẩu
+  hoặc MFA. Không ghi key đầy đủ, mật khẩu hoặc MFA lên Sheet.
 - Báo cáo do app tạo được ghi theo mã `APP-` vào các tab `01`–`12`; tab `08` có
   thêm mã và tên xã/điểm của PC. Tab `15_DONG_BO_APP` ghi lần xuất báo cáo.
 - Sheet không đọc kết quả ngược từ các tab báo cáo để thay đổi hồ sơ trong app.
@@ -47,9 +49,11 @@ chính xác với kế hoạch đã nạp. Có thể nạp lặp lại cùng dan
 dòng đã khớp. Nếu email đã tồn tại ở đơn vị/người quản lý khác, app dừng nạp để Admin
 đối chiếu thay vì tự chuyển dữ liệu. Không nhập mật khẩu, mã MFA, key hoặc recovery code.
 
-Admin giao riêng từng tài khoản Microsoft đã redeem cho một KTV. Mọi license Office
-trên một PC phải do cùng KTV nhận tài khoản đó phụ trách. Không thể thu hồi tài khoản
-KTV khi còn máy chưa kích hoạt hoặc chưa QC đóng gói.
+Tab 17 phục vụ tài khoản Microsoft dùng cho Office Retail đã redeem. Admin giao
+riêng từng tài khoản đã redeem cho một KTV. Mọi license Office trên một PC phải do
+cùng KTV nhận tài khoản đó phụ trách. Windows và Antivirus được theo dõi theo SKU
+và luồng trực tiếp/theo nhà cung cấp; không ép vào luồng redeem Microsoft. Không
+thể thu hồi tài khoản KTV khi còn máy chưa kích hoạt hoặc chưa QC đóng gói.
 
 ## Đồng bộ báo cáo
 
