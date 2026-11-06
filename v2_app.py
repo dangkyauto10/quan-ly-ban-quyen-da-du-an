@@ -325,8 +325,8 @@ elif page=='Tổng quan':
         st.download_button('Tải báo cáo CSV',buf.getvalue().encode('utf-8-sig'),'bao_cao.csv','text/csv')
 elif page=='Đơn vị & tài khoản':
     if role=='ADMIN':
-        from license_app.sheet_sync import (PLAN_TAB, PLAN_HEADERS, build_sheets_service,
-            configured_spreadsheet_id, read_delivery_plan)
+        from license_app.sheet_sync import (PLAN_TAB, PLAN_HEADERS, ACCOUNT_TAB, build_sheets_service,
+            configured_spreadsheet_id, read_delivery_plan, read_account_roster)
         st.markdown('### Nạp kế hoạch từ Google Sheet')
         st.caption('Google Sheet là nơi nhập đơn vị, xã/điểm nhận, số PC và số lượng theo từng phần mềm/SKU. App đọc kế hoạch sau khi Admin xem trước; key đầy đủ vẫn nằm trong kho bảo mật của app.')
         target=configured_spreadsheet_id(st.secrets)
@@ -379,12 +379,56 @@ elif page=='Đơn vị & tài khoản':
                 'Số license':r['license_quantity'] if r['product'] else '—'} for r in schedule],
                 hide_index=True,width='stretch')
         else:st.info('Chưa có kế hoạch được nạp. Nhập danh sách tại tab 16_KE_HOACH_CAP_PC rồi bấm đọc và nạp.')
-    with st.form('account'):
-        unit=pick('Đơn vị được cấp',rows('units'),lambda r:f"{r.get('project_name') or r['project']} · {r['project']} · {r['name']}")
-        email=st.text_input('Email Microsoft');owner=st.text_input('Người quản lý tài khoản')
-        st.caption('App không thu thập mật khẩu hoặc mã MFA.')
-        if st.form_submit_button('Thêm tài khoản') and unit:run('account',lambda t:ledger.add_account(actor,unit['id'],email,owner,t))
-    table(rows('accounts'))
+    st.markdown('### Nạp danh sách tài khoản Microsoft theo lô')
+    st.caption('Nguồn là tab 17_TAI_KHOAN_MS, đối chiếu Mã dự án + Tên đơn vị được cấp với tab 16. Chỉ nhập email và người quản lý; không đưa mật khẩu hoặc MFA vào Sheet.')
+    account_preview_key='sheet-account-preview-'+actor
+    if os.getenv('APP_MODE') in {'demo','shared_test','team_test'}:
+        st.info('Chế độ minh họa không đọc danh sách tài khoản thật từ Google Sheet.')
+    elif st.button('Đọc và xem trước danh sách tài khoản',key='read-account-roster'):
+        try:
+            records=read_account_roster(build_sheets_service(st.secrets),target)
+            digest=hashlib.sha256(json.dumps(records,ensure_ascii=False,sort_keys=True).encode()).hexdigest()
+            st.session_state[account_preview_key]={'records':records,'digest':digest,'target':target};st.rerun()
+        except DomainError as e:st.error(str(e))
+        except Exception:st.error('Không đọc được tab tài khoản. Kiểm tra quyền Google Sheet và kết nối của app.')
+    account_preview=st.session_state.get(account_preview_key)
+    if account_preview and account_preview['target']==target:
+        st.dataframe([{'Mã dự án':r['project'],'Tên dự án':r['project_name'],'Đơn vị được cấp':r['unit_name'],
+            'Email Microsoft':r['email'],'Người quản lý':r['owner']} for r in account_preview['records']],hide_index=True,width='stretch')
+        if st.button('Nạp danh sách đã xem vào app',type='primary',key='apply-account-roster'):
+            try:
+                current=read_account_roster(build_sheets_service(st.secrets),target)
+                digest=hashlib.sha256(json.dumps(current,ensure_ascii=False,sort_keys=True).encode()).hexdigest()
+                if digest!=account_preview['digest']:
+                    st.error('Sheet đã thay đổi sau khi xem trước. Hãy đọc lại danh sách rồi nạp.')
+                    st.session_state.pop(account_preview_key,None)
+                else:
+                    token=st.session_state.setdefault('op-account-roster-'+actor,str(uuid.uuid4()))
+                    result=ledger.import_accounts(actor,current,token)
+                    st.session_state.pop('op-account-roster-'+actor,None);st.session_state.pop(account_preview_key,None)
+                    st.success(f"Đã thêm {result['added']} tài khoản; {result['unchanged']} dòng đã có sẵn.");st.rerun()
+            except DomainError as e:st.error(str(e))
+            except Exception:st.error('Chưa nạp được danh sách; dữ liệu app chưa xác nhận cập nhật.')
+    st.markdown('### Giao tài khoản đã redeem cho KTV')
+    account_rows=ledger.account_assignment_rows(actor)
+    redeemed_ids={r['account_id'] for r in rows('licenses') if r.get('account_id') and r['state'] in {'REDEEMED','ASSIGNED','ACTIVATED','WARRANTY_REVIEW'}}
+    eligible=[r for r in account_rows if r['id'] in redeemed_ids]
+    if eligible:
+        account=st.selectbox('Tài khoản Microsoft',eligible,format_func=lambda r:f"{r['project']} · {r['unit']} · {r['email']} · {r['ktv'] or 'Chưa giao'}",key='account-handoff')
+        ktvs=[r for r in rows('users') if r['role']=='KTV' and r['active']]
+        if account['ktv']:
+            st.info('Đang giao cho KTV: '+account['ktv'])
+            if st.button('Thu hồi giao tài khoản',key='release-account'):
+                try:ledger.release_account_from_ktv(actor,account['id'],str(uuid.uuid4()));st.success('Đã ghi nhận thu hồi.');st.rerun()
+                except DomainError as e:st.error(str(e))
+        elif ktvs:
+            ktv=st.selectbox('KTV nhận tài khoản',[r['email'] for r in ktvs],key='account-ktv')
+            if st.button('Giao tài khoản Microsoft cho KTV',type='primary',key='assign-account'):
+                try:ledger.assign_account_to_ktv(actor,account['id'],ktv,str(uuid.uuid4()));st.success('Đã giao tài khoản cho KTV.');st.rerun()
+                except DomainError as e:st.error(str(e))
+    else:st.info('Tài khoản sẽ xuất hiện tại đây sau khi được redeem vào Microsoft.')
+    st.markdown('### Danh sách tài khoản')
+    table(account_rows)
 elif page=='Kho key':
     if role=='ADMIN':
         with st.form('import',clear_on_submit=True):
@@ -495,7 +539,30 @@ elif page in ['Kích hoạt','Việc của tôi']:
       if role=='KTV':
         st.caption('Sau khi hoàn tất các PC của đơn vị, ghi serial lên vỏ hộp và gửi thành một lô tại “Tem của tôi”.')
 elif page=='Bảo hành':
-    table(rows('devices'))
+    st.caption('Tra lịch sử theo mã dự án, đơn vị, mã PC, serial máy hoặc serial mainboard hiện tại/cũ.')
+    search=st.text_input('Từ khóa tra hồ sơ bảo hành')
+    if search.strip():
+        matches=ledger.device_dossier(actor,search)
+        audit_rows=rows('audit')
+        jobs_all=rows('jobs')
+        licenses_all=rows('licenses')
+        for device in matches:
+            st.markdown(f"#### {device['asset_tag']} · {device['project']} · {device['unit']}")
+            st.write(f"Serial máy: {device['serial']} · Serial mainboard hiện tại: {device['board_serial']} · {device['model']}")
+            related_jobs=[j for j in jobs_all if j['device_id']==device['id']]
+            license_ids={j['license_id'] for j in related_jobs}
+            st.dataframe([{'KTV':j['ktv'],'Trạng thái':j['state'],'Lỗi':j.get('error_code') or '',
+                'Báo cáo':j.get('note') or '', 'License':next((('…'+l['tail']) for l in licenses_all if l['id']==j['license_id']),'')}
+                for j in related_jobs],hide_index=True,width='stretch')
+            account_ids={l.get('account_id') for l in licenses_all if l['id'] in license_ids and l.get('account_id')}
+            history=[a for a in audit_rows if a['entity']==device['id'] or any(a['entity']==j['id'] for j in related_jobs)
+                or any(a['entity']==lid for lid in license_ids) or a['entity'] in account_ids]
+            st.dataframe(history,hide_index=True,width='stretch')
+            dossier={'device':device,'jobs':related_jobs,'license_summaries':[{'id':l['id'],'product':l['product'],'sku':l['sku'],'tail':l['tail'],'state':l['state']}
+                for l in licenses_all if l['id'] in license_ids],'audit':history}
+            st.download_button('Tải hồ sơ bảo hành JSON',json.dumps(dossier,ensure_ascii=False,indent=2),
+                f"ho-so-{device['asset_tag']}.json",'application/json',key='dossier-'+device['id'])
+    else:st.info('Nhập từ khóa để tra hồ sơ đã hoàn thành hoặc đang bảo hành.')
     if role!='ADMIN':st.info('Admin xác nhận thay mainboard và duyệt kích hoạt lại.');st.stop()
     with st.form('warranty'):
         device=pick('Máy thay mainboard',rows('devices'),lambda r:r['asset_tag'])
@@ -555,3 +622,4 @@ elif page=='Đồng bộ Google Sheet':
                 st.success(f'Đã đồng bộ {count} bản ghi. Xem thời điểm tại tab 15_DONG_BO_APP.')
             except DomainError as err:st.error(str(err))
             except Exception:st.error('Chưa đồng bộ được. Kiểm tra Google Sheets API, danh tính chạy app và quyền Người chỉnh sửa trên đúng file Sheet. Dữ liệu app vẫn đã lưu; có thể đồng bộ lại.')
+

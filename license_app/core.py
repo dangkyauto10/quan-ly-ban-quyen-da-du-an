@@ -24,6 +24,11 @@ users = Table('users', meta, Column('email', String, primary_key=True),
 accounts = Table('accounts', meta, Column('id', String, primary_key=True),
                  Column('unit_id', String, ForeignKey('units.id'), nullable=False),
                  Column('email', String, nullable=False, unique=True), Column('owner', String, nullable=False))
+account_assignments = Table('account_assignments', meta, Column('id', String, primary_key=True),
+    Column('account_id', String, ForeignKey('accounts.id'), nullable=False),
+    Column('ktv', String, ForeignKey('users.email'), nullable=False),
+    Column('assigned_by', String, nullable=False), Column('assigned_at', String, nullable=False),
+    Column('released_at', String))
 licenses = Table('licenses', meta, Column('id', String, primary_key=True),
     Column('batch', String, nullable=False), Column('product', String, nullable=False),
     Column('sku', String, nullable=False), Column('channel', String, nullable=False),
@@ -174,6 +179,116 @@ class Ledger:
             return entity
         return self._atomic(actor, {'ADMIN', 'OPERATOR'}, op, fn)
 
+    def import_accounts(self, actor, records, op):
+        cleaned=[]
+        seen=set()
+        for row in records or []:
+            project=str(row.get('project') or '').strip()
+            unit_name=str(row.get('unit_name') or '').strip()
+            email=str(row.get('email') or '').strip().lower()
+            owner=str(row.get('owner') or '').strip()
+            if not project or not unit_name or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',email):
+                raise DomainError('Mỗi dòng cần mã dự án, tên đơn vị được cấp và email Microsoft hợp lệ.')
+            if email in seen:raise DomainError('Email Microsoft bị lặp trong danh sách nhập.')
+            seen.add(email);cleaned.append((project,unit_name,email,owner or 'Chưa ghi người quản lý'))
+        if not cleaned:raise DomainError('Tab tài khoản chưa có dòng hợp lệ để nạp.')
+        def fn(c):
+            added=0;unchanged=0
+            for project,unit_name,email,owner in cleaned:
+                unit=c.execute(select(units).where(units.c.project==project,units.c.name==unit_name)).mappings().first()
+                if not unit:raise DomainError(f'Chưa có đơn vị {unit_name} thuộc dự án {project}; hãy nạp kế hoạch trước.')
+                if unit['project_name'] and unit['project_name']!=str(row.get('project_name') or '').strip():
+                    raise DomainError(f'Tên dự án của {unit_name} không khớp tab kế hoạch. Hãy cập nhật kế hoạch trước khi nạp tài khoản.')
+                prior=c.execute(select(accounts).where(accounts.c.email==email)).mappings().first()
+                if prior:
+                    if prior['unit_id']!=unit['id'] or prior['owner']!=owner:
+                        raise DomainError(f'Tài khoản {email} đã có trong app nhưng khác đơn vị/người quản lý. Không tự chuyển tài khoản.')
+                    unchanged+=1;continue
+                entity=str(uuid.uuid4())
+                c.execute(insert(accounts).values(id=entity,unit_id=unit['id'],email=email,owner=owner))
+                self._log(c,actor,'IMPORT_ACCOUNT',entity,{'email':email,'unit_id':unit['id'],'owner':owner})
+                added+=1
+            self._log(c,actor,'IMPORT_ACCOUNT_ROSTER',op,{'added':added,'unchanged':unchanged})
+            return f'{added}:{unchanged}'
+        result=self._atomic(actor,{'ADMIN'},op,fn)
+        added,unchanged=(int(x) for x in result.split(':'))
+        return {'added':added,'unchanged':unchanged}
+
+    def assign_account_to_ktv(self,actor,account_id,ktv,op):
+        ktv=ktv.lower().strip()
+        def fn(c):
+            account=self._get(c,accounts,account_id)
+            self._auth(c,ktv,{'KTV'})
+            prior=c.execute(select(account_assignments).where(account_assignments.c.account_id==account_id,
+                account_assignments.c.released_at.is_(None))).mappings().first()
+            if prior:
+                if prior['ktv']==ktv:return prior['id']
+                raise DomainError('Tài khoản Microsoft đang được giao cho '+prior['ktv']+'.')
+            entity=str(uuid.uuid4());stamp=datetime.now(timezone.utc).isoformat()
+            c.execute(insert(account_assignments).values(id=entity,account_id=account_id,ktv=ktv,
+                assigned_by=actor,assigned_at=stamp,released_at=None))
+            self._log(c,actor,'ASSIGN_MS_ACCOUNT',account_id,{'ktv':ktv,'email':account['email']})
+            return entity
+        return self._atomic(actor,{'ADMIN'},op,fn)
+
+    def release_account_from_ktv(self,actor,account_id,op):
+        def fn(c):
+            account=self._get(c,accounts,account_id)
+            active=c.execute(select(account_assignments).where(account_assignments.c.account_id==account_id,
+                account_assignments.c.released_at.is_(None))).mappings().first()
+            if not active:raise DomainError('Tài khoản chưa được giao cho KTV.')
+            unfinished=c.execute(select(jobs.c.device_id).select_from(jobs.join(licenses,jobs.c.license_id==licenses.c.id)
+                .join(devices,jobs.c.device_id==devices.c.id)).where(licenses.c.account_id==account_id,
+                    jobs.c.ktv==active['ktv'],jobs.c.state!='SUCCESS')).first()
+            if unfinished:raise DomainError('Còn PC của tài khoản này chưa hoàn tất kích hoạt.')
+            inspection=meta.tables.get('preparation_inspections')
+            if inspection is not None:
+                linked_devices=c.execute(select(jobs.c.device_id,inspection.c.state).select_from(
+                    jobs.join(licenses,jobs.c.license_id==licenses.c.id).join(devices,jobs.c.device_id==devices.c.id)
+                    .outerjoin(inspection,inspection.c.id==jobs.c.device_id)).where(
+                    licenses.c.account_id==account_id,jobs.c.ktv==active['ktv'])).all()
+                if any(state!='PACKED' for _device_id,state in linked_devices):
+                    raise DomainError('KTV cần hoàn tất đóng gói/QC các PC của tài khoản trước khi thu hồi.')
+            stamp=datetime.now(timezone.utc).isoformat()
+            c.execute(update(account_assignments).where(account_assignments.c.id==active['id']).values(released_at=stamp))
+            self._log(c,actor,'RELEASE_MS_ACCOUNT',account_id,{'ktv':active['ktv'],'email':account['email']})
+            return account_id
+        return self._atomic(actor,{'ADMIN'},op,fn)
+
+    def account_assignment_rows(self,actor):
+        with self.engine.connect() as c:
+            self._auth(c,actor,{'ADMIN','OPERATOR'})
+            query=select(accounts.c.id,accounts.c.email,accounts.c.owner,units.c.project,units.c.project_name,
+                units.c.name.label('unit'),account_assignments.c.ktv,account_assignments.c.assigned_at,
+                account_assignments.c.released_at).select_from(accounts.join(units,accounts.c.unit_id==units.c.id)
+                .outerjoin(account_assignments,(account_assignments.c.account_id==accounts.c.id)&account_assignments.c.released_at.is_(None)))
+            return [dict(r) for r in c.execute(query.order_by(units.c.project,units.c.name,accounts.c.email)).mappings()]
+
+    def device_dossier(self,actor,query_text):
+        needle=(query_text or '').strip().casefold()
+        if not needle:raise DomainError('Nhập mã dự án, đơn vị, mã máy hoặc serial để tra hồ sơ.')
+        with self.engine.connect() as c:
+            self._auth(c,actor,{'ADMIN','OPERATOR','QC'})
+            stmt=select(devices,units.c.project,units.c.project_name,units.c.name.label('unit')).select_from(
+                devices.join(units,devices.c.unit_id==units.c.id))
+            records=[]
+            event_table=meta.tables.get('audit')
+            event_rows=c.execute(select(event_table.c.entity,event_table.c.details).where(
+                event_table.c.action=='BOARD_REPLACED')).mappings().all() if event_table is not None else []
+            historical={}
+            for event_row in event_rows:
+                try:details=json.loads(event_row['details'])
+                except (TypeError,ValueError):continue
+                historical.setdefault(event_row['entity'],[]).extend([details.get('old_board',''),details.get('new_board','')])
+            account_emails={}
+            account_rows=c.execute(select(jobs.c.device_id,accounts.c.email).select_from(jobs.join(licenses,jobs.c.license_id==licenses.c.id)
+                .join(accounts,licenses.c.account_id==accounts.c.id))).all()
+            for device_id,email in account_rows:account_emails.setdefault(device_id,[]).append(email)
+            for row in c.execute(stmt).mappings():
+                d=dict(row);hay=' '.join([str(d.get(k) or '') for k in ['project','project_name','unit','asset_tag','serial','board_serial']]+historical.get(d['id'],[])+account_emails.get(d['id'],[])).casefold()
+                if needle in hay:records.append(d)
+            return records
+
     def import_keys(self, actor, batch, product, sku, channel, route, keys, expires, op):
         if not batch.strip() or not sku.strip() or product not in PRODUCTS:
             raise DomainError('Nhập lô, phần mềm và phiên bản/SKU.')
@@ -257,6 +372,13 @@ class Ledger:
                 account = self._get(c, accounts, row['account_id'])
                 if account['unit_id'] != device['unit_id']:
                     raise DomainError('Tài khoản và máy thuộc hai đơn vị khác nhau.')
+                handoff=c.execute(select(account_assignments).where(account_assignments.c.account_id==account['id'],
+                    account_assignments.c.released_at.is_(None))).mappings().first()
+                if not handoff or handoff['ktv']!=ktv:
+                    raise DomainError('Tài khoản Microsoft chưa được Admin phân bổ cho KTV này.')
+            other_ktvs=c.execute(select(jobs.c.ktv).where(jobs.c.device_id==device_id)).scalars().all()
+            if other_ktvs and any(owner!=ktv for owner in other_ktvs):
+                raise DomainError('Một PC phải được cùng một KTV phụ trách đến khi hoàn thiện.')
             allocation_table=meta.tables.get('point_license_plans')
             if device['point_id'] and allocation_table is not None:
                 allocation=c.execute(select(allocation_table.c.quantity).where(
@@ -345,7 +467,11 @@ class Ledger:
                 c.execute(delete(tab).where(tab.c.id==device_id))
             if 'preparation_inspections' in meta.tables:
                 tab=meta.tables['preparation_inspections']
-                c.execute(delete(tab).where(tab.c.id==device_id))
+                c.execute(update(tab).where(tab.c.id==device_id).values(
+                    state='FAILED',note='Bảo hành/thay mainboard; cần QC lại.',inspector=actor))
+            if 'ktv_pc_completions' in meta.tables:
+                completion=meta.tables['ktv_pc_completions']
+                c.execute(update(completion).where(completion.c.device_id==device_id).values(state='REWORK_REQUIRED'))
             self._log(c, actor, 'BOARD_REPLACED', device_id, {'old_board': device['board_serial'],
                 'new_board': new_board.strip(), 'reason': reason})
             return device_id
@@ -388,3 +514,4 @@ class Ledger:
                 # Explicit output allowlist: ciphertext and key fingerprints never leave this layer.
                 stmt = select(*[col for col in table.c if col.name not in {'cipher', 'fingerprint'}])
             return [dict(row) for row in c.execute(stmt).mappings()]
+

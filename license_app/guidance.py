@@ -40,7 +40,8 @@ PAGE_GUIDES = {
         'Nhập mã/tên dự án, đơn vị được cấp, xã/phường/điểm nhận, số PC và quota phần mềm/SKU tại tab 16_KE_HOACH_CAP_PC trong Google Sheet.',
         'Admin đọc, xem trước rồi xác nhận nạp kế hoạch vào app; số license phải nằm trong kho key đã nhập.',
         'Công đoạn BẢN QUYỀN kết thúc khi PC được kích hoạt, đối chiếu thiết bị/serial, ghép đúng cặp tem và QC xác nhận đóng gói. Sau đó mới chuyển sang QUẢN LÝ DỰ ÁN để vận chuyển và lắp đặt.',
-        'Admin hoặc người quản lý redeem thêm email Microsoft và người phụ trách tài khoản.',
+        'Danh sách email Microsoft được nạp hàng loạt từ tab 17_TAI_KHOAN_MS sau khi tab 16 đã có kế hoạch.',
+        'Admin giao từng tài khoản Microsoft đã redeem cho đúng KTV; một PC và toàn bộ license của PC do cùng KTV xử lý.',
         'Mật khẩu và MFA (xác thực nhiều bước) do người quản lý tài khoản giữ bên ngoài app.']),
     'Kế hoạch PC theo điểm': ('Theo dõi số PC đã phân bổ theo từng điểm', [
         'Số PC theo từng điểm lấy từ danh sách Excel ở Đơn vị & tài khoản. Màn hình này theo dõi PC đã khai báo, đánh số tem và QC đóng gói.',
@@ -61,8 +62,8 @@ PAGE_GUIDES = {
         'Serial phục vụ theo dõi thiết bị. Tài khoản/license và quy trình nhà cung cấp quyết định kích hoạt.']),
     'Phân bổ': ('Admin giao bản quyền cho máy và KTV', [
         'Chọn bản quyền đủ điều kiện, máy nhận và KTV được giao.',
-        'Với Office đã redeem, tài khoản Microsoft và máy phải cùng đơn vị.',
-        'Bản đầu quản lý một bản quyền cho một máy; quy tắc nhiều suất thiết bị chờ anh Vỹ chốt.']),
+        'Với Office đã redeem, tài khoản Microsoft và máy phải cùng đơn vị; tài khoản đó phải được giao cho cùng KTV.',
+        'Toàn bộ license gắn với một PC phải được giao cho cùng KTV để người này làm trọn PC tới khi QC đóng gói.']),
     'Kích hoạt': ('Theo dõi kết quả công việc', [
         'Admin xem các việc đã giao; người quản lý redeem xem tiến độ.',
         'KTV được giao xác minh trạng thái tại máy và gửi báo cáo.',
@@ -76,7 +77,8 @@ PAGE_GUIDES = {
     'Tem của tôi': ('Gửi lô tem và đối chiếu khi nhận', [
         'Chỉ chọn PC đã kích hoạt thành công; app ghép mỗi PC với đúng serial mainboard và số thứ tự của đơn vị.',
         'Ghi serial mainboard lên hộp, chọn các PC cùng đơn vị rồi chuyển lô sang chờ in.',
-        'Khi nhận lô tem đã in, so serial trên hộp với cả cặp tem của PC trước khi dán và đóng hộp.']),
+        'Khi nhận lô tem đã in, xác nhận nhận lô trước, rồi đối chiếu và xác nhận từng PC: serial khớp, dán tem PC/hộp đúng cặp, đóng hộp.',
+        'PC chỉ được chuyển QC khi KTV đã hoàn tất xác nhận riêng cho máy đó; sau bảo hành/làm lại, app cho in cặp QR mới và giữ lô cũ trong lịch sử.']),
     'Hàng đợi in': ('Trạm in xử lý theo lô', [
         'Chọn đúng lô theo đơn vị và KTV. Mỗi PC in hai tem liền nhau theo thứ tự số máy.',
         'Chỉ xác nhận in xong sau khi máy in đã in hết lô; lô đã in sẽ chuyển cho KTV nhận và đối chiếu.']),
@@ -84,7 +86,8 @@ PAGE_GUIDES = {
         'Admin chọn máy, nhập serial mainboard mới và căn cứ bảo hành.',
         'App giữ serial trước/sau trong nhật ký và chuyển công việc đã thành công sang chờ xét.',
         'Admin ghi căn cứ license/nhà cung cấp cho phép xử lý rồi giao KTV kích hoạt lại.',
-        'App ghi chép sự kiện; quyết định quyền chuyển máy phải theo license thực tế.']),
+        'App giữ serial cũ/mới, các lần kích hoạt, QC và lần in tem; có thể tra theo dự án, đơn vị, mã máy, serial cũ/mới hoặc email tài khoản.',
+        'Sau khi duyệt kích hoạt lại, KTV phụ trách PC đó làm lại tem và quy trình QC; quyết định quyền chuyển máy phải theo license thực tế.']),
     'Nhật ký': ('Tra cứu lịch sử', [
         'Theo dõi ai nhập, kiểm tra, xem key, redeem, giao việc và xử lý bảo hành.',
         'Thời gian được lưu theo UTC (giờ quốc tế). Quy tắc hiển thị chính thức chờ chốt.',
@@ -108,3 +111,4 @@ def display_record(record, statuses):
         elif key == 'channel': value = {'Retail':'Bán lẻ', 'OEM':'Đi kèm máy', 'Volume':'Cấp phép số lượng lớn', 'Vendor':'Theo nhà cung cấp'}.get(value,value)
         mapped[FIELD_NAMES.get(key,key)] = value
     return mapped
+

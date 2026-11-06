@@ -8,12 +8,14 @@ Google Sheet: https://docs.google.com/spreadsheets/d/1H5j9IK1U7CBef94utPNbhUQ1A3
   số PC và quota Windows/Office/Antivirus theo SKU.
 - Admin bấm đọc, xem trước rồi nạp kế hoạch vào app. App kiểm tra định dạng, SKU,
   số lượng theo điểm và tổng quota so với kho key.
+- Tab `17_TAI_KHOAN_MS` là danh sách email Microsoft nhập theo lô, theo Mã dự án và
+  Tên đơn vị được cấp. Admin xem trước và xác nhận nạp sau khi kế hoạch tab 16 đã có.
 - App giữ key đầy đủ, dữ liệu đăng nhập Microsoft và trạng thái xử lý trong kho
   bảo mật riêng. Không ghi key, mật khẩu hoặc MFA lên Sheet.
 - Báo cáo do app tạo được ghi theo mã `APP-` vào các tab `01`–`12`; tab `08` có
   thêm mã và tên xã/điểm của PC. Tab `15_DONG_BO_APP` ghi lần xuất báo cáo.
 - Sheet không đọc kết quả ngược từ các tab báo cáo để thay đổi hồ sơ trong app.
-  Kế hoạch chỉ được lấy từ tab 16 sau thao tác xác nhận của Admin.
+  Kế hoạch và danh sách email chỉ được lấy từ tab 16/17 sau thao tác xác nhận của Admin.
 
 ## Mẫu tab kế hoạch
 
@@ -37,6 +39,18 @@ Mã dự án + tên đơn vị + mã xã/điểm nhận diện một điểm. Ph
 một quota. Số PC phải là số nguyên dương; số license là số nguyên từ 0 đến số PC.
 Không nhập công thức vào tab kế hoạch.
 
+## Mẫu danh sách tài khoản Microsoft
+
+Tab `17_TAI_KHOAN_MS` gồm: Mã dự án, Tên dự án, Tên đơn vị được cấp, Email tài khoản
+Microsoft, Người quản lý tài khoản. Email phải duy nhất trong lô; đơn vị phải trùng
+chính xác với kế hoạch đã nạp. Có thể nạp lặp lại cùng danh sách để app bỏ qua các
+dòng đã khớp. Nếu email đã tồn tại ở đơn vị/người quản lý khác, app dừng nạp để Admin
+đối chiếu thay vì tự chuyển dữ liệu. Không nhập mật khẩu, mã MFA, key hoặc recovery code.
+
+Admin giao riêng từng tài khoản Microsoft đã redeem cho một KTV. Mọi license Office
+trên một PC phải do cùng KTV nhận tài khoản đó phụ trách. Không thể thu hồi tài khoản
+KTV khi còn máy chưa kích hoạt hoặc chưa QC đóng gói.
+
 ## Đồng bộ báo cáo
 
 Admin dùng trang “Đồng bộ Google Sheet” để ghi báo cáo từ app. Các tab `01`–`12`
@@ -56,5 +70,10 @@ báo cáo lên file dùng chung.
   xóa hồ sơ cũ. SKU đã gán cho PC không thể bị xóa hoặc giảm thấp hơn số đã gán.
 - Dữ liệu PC và license trong app chưa tự xác minh trạng thái Microsoft. Người thao
   tác vẫn phải kiểm tra kết quả thực tế.
+- KTV gửi lô tới trạm in USB, xác nhận đã nhận tem, sau đó xác nhận riêng từng PC
+  rằng serial khớp, hai tem đã dán đúng thân máy/vỏ hộp và máy đã đóng hộp. QC không
+  thể nhận PC trước xác nhận này. Nếu bảo hành thay mainboard hoặc QC yêu cầu làm lại,
+  app giữ lô tem cũ, cho phép tạo cặp tem mới và lưu từng lần trong nhật ký.
 - Giai đoạn bản quyền kết thúc khi QC đối chiếu serial/tem và xác nhận đóng gói.
   Vận chuyển, giao điểm và lắp đặt thuộc app QUẢN LÝ DỰ ÁN.
+

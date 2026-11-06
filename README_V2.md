@@ -19,6 +19,10 @@ Kiểm tra: `python -m pytest -q tests` (pytest cài riêng).
 
 Bản B thêm nhãn tiếng Việt, hướng dẫn theo vai trò và ví dụ 2 license cùng tài khoản, 2 máy, 1 kết quả thành công/1 kết quả lỗi. Xem docs/HUONG_DAN_THANH_VIEN.md và docs/DOI_CHIEU_GOOGLE_SHEET.md.
 
-Bản tiếp theo đọc kế hoạch đơn vị/điểm/SKU từ tab `16_KE_HOACH_CAP_PC` sau khi Admin
-xem trước và xác nhận; báo cáo vận hành đi từ app sang các tab dữ liệu. Kho key đầy
-đủ vẫn ở kho bảo mật riêng. Xem `docs/DONG_BO_GOOGLE_SHEET.md`.
+Kế hoạch đơn vị/điểm/SKU được nạp từ tab `16_KE_HOACH_CAP_PC`; email tài khoản
+Microsoft được nạp theo lô từ tab `17_TAI_KHOAN_MS`, Admin xem trước và xác nhận.
+Account đã redeem được giao đích danh cho KTV; PC chỉ qua QC sau khi KTV xác nhận
+riêng dán cặp tem, đối serial và đóng hộp. Lịch sử bảo hành/làm lại được giữ để tra cứu.
+Báo cáo đi từ app sang các tab dữ liệu, còn kho key đầy đủ vẫn ở kho bảo mật riêng.
+Xem `docs/DONG_BO_GOOGLE_SHEET.md`.
+

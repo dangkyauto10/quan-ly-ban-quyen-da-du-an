@@ -81,8 +81,9 @@ def render(ledger,actor,role,page,is_demo):
         return
     if page=='Tem của tôi':
         existing=ledger.label_batches_for_ktv(actor)
-        used={device_id for batch in existing for device_id in batch['device_ids']}
-        ready=[r for r in data if r['number'] and r['activation_ready'] and r['id'] not in used]
+        inflight={device_id for batch in existing if batch['state'] in {'WAITING','PRINTED'} for device_id in batch['device_ids']}
+        ready=[r for r in data if r['number'] and r['activation_ready'] and r['id'] not in inflight
+            and r.get('ktv_completion_state')!='QC_PASSED']
         st.markdown('### Gửi PC đã kích hoạt vào hàng đợi chung')
         if ready:
             units={r['unit_id']:r['unit'] for r in ready}
@@ -107,12 +108,31 @@ def render(ledger,actor,role,page,is_demo):
                 st.markdown(f"**{batch['project']} · {batch['unit']}** — {len(batch['device_ids'])} PC · trạng thái: **{state_name}**")
                 st.write(', '.join(names.get(device_id,device_id) for device_id in batch['device_ids']))
                 if batch['state']=='PRINTED':
-                    checked=st.checkbox('Đã nhận đủ tem, đối chiếu từng serial với vỏ hộp, dán đúng PC/hộp và đóng lại.',key='collect-confirm-'+batch['id'])
-                    if st.button('Xác nhận đã nhận và đối chiếu lô',key='collect-'+batch['id'],type='primary'):
-                        if not checked:st.error('Cần đối chiếu serial và số tem của toàn bộ PC trong lô trước khi xác nhận.')
+                    checked=st.checkbox('Đã nhận đủ cặp tem của lô từ trạm in.',key='collect-confirm-'+batch['id'])
+                    if st.button('Xác nhận đã nhận tem',key='collect-'+batch['id'],type='primary'):
+                        if not checked:st.error('Xác nhận số tem nhận được trước khi chuyển sang đối chiếu từng PC.')
                         else:
                             try:ledger.confirm_label_batch_collected(actor,batch['id'],secrets.token_hex(16));st.rerun()
                             except DomainError as e:st.error(str(e))
+                if batch['state']=='COLLECTED':
+                    st.markdown('**Đối chiếu, dán tem và đóng hộp theo từng PC**')
+                    for device_id in batch['device_ids']:
+                        record=next((r for r in data if r['id']==device_id),None)
+                        if not record:continue
+                        state=record.get('ktv_completion_state') or ''
+                        if state=='QC_PASSED':
+                            st.success(f"{record['asset_tag']} · {record['number']}/{record['quantity']} — đã QC đạt")
+                            continue
+                        with st.form('pc-close-'+device_id):
+                            st.write(f"{record['asset_tag']} · {record['number']}/{record['quantity']} · đơn vị {record['unit']}")
+                            serial=st.text_input('Nhập lại serial mainboard trên PC/hộp',value=record['board_serial'],key='close-serial-'+device_id)
+                            applied=st.checkbox('Hai tem thuộc đúng cặp serial này đã dán lên thân máy và hộp; PC đã đóng hộp.',key='close-confirm-'+device_id)
+                            note=st.text_input('Ghi chú bàn giao cho QC (nếu có)',key='close-note-'+device_id)
+                            if st.form_submit_button('Xác nhận hoàn tất PC, chuyển QC'):
+                                if not applied:st.error('Cần xác nhận đã dán đúng cặp tem và đóng hộp.')
+                                else:
+                                    try:ledger.confirm_labels_applied(actor,device_id,serial,note or 'Đã đối chiếu cặp tem và đóng hộp.',secrets.token_hex(16));st.success('Đã chuyển riêng PC này sang QC.');st.rerun()
+                                    except DomainError as e:st.error(str(e))
         return
     if page=='In tem PC và vỏ hộp':
         if role=='KTV':st.error('KTV gửi tem theo lô tại “Tem của tôi”; chỉ trạm in dùng máy in USB.');return
@@ -131,14 +151,7 @@ def render(ledger,actor,role,page,is_demo):
         components.html(content,height=410,scrolling=True)
         st.download_button('Tải cặp tem để in (HTML)',content,'tem_pc_vo_hop.html','text/html')
         if role=='KTV':
-            confirmed=st.checkbox('Tôi đã in, dán tem PC và tem hộp lên đúng cặp máy này, rồi đóng hộp.',key='ktv-label-confirm-'+record['id'])
-            if st.button('Kết thúc PC này và đăng xuất',type='primary',key='ktv-finish-'+record['id']):
-                if not confirmed:st.error('Xác nhận đã dán đủ cặp tem và đóng đúng hộp trước khi kết thúc.')
-                else:
-                    try:
-                        ledger.confirm_labels_applied(actor,record['id'],secrets.token_hex(16))
-                        st.logout()
-                    except DomainError as e:st.error(str(e))
+            st.info('KTV nhận tem theo hàng đợi chung và xác nhận từng PC tại “Tem của tôi”.')
         with st.expander('Mã tem để thử đối chiếu khi chưa có máy in'):
             st.code(label_token(record,'PC',key),language=None)
             st.code(label_token(record,'BOX',key),language=None)
@@ -234,3 +247,4 @@ def render(ledger,actor,role,page,is_demo):
                     st.rerun()
                 except DomainError as e:st.error(str(e))
                 except Exception:st.error('Chưa xác nhận lưu thành công. Giữ nguyên màn hình và thử gửi lại; không chuyển máy khi chưa có xác nhận.')
+

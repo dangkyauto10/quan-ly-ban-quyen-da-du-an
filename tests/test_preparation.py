@@ -44,13 +44,22 @@ def test_inspection_gate_and_rework(setup_pc):
     with pytest.raises(DomainError):l.close_package('qc@example.test',d['id'],'too-early')
     with pytest.raises(DomainError):l.inspect_device('ktv@example.test',d['id'],True,'OK',d['board_serial'],'bad-qc')
     with pytest.raises(DomainError):l.inspect_device('qc@example.test',d['id'],True,'OK','wrong','bad-serial')
+    batch=l.queue_label_batch('ktv@example.test',d['unit_id'],[d['id']],'queue-one')
+    l.confirm_label_batch_printed('admin@example.test',batch,'print-one')
+    l.confirm_label_batch_collected('ktv@example.test',batch,'collect-one')
+    l.confirm_labels_applied('ktv@example.test',d['id'],d['board_serial'],'Đã dán cặp tem và đóng hộp','close-one')
     l.inspect_device('qc@example.test',d['id'],False,'Lỗi kỹ thuật',d['board_serial'],'fail')
     job=next(j for j in l.rows('admin@example.test','jobs') if j['device_id']==d['id'])
     assert job['state']=='PENDING'
     with pytest.raises(DomainError):l.close_package('qc@example.test',d['id'],'still-failed')
     l.report('ktv@example.test',job['id'],True,'','Đã sửa và kiểm tra','','rework')
+    batch=l.queue_label_batch('ktv@example.test',d['unit_id'],[d['id']],'queue-two')
+    l.confirm_label_batch_printed('admin@example.test',batch,'print-two')
+    l.confirm_label_batch_collected('ktv@example.test',batch,'collect-two')
+    l.confirm_labels_applied('ktv@example.test',d['id'],d['board_serial'],'Đã dán lại tem và đóng hộp','close-two')
     l.inspect_device('qc@example.test',d['id'],True,'Đã kiểm tra đạt',d['board_serial'],'pass')
     l.close_package('qc@example.test',d['id'],'pack')
     assert l.preparation_rows('qc@example.test')[0]['inspection_state']=='PACKED'
     l.warranty('admin@example.test',d['id'],'NEW-BOARD','Lỗi mainboard','replace')
-    assert l.preparation_rows('qc@example.test')[0]['inspection_state'] is None
+    assert l.preparation_rows('qc@example.test')[0]['inspection_state']=='FAILED'
+

@@ -22,6 +22,7 @@ def ready(s):
     entity=l.rows('admin@test.example','licenses')[0]['id']
     l.verify('vy@test.example',entity,'Verified document and license terms',op())
     l.redeem('admin@test.example',entity,a,'Confirmed at Microsoft',op())
+    l.assign_account_to_ktv('admin@test.example',a,'ktv@test.example',op())
     return entity
 
 def test_complete_flow_and_warranty(setup):
@@ -144,3 +145,16 @@ def test_vietnamese_labels_preserve_source():
     assert result['Vai trò']=='KTV (kỹ thuật viên)'
     assert result['Cách xử lý']=='Redeem vào tài khoản Microsoft'
     assert source['state']=='REDEEMED'
+
+
+
+def test_bulk_account_import_and_assignment(setup):
+    l,_,_,_=setup
+    rows=[{'project':'DA1','project_name':'Project A','unit_name':'Unit A',
+        'email':'bulk-office@test.example','owner':'Owner A'}]
+    assert l.import_accounts('admin@test.example',rows,op())=={'added':1,'unchanged':0}
+    assert l.import_accounts('admin@test.example',rows,op())=={'added':0,'unchanged':1}
+    account=next(r for r in l.rows('admin@test.example','accounts') if r['email']=='bulk-office@test.example')
+    l.assign_account_to_ktv('admin@test.example',account['id'],'ktv@test.example',op())
+    assert next(r for r in l.account_assignment_rows('admin@test.example') if r['id']==account['id'])['ktv']=='ktv@test.example'
+    with pytest.raises(DomainError):l.assign_account_to_ktv('admin@test.example',account['id'],'other@test.example',op())

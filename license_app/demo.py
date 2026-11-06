@@ -24,6 +24,10 @@ def seed_demo(ledger):
         ledger.redeem(admin, lic, account, 'Xác nhận GIẢ — không có redeem thật', f'seed-redeem-{i}')
         device = ledger.add_device(admin, unit, f'PC-MAU-0{i}', f'SN-MAU-0{i}',
             f'MB-MAU-0{i}', 'Máy minh họa', f'seed-device-{i}')
+        current=ledger.account_assignment_rows(admin)
+        if not any(item['id']==account and item['ktv']==ktv for item in current):
+            ledger.assign_account_to_ktv(admin,account,ktv,f'seed-account-handoff-{i}')
         job = ledger.assign(admin, lic, device, ktv, f'seed-assign-{i}')
         ledger.report(ktv, job, i == 1, '' if i == 1 else 'LOI-MAU',
             'Báo cáo GIẢ — chưa kiểm tra phần mềm thực tế', '', f'seed-report-{i}')
+

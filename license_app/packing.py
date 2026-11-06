@@ -2,7 +2,7 @@
 import time
 from sqlalchemy import Table,Column,String,Integer,ForeignKey,select,insert,update,delete
 from .core import DomainError,meta,devices,jobs,units
-from .preparation import PreparationLedger,plans,slots,inspections
+from .preparation import PreparationLedger,plans,slots,inspections,ktv_completions
 from .labels import compare_labels
 
 claims = meta.tables.get('packing_claims')
@@ -20,6 +20,9 @@ class PackingLedger(PreparationLedger):
             if not linked or any(j['state']!='SUCCESS' for j in linked):
                 raise DomainError('Máy chưa hoàn tất kích hoạt hoặc đang chờ KTV xử lý.')
             if any(j['ktv']==actor for j in linked):raise DomainError('Người kiểm tra phải khác người kích hoạt.')
+            completion=c.execute(select(ktv_completions).where(ktv_completions.c.device_id==device_id)).mappings().first()
+            if not completion or completion['state']!='READY_QC' or completion['board_serial']!=self._get(c,devices,device_id)['board_serial']:
+                raise DomainError('KTV chưa xác nhận dán đúng cặp tem, đối serial và đóng hộp cho PC này.')
             record=c.execute(select(inspections).where(inspections.c.id==device_id)).mappings().first()
             if record and record['state']=='PACKED':raise DomainError('Máy đã đóng gói hoàn tất; không nhận lại.')
             now=int(time.time())
@@ -75,11 +78,16 @@ class PackingLedger(PreparationLedger):
             linked=c.execute(select(jobs).where(jobs.c.device_id==device_id)).mappings().all()
             if not linked or any(j['state']!='SUCCESS' for j in linked):raise DomainError('Máy chưa hoàn tất kích hoạt; cần KTV xử lý.')
             if any(j['ktv']==actor for j in linked):raise DomainError('Người kiểm tra phải khác người kích hoạt.')
+            completion=c.execute(select(ktv_completions).where(ktv_completions.c.device_id==device_id)).mappings().first()
+            if not completion or completion['state']!='READY_QC' or completion['board_serial']!=d['board_serial']:
+                raise DomainError('KTV chưa xác nhận dán đúng cặp tem, đối serial và đóng hộp cho PC này.')
             prior=c.execute(select(inspections).where(inspections.c.id==device_id)).mappings().first()
             if prior and prior['state']=='PACKED':raise DomainError('Máy đã hoàn tất đóng gói. Không ghi trùng.')
             values={'state':'PACKED' if passed else 'FAILED','note':note.strip(),'inspector':actor}
             if prior:c.execute(update(inspections).where(inspections.c.id==device_id).values(**values))
             else:c.execute(insert(inspections).values(id=device_id,**values))
+            c.execute(update(ktv_completions).where(ktv_completions.c.device_id==device_id).values(
+                state='QC_PASSED' if passed else 'REWORK_REQUIRED'))
             if not passed:
                 for job in linked:
                     self._transition(c,job['license_id'],'ACTIVATED','ASSIGNED')
@@ -89,3 +97,4 @@ class PackingLedger(PreparationLedger):
                 {**values,'paired_labels':True,'serial_checked':serial.strip()})
             return device_id
         return self._atomic(actor,{'QC'},op,fn)
+

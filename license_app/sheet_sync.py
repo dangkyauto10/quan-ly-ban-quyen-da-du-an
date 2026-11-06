@@ -5,7 +5,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from sqlalchemy import select
-from .core import units, receiving_points, users, accounts, licenses, devices, jobs, audit, DomainError
+from .core import units, receiving_points, users, accounts, licenses, devices, jobs, audit, DomainError, meta
 from .guidance import ROLE_NAMES, ACTION_NAMES
 from .preparation import inspections
 
@@ -13,6 +13,8 @@ SHEET_ID = '1H5j9IK1U7CBef94utPNbhUQ1A31bcQD03yCEaP2L7-U'
 PLAN_TAB = '16_KE_HOACH_CAP_PC'
 PLAN_HEADERS = ['Mã dự án','Tên dự án','Tên đơn vị được cấp','Mã xã/điểm',
     'Tên xã/phường/đơn vị','Số PC tại điểm','Phần mềm','SKU','Số license được cấp']
+ACCOUNT_TAB = '17_TAI_KHOAN_MS'
+ACCOUNT_HEADERS = ['Mã dự án','Tên dự án','Tên đơn vị được cấp','Email tài khoản Microsoft','Người quản lý tài khoản']
 HEADERS = json.loads(Path(__file__).with_name('sheet_schema.json').read_text())
 SYNC_TAB = '15_DONG_BO_APP'
 STATUS_HEADERS = ['Mã lần đồng bộ','Thời điểm','Loại dữ liệu','Nguồn dữ liệu','Số bản ghi nguồn','Kết quả','Ghi chú']
@@ -80,6 +82,32 @@ def read_delivery_plan(service,spreadsheet_id):
     if not records:raise DomainError('Tab '+PLAN_TAB+' chưa có dòng kế hoạch để nạp.')
     return records
 
+def read_account_roster(service,spreadsheet_id):
+    """Read account ownership metadata only; passwords and MFA are never accepted."""
+    api=service.spreadsheets()
+    book=api.get(spreadsheetId=spreadsheet_id,fields='sheets(properties(title))').execute()
+    titles={sheet['properties']['title'] for sheet in book.get('sheets',[])}
+    if ACCOUNT_TAB not in titles:raise DomainError('Chưa có tab '+ACCOUNT_TAB+' trong Google Sheet.')
+    values=api.values().get(spreadsheetId=spreadsheet_id,range="'"+ACCOUNT_TAB+"'!A1:E1000",
+        valueRenderOption='FORMULA').execute().get('values',[])
+    if not values or values[0][:len(ACCOUNT_HEADERS)]!=ACCOUNT_HEADERS:
+        raise DomainError('Tiêu đề tab '+ACCOUNT_TAB+' chưa đúng mẫu.')
+    records=[];seen=set()
+    for line,row in enumerate(values[1:],2):
+        cells=list(row[:len(ACCOUNT_HEADERS)])+['']*max(0,len(ACCOUNT_HEADERS)-len(row))
+        if not any(str(value).strip() for value in cells):continue
+        if any(isinstance(value,str) and value.startswith('=') for value in cells):
+            raise DomainError(f'Dòng {line}: không dùng công thức trong tab tài khoản.')
+        project,project_name,unit_name,email,owner=[str(v).strip() for v in cells]
+        email=email.lower()
+        if not project or not project_name or not unit_name or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',email):
+            raise DomainError(f'Dòng {line}: cần đủ dự án, đơn vị được cấp và email Microsoft hợp lệ.')
+        if email in seen:raise DomainError(f'Dòng {line}: email Microsoft bị lặp trong danh sách.')
+        seen.add(email);records.append({'project':project,'project_name':project_name,'unit_name':unit_name,
+            'email':email,'owner':owner or 'Chưa ghi người quản lý'})
+    if not records:raise DomainError('Tab '+ACCOUNT_TAB+' chưa có dòng tài khoản để nạp.')
+    return records
+
 def ident(kind, value): return 'APP-' + kind + '-' + str(value)
 def scrub(value):
     # Strings are sent as literal stringValue, never as formulas.
@@ -98,6 +126,8 @@ def make_snapshot(ledger, actor, demo=False):
                               ('licenses',licenses),('devices',devices),('jobs',jobs),('audit',audit),('inspections',inspections)]:
                 safe = [x for x in tab.c if x.name not in {'cipher','fingerprint'}]
                 data[name] = [dict(r) for r in c.execute(select(*safe)).mappings()]
+            assignment_table=meta.tables.get('account_assignments')
+            data['account_assignments']=[dict(r) for r in c.execute(select(*assignment_table.c)).mappings()] if assignment_table is not None else []
     out = {name: [] for name in HEADERS}
     marker = 'DỮ LIỆU GIẢ — từ app chạy thử' if demo else 'Từ ứng dụng quản lý bản quyền'
     def row(tab, **values): out[tab].append([scrub(values.get(h,'')) for h in HEADERS[tab]])
@@ -133,10 +163,13 @@ def make_snapshot(ledger, actor, demo=False):
         row('04_LO_BAN_GIAO', **{'Mã lô':ident('LO',hashlib.sha256((batch+sp).encode()).hexdigest()[:16]),
             'Mã sản phẩm':sp,'Số key bàn giao':qty,'Trạng thái đối chiếu':'Chưa đối chiếu',
             'Ghi chú':marker+'; mã lô app: '+batch+'; số lượng là key đang lưu, chưa thay biên nhận công ty'})
+    active_handoffs={r['account_id']:r for r in data['account_assignments'] if r.get('released_at') is None}
     for r in data['accounts']:
+        handoff=active_handoffs.get(r['id'])
         row('06_TK_MICROSOFT', **{'Mã tài khoản':ident('TK',r['id']),'Mã đơn vị':ident('DV',r['unit_id']),
             'Email Microsoft':r['email'],'Người sở hữu/quản lý':r['owner'],'Tình trạng xác thực':'Chưa xác minh',
-            'MFA (xác thực nhiều bước)':'Chưa xác minh','Trạng thái tài khoản':'Chờ xác minh','Ghi chú':marker})
+            'MFA (xác thực nhiều bước)':'Chưa xác minh','Trạng thái tài khoản':'Đang giao KTV' if handoff else 'Chờ xác minh',
+            'Ghi chú':marker+('; KTV hiện được giao: '+str(handoff['ktv']) if handoff else '')})
     point_by_id={r['id']:r for r in data['receiving_points']}
     inspection_by_id={r['id']:r for r in data['inspections']}
     for r in data['devices']:
@@ -183,7 +216,8 @@ def make_snapshot(ledger, actor, demo=False):
                 'Trạng thái hồ sơ':'Chờ xác minh','Ghi chú':marker+'; trạng thái tại lúc ghi sự kiện thay mainboard'})
         row('12_NHAT_KY', **{'Mã sự kiện':ident('NK',r['id']),'Thời điểm':r['at'],
             'Người thao tác':ident('ND',r['actor']),'Loại thao tác':ACTION_NAMES.get(r['action'],r['action']),
-            'Mã hồ sơ liên quan':r['entity'],'Sau thay đổi':r['action'],'Ghi chú':marker})
+            'Mã hồ sơ liên quan':r['entity'],'Sau thay đổi':r['action'],
+            'Ghi chú':marker+'; chi tiết: '+scrub(json.dumps({k:v for k,v in details.items() if k in {'email','ktv','unit_id','asset_tag','board_serial','old_board','new_board','reason','batch_id','device_id','quantity','number','note','reference'}},ensure_ascii=False))})
     # Human-entered free text is scrubbed too; raw key bytes/cipher/password fields never enter snapshot.
     return {'created_at':datetime.now(timezone.utc).isoformat(),'demo':demo,'tables':out}
 
@@ -256,3 +290,4 @@ def status_request(snapshot, sheet_id):
     return {'appendCells':{'sheetId':sheet_id,'rows':[{'values':[{'userEnteredValue':{'stringValue':x},
         'userEnteredFormat':{'wrapStrategy':'WRAP','textFormat':{'fontFamily':'Arial','fontSize':11,'bold':False}}}
         for x in values]}],'fields':'userEnteredValue,userEnteredFormat'}}
+
