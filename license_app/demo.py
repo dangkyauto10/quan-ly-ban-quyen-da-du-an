@@ -31,3 +31,42 @@ def seed_demo(ledger):
         ledger.report(ktv, job, i == 1, '' if i == 1 else 'LOI-MAU',
             'Báo cáo GIẢ — chưa kiểm tra phần mềm thực tế', '', f'seed-report-{i}')
 
+
+def seed_activation_demo(ledger):
+    """Fresh, isolated activation exercise with synthetic devices and keys only."""
+    admin, operator, ktv = 'admin@example.test', 'vy@example.test', 'ktv@example.test'
+    ledger.bootstrap(admin)
+    ledger.add_user(admin, operator, 'OPERATOR', 'activation-seed-vy')
+    ledger.add_user(admin, ktv, 'KTV', 'activation-seed-ktv')
+    ledger.add_user(admin, 'ktv2@example.test', 'KTV', 'activation-seed-ktv2')
+    ledger.add_user(admin, 'qc@example.test', 'QC', 'activation-seed-qc')
+    for n in range(2, 7):
+        ledger.add_user(admin, f'qc{n}@example.test', 'QC', f'activation-seed-qc-{n}')
+
+    unit = ledger.add_unit(admin, 'TEST-KICH-HOAT', 'Đơn vị mô phỏng — không có thật',
+                           'activation-seed-unit', project_name='Môi trường test nghiệp vụ')
+    account = ledger.add_account(operator, unit, 'office@example.test',
+                                 'Tài khoản mẫu — không đăng nhập được', 'activation-seed-account')
+    ledger.assign_account_to_ktv(admin, account, ktv, 'activation-seed-account-handoff')
+    device = ledger.add_device(admin, unit, 'TEST-PC-01', 'SN-MAU-01', 'MB-SERIAL-MAU-01',
+                               'PC mô phỏng — không phải thiết bị thật', 'activation-seed-device')
+
+    products = [
+        ('Office', 'Office Home & Business 2024 — MẪU', 'Retail', 'ACCOUNT_REDEEM',
+         'AAAAA-BBBBB-CCCCC-DDDDD-EEEEE'),
+        ('Windows', 'Windows Pro — MẪU', 'OEM', 'DIRECT',
+         'FFFFF-GGGGG-HHHHH-JJJJJ-KKKKK'),
+        ('Antivirus', 'Antivirus — MẪU', 'Subscription', 'DIRECT',
+         'LLLLL-MMMMM-NNNNN-PPPPP-QQQQQ'),
+    ]
+    for index, (product, sku, channel, route, fake_key) in enumerate(products, 1):
+        ledger.import_keys(admin, f'LO-TEST-GIA-{index}', product, sku, channel,
+                           route, [fake_key], '', f'activation-seed-import-{index}')
+        license_row = next(r for r in ledger.rows(admin, 'licenses') if r['tail'] == fake_key[-5:])
+        ledger.verify(operator, license_row['id'], 'Xác nhận GIẢ — chỉ thử luồng nghiệp vụ',
+                      f'activation-seed-verify-{index}')
+        if route == 'ACCOUNT_REDEEM':
+            ledger.redeem(admin, license_row['id'], account,
+                          'MÔ PHỎNG — không truy cập Microsoft', f'activation-seed-redeem-{index}')
+        ledger.assign(admin, license_row['id'], device, ktv, f'activation-seed-assign-{index}')
+
