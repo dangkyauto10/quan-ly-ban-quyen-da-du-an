@@ -44,7 +44,7 @@ PAGE_GUIDES = {
         'Admin giao từng tài khoản Microsoft đã redeem cho đúng KTV; một PC và toàn bộ license của PC do cùng KTV xử lý.',
         'Mật khẩu và MFA (xác thực nhiều bước) do người quản lý tài khoản giữ bên ngoài app.']),
     'Kế hoạch PC theo điểm': ('Theo dõi số PC đã phân bổ theo từng điểm', [
-        'Số PC theo từng điểm lấy từ danh sách Excel ở Đơn vị & tài khoản. Màn hình này theo dõi PC đã khai báo, đánh số tem và QC đóng gói.',
+        'Số PC theo từng điểm lấy từ kế hoạch Google Sheet đã nạp tại Đơn vị & tài khoản. Màn hình này theo dõi PC đã khai báo, đánh số tem và QC đóng gói.',
         'Số tem chạy liên tục theo tổng PC của đơn vị được cấp, kể cả khi đơn vị có nhiều xã/phường/điểm nhận.']),
     'Kho key': ('Nhận bàn giao và kiểm tra', [
         'Admin nhập mã lô, loại phần mềm, phiên bản/SKU, kênh cấp phép và từng key.',
