@@ -163,7 +163,7 @@ st.sidebar.markdown(f'<div class="side-brand-row"><div class="side-mark"><img sr
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
 @st.cache_resource
 def connect(url,key,fp):return Ledger(url,key,fp)
-activation_demo=os.getenv('APP_MODE')=='activation_demo' or activation_demo
+activation_demo=os.getenv('APP_MODE')=='activation_demo'
 if os.getenv('APP_MODE','production') in {'demo','shared_test','team_test','activation_demo'}:
     shared_test=os.getenv('APP_MODE') in {'shared_test','team_test','activation_demo'}
     activation_demo=os.getenv('APP_MODE')=='activation_demo'
@@ -518,7 +518,7 @@ elif page in ['Kích hoạt','Việc của tôi']:
         job=pick('Chọn PC / license đang làm',pending,
             lambda r:f"{r.get('asset_tag',r['device_id'])} · {r.get('product','')} · {r.get('sku','')} · …{r.get('tail','')} · {r['id'][:8]}")
         if job:
-            if os.getenv('APP_MODE')=='activation_demo':
+            if os.getenv('APP_MODE')=='activation_demo' or activation_demo:
                 marker=f"board-bound-{actor}-{job['id']}"
                 st.session_state[marker]=job.get('board_serial')
                 st.info('PC và serial đang hiển thị là dữ liệu giả. Chế độ mô phỏng bỏ qua công cụ đọc serial trên máy thật.')
@@ -544,7 +544,7 @@ elif page in ['Kích hoạt','Việc của tôi']:
                     st.warning('Chưa nhận được serial. Kiểm tra công cụ đang chạy trên đúng PC và quyền mạng cục bộ của Chrome.')
                 serial_ready=(st.session_state.get(f"board-bound-{actor}-{job['id']}")==job.get('board_serial'))
                 if serial_ready:
-                    st.success(('Đã gắn serial giả ' if os.getenv('APP_MODE')=='activation_demo' else 'Đã đọc và gắn serial mainboard ')+job['board_serial']+' với PC / license đang chọn.')
+                    st.success(('Đã gắn serial giả ' if activation_demo else 'Đã đọc và gắn serial mainboard ')+job['board_serial']+' với PC / license đang chọn.')
                 else:
                     st.warning('Đọc serial trên chính PC này trước khi gửi báo cáo kích hoạt thành công.')
     else:
