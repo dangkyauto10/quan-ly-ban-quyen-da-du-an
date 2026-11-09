@@ -17,8 +17,6 @@ from license_app.packing import PackingLedger as Ledger
 from license_app.demo import seed_demo, seed_activation_demo
 from license_app.guidance import ROLE_NAMES, PAGE_GUIDES, display_record
 st.set_page_config(page_title='KEY BẢN QUYỀN',page_icon='assets/key-ban-quyen-icon.svg',layout='wide')
-board_serial_reader = components.declare_component(
-    'board_serial_reader', path=str(Path(__file__).parent / 'license_app' / 'serial_reader'))
 logo_data=base64.b64encode(Path('assets/key-ban-quyen-icon.svg').read_bytes()).decode('ascii')
 logo_src='data:image/svg+xml;base64,'+logo_data
 hero_photo_src='data:image/webp;base64,'+base64.b64encode(Path('assets/hero-tech-operations.webp').read_bytes()).decode('ascii')
@@ -313,11 +311,11 @@ def run(name,fn,confirmation=None,next_page=None,select_record=None):
     except DomainError as e:st.error(str(e))
     except Exception:st.error('Chưa xác nhận lưu thành công. Hãy kiểm tra kết nối và tải lại hồ sơ.')
 def label(r):return f"{r['product']} · {r['sku']} · …{r['tail']} · {LABELS[r['state']]}"
-def serial_agent_archive():
+def serial_usb_archive():
     bundle=io.BytesIO()
     with zipfile.ZipFile(bundle,'w',zipfile.ZIP_DEFLATED) as archive:
-        archive.write(Path('tools/SerialAgent.ps1'),'SerialAgent.ps1')
-        archive.write(Path('tools/START_SERIAL_AGENT.cmd'),'START_SERIAL_AGENT.cmd')
+        archive.write(Path('tools/LAY_SERIAL_MO_APP.ps1'),'LAY_SERIAL_MO_APP.ps1')
+        archive.write(Path('tools/LAY_SERIAL_MO_APP.cmd'),'LAY_SERIAL_MO_APP.cmd')
     return bundle.getvalue()
 if page in {'Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra','Tem của tôi','Hàng đợi in'}:
     from license_app.preparation_ui import render
@@ -520,36 +518,39 @@ elif page in ['Kích hoạt','Việc của tôi']:
         if job:
             if os.getenv('APP_MODE')=='activation_demo' or activation_demo:
                 marker=f"board-bound-{actor}-{job['id']}"
-                st.session_state[marker]=job.get('board_serial')
+                st.session_state[marker]=str(job.get('board_serial') or '').strip().upper()
                 st.info('PC và serial đang hiển thị là dữ liệu giả. Chế độ mô phỏng bỏ qua công cụ đọc serial trên máy thật.')
             else:
-                st.download_button('Tải công cụ đọc serial mainboard cho PC này',serial_agent_archive(),
-                    'cong_cu_doc_serial_mainboard.zip','application/zip',key='serial-agent-download-'+job['id'])
-                st.caption('Giải nén trên PC đang xử lý, chạy START_SERIAL_AGENT.cmd và để cửa sổ công cụ mở. Sau đó bấm nút đọc bên dưới. Công cụ chỉ đọc serial mainboard, không kích hoạt và không nhận lệnh từ app.')
-                read=board_serial_reader(job_id=job['id'],default=None,key='board-reader-'+job['id'])
-                if isinstance(read,dict) and read.get('ok') and read.get('serial'):
-                    serial_value=str(read['serial']).strip()
-                    marker=f"board-bound-{actor}-{job['id']}"
-                    if st.session_state.get(marker)!=serial_value:
+                usb_serial=str(st.query_params.get('board_serial','')).strip()
+                if usb_serial:
+                    st.info('Serial vừa đọc từ USB: **'+usb_serial+'**')
+                    st.caption('Đối chiếu đây là đúng PC đang xử lý, rồi xác nhận gắn serial vào công việc được chọn.')
+                    if st.button('Gắn serial USB vào '+str(job.get('asset_tag','PC đang chọn')),
+                                 type='primary',key='bind-usb-serial-'+job['id']):
                         operation_key=f"board-bind-op-{actor}-{job['id']}"
                         operation=st.session_state.setdefault(operation_key,str(uuid.uuid4()))
                         try:
-                            ledger.bind_board_serial(actor,job['id'],serial_value,operation)
+                            ledger.bind_board_serial(actor,job['id'],usb_serial,operation)
                             st.session_state.pop(operation_key,None)
-                            st.session_state[marker]=serial_value
+                            st.session_state[f"board-bound-{actor}-{job['id']}"]=usb_serial.upper()
+                            try:del st.query_params['board_serial']
+                            except KeyError:pass
                             st.rerun()
                         except DomainError as e:
                             st.error(str(e))
-                elif isinstance(read,dict) and read.get('ok') is False:
-                    st.warning('Chưa nhận được serial. Kiểm tra công cụ đang chạy trên đúng PC và quyền mạng cục bộ của Chrome.')
-                serial_ready=(st.session_state.get(f"board-bound-{actor}-{job['id']}")==job.get('board_serial'))
-                if serial_ready:
-                    st.success(('Đã gắn serial giả ' if activation_demo else 'Đã đọc và gắn serial mainboard ')+job['board_serial']+' với PC / license đang chọn.')
                 else:
-                    st.warning('Đọc serial trên chính PC này trước khi gửi báo cáo kích hoạt thành công.')
+                    st.download_button('Tải tiện ích USB đọc serial (chỉ cần tải một lần)',serial_usb_archive(),
+                        'KEY_BAN_QUYEN_USB_SERIAL.zip','application/zip',key='serial-usb-download-'+job['id'])
+                    st.caption('Giải nén bộ này vào USB một lần. Trên từng PC, KTV cắm USB và chạy LAY_SERIAL_MO_APP.cmd; tiện ích đọc serial rồi mở app. Không cài agent, không cần cấp quyền mạng cục bộ cho Chrome. Nếu app yêu cầu, KTV đăng nhập Google như bình thường.')
+                    st.info('Sau khi app mở, chọn đúng PC được giao. Nếu serial không hiện sau khi đăng nhập, chạy lại file USB khi đã đăng nhập.')
+            serial_ready=(st.session_state.get(f"board-bound-{actor}-{job['id']}")==str(job.get('board_serial') or '').strip().upper())
+            if serial_ready:
+                st.success(('Đã gắn serial giả ' if activation_demo else 'Đã đọc và gắn serial mainboard ')+job['board_serial']+' với PC / license đang chọn.')
+            else:
+                st.warning('Đọc serial trên chính PC này trước khi gửi báo cáo kích hoạt thành công.')
     else:
         job=pick('Việc cần báo cáo',pending,lambda r:r.get('asset_tag',r['device_id'])+' · '+r['id'][:8])
-    if role!='KTV' or (job and st.session_state.get(f"board-bound-{actor}-{job['id']}")==job.get('board_serial')):
+    if role!='KTV' or (job and st.session_state.get(f"board-bound-{actor}-{job['id']}")==str(job.get('board_serial') or '').strip().upper()):
       with st.form('report',clear_on_submit=True):
         result_choice=st.radio('Kết quả',['Thành công','Thất bại'],index=None)
         success=result_choice=='Thành công'
