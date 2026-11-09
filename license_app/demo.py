@@ -56,7 +56,7 @@ def seed_activation_demo(ledger):
          'AAAAA-BBBBB-CCCCC-DDDDD-EEEEE'),
         ('Windows', 'Windows Pro — MẪU', 'OEM', 'DIRECT',
          'FFFFF-GGGGG-HHHHH-JJJJJ-KKKKK'),
-        ('Antivirus', 'Antivirus — MẪU', 'Subscription', 'DIRECT',
+        ('Antivirus', 'Antivirus — MẪU', 'Vendor', 'DIRECT',
          'LLLLL-MMMMM-NNNNN-PPPPP-QQQQQ'),
     ]
     for index, (product, sku, channel, route, fake_key) in enumerate(products, 1):
@@ -69,4 +69,3 @@ def seed_activation_demo(ledger):
             ledger.redeem(admin, license_row['id'], account,
                           'MÔ PHỎNG — không truy cập Microsoft', f'activation-seed-redeem-{index}')
         ledger.assign(admin, license_row['id'], device, ktv, f'activation-seed-assign-{index}')
-
