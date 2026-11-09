@@ -12,6 +12,58 @@ if claims is None:
         Column('owner',String,nullable=False),Column('until',Integer,nullable=False))
 
 class PackingLedger(PreparationLedger):
+    def confirm_paired_labels(self,actor,first,second,key,op):
+        """Complete QC when the independently scanned PC and box labels match."""
+        matched=compare_labels(first,second,key)
+        device_id=matched['id']
+        def fn(c):
+            # Serialize against changes to the device and its unit plan while validating
+            # the signed QR payload against the current authoritative records.
+            c.execute(update(devices).where(devices.c.id==device_id).values(model=devices.c.model))
+            d=self._get(c,devices,device_id)
+            unit=self._get(c,units,d['unit_id'])
+            c.execute(update(units).where(units.c.id==unit['id']).values(name=units.c.name))
+            slot=self._get(c,slots,device_id)
+            plan=self._get(c,plans,unit['id'])
+            actual={'id':device_id,'asset_tag':d['asset_tag'],'serial':d['board_serial'],
+                'unit':unit['name'],'project':unit['project'],'number':slot['number'],
+                'quantity':plan['quantity']}
+            if matched.get('v')==3:
+                point=self._get(c,meta.tables['receiving_points'],d['point_id']) if d['point_id'] else None
+                actual['point']=point['name'] if point else ''
+                actual['point_code']=point['code'] if point else ''
+            if any(actual[k]!=matched[k] for k in actual):
+                raise DomainError('Tem cũ hoặc không khớp hồ sơ máy hiện tại. Dừng kiểm tra và báo Admin.')
+
+            linked=c.execute(select(jobs).where(jobs.c.device_id==device_id)).mappings().all()
+            if not linked or any(job['state']!='SUCCESS' for job in linked):
+                raise DomainError('PC chưa hoàn tất kích hoạt; chưa thể xác nhận QC.')
+            if any(job['ktv']==actor for job in linked):
+                raise DomainError('QC phải do người độc lập với KTV phụ trách PC thực hiện.')
+            completion=c.execute(select(ktv_completions).where(
+                ktv_completions.c.device_id==device_id)).mappings().first()
+            if (not completion or completion['state']!='READY_QC' or
+                completion['board_serial']!=d['board_serial']):
+                raise DomainError('KTV chưa hoàn tất PC và bàn giao sang bước QC.')
+            prior=c.execute(select(inspections).where(inspections.c.id==device_id)).mappings().first()
+            if prior and prior['state']=='PACKED':
+                raise DomainError('PC đã được QC xác nhận hoàn tất trước đó.')
+
+            values={'state':'PACKED','note':'Đã quét đúng cặp QR thân máy và vỏ hộp.',
+                'inspector':actor}
+            if prior:
+                c.execute(update(inspections).where(inspections.c.id==device_id).values(**values))
+            else:
+                c.execute(insert(inspections).values(id=device_id,**values))
+            c.execute(update(ktv_completions).where(
+                ktv_completions.c.device_id==device_id).values(state='QC_PASSED'))
+            c.execute(delete(claims).where(claims.c.id==device_id))
+            self._log(c,actor,'PACK_PC',device_id,{
+                **values,'paired_labels':True,'serial':matched['serial'],
+                'number':matched['number'],'quantity':matched['quantity']})
+            return device_id
+        return self._atomic(actor,{'QC'},op,fn)
+
     def claim_for_check(self,actor,device_id,op):
         def fn(c):
             self._get(c,devices,device_id)
