@@ -12,8 +12,8 @@ if claims is None:
         Column('owner',String,nullable=False),Column('until',Integer,nullable=False))
 
 class PackingLedger(PreparationLedger):
-    def confirm_paired_labels(self,actor,first,second,key,op):
-        """Complete QC when the independently scanned PC and box labels match."""
+    def confirm_paired_labels(self,actor,first,second,key,op,external_qc_passed=False):
+        """Record independent QC scan or KTV final scan after external QC."""
         matched=compare_labels(first,second,key)
         device_id=matched['id']
         def fn(c):
@@ -37,9 +37,16 @@ class PackingLedger(PreparationLedger):
 
             linked=c.execute(select(jobs).where(jobs.c.device_id==device_id)).mappings().all()
             if not linked or any(job['state']!='SUCCESS' for job in linked):
-                raise DomainError('PC chưa hoàn tất kích hoạt; chưa thể xác nhận QC.')
-            if any(job['ktv']==actor for job in linked):
-                raise DomainError('QC phải do người độc lập với KTV phụ trách PC thực hiện.')
+                raise DomainError('PC chưa hoàn tất kích hoạt; chưa thể đối chiếu tem.')
+            role=self._auth(c,actor,{'QC','KTV'})
+            if role=='QC':
+                if any(job['ktv']==actor for job in linked):
+                    raise DomainError('QC phải do người độc lập với KTV phụ trách PC thực hiện.')
+            else:
+                if not external_qc_passed:
+                    raise DomainError('Chỉ quét hoàn tất sau khi bên thứ ba đã kiểm tra PC.')
+                if any(job['ktv']!=actor for job in linked):
+                    raise DomainError('KTV chỉ được xác nhận cặp tem cho PC mình phụ trách.')
             completion=c.execute(select(ktv_completions).where(
                 ktv_completions.c.device_id==device_id)).mappings().first()
             if (not completion or completion['state']!='READY_QC' or
@@ -49,7 +56,9 @@ class PackingLedger(PreparationLedger):
             if prior and prior['state']=='PACKED':
                 raise DomainError('PC đã được QC xác nhận hoàn tất trước đó.')
 
-            values={'state':'PACKED','note':'Đã quét đúng cặp QR thân máy và vỏ hộp.',
+            values={'state':'PACKED',
+                'note':('KTV quét đúng cặp QR sau khi bên thứ ba kiểm tra.' if role=='KTV'
+                        else 'QC quét đúng cặp QR thân máy và vỏ hộp.'),
                 'inspector':actor}
             if prior:
                 c.execute(update(inspections).where(inspections.c.id==device_id).values(**values))
@@ -58,11 +67,12 @@ class PackingLedger(PreparationLedger):
             c.execute(update(ktv_completions).where(
                 ktv_completions.c.device_id==device_id).values(state='QC_PASSED'))
             c.execute(delete(claims).where(claims.c.id==device_id))
-            self._log(c,actor,'PACK_PC',device_id,{
+            self._log(c,actor,'FINAL_PACK_SCAN' if role=='KTV' else 'PACK_PC',device_id,{
                 **values,'paired_labels':True,'serial':matched['serial'],
-                'number':matched['number'],'quantity':matched['quantity']})
+                'number':matched['number'],'quantity':matched['quantity'],
+                'external_qc_passed':bool(role=='KTV' and external_qc_passed)})
             return device_id
-        return self._atomic(actor,{'QC'},op,fn)
+        return self._atomic(actor,{'QC','KTV'},op,fn)
 
     def claim_for_check(self,actor,device_id,op):
         def fn(c):
