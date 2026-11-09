@@ -50,6 +50,8 @@ def seed_activation_demo(ledger):
     ledger.assign_account_to_ktv(admin, account, ktv, 'activation-seed-account-handoff')
     device = ledger.add_device(admin, unit, 'TEST-PC-01', 'SN-MAU-01', 'MB-SERIAL-MAU-01',
                                'PC mô phỏng — không phải thiết bị thật', 'activation-seed-device')
+    ledger.set_plan(admin, unit, 1, 'activation-seed-plan')
+    ledger.number_device(admin, device, 'activation-seed-number')
 
     products = [
         ('Office', 'Office Home & Business 2024 — MẪU', 'Retail', 'ACCOUNT_REDEEM',
