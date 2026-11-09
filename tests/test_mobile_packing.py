@@ -5,7 +5,7 @@ import pytest
 from cryptography.fernet import Fernet
 from sqlalchemy import update,select
 from license_app.packing import PackingLedger,claims
-from license_app.preparation import inspections
+from license_app.preparation import inspections,ktv_completions
 from license_app.core import DomainError,audit
 from license_app.demo import seed_demo
 from license_app.labels import label_token
@@ -52,6 +52,28 @@ def test_atomic_report_pair_validation_and_duplicate(ready_pc):
     assert packed['state']=='PACKED' and packed['inspector']=='qc@example.test'
     assert len(events)==1
     with pytest.raises(DomainError):ledger.claim_for_check('qc2@example.test',d['id'],'claim-complete')
+
+def test_scanning_matching_pair_completes_qc_without_extra_form(ready_pc):
+    ledger,d,key,a,b=ready_pc
+    assert ledger.confirm_paired_labels('qc@example.test',a,b,key,'scan-pass')==d['id']
+    assert ledger.confirm_paired_labels('qc@example.test',a,b,key,'scan-pass')==d['id']
+    with ledger.engine.connect() as c:
+        packed=c.execute(select(inspections).where(inspections.c.id==d['id'])).mappings().one()
+        completion=c.execute(select(ktv_completions).where(
+            ktv_completions.c.device_id==d['id'])).mappings().one()
+        events=c.execute(select(audit).where(audit.c.action=='PACK_PC',audit.c.entity==d['id'])).all()
+    assert packed['state']=='PACKED' and packed['inspector']=='qc@example.test'
+    assert completion['state']=='QC_PASSED'
+    assert len(events)==1
+
+def test_pair_scan_blocks_wrong_pair_role_and_stale_plan(ready_pc):
+    ledger,d,key,a,b=ready_pc
+    with pytest.raises(DomainError):ledger.confirm_paired_labels('qc@example.test',a,a,key,'same-label')
+    with pytest.raises(DomainError):ledger.confirm_paired_labels('admin@example.test',a,b,key,'admin-scan')
+    ledger.set_plan('admin@example.test',d['unit_id'],3,'new-plan')
+    with pytest.raises(DomainError):ledger.confirm_paired_labels('qc@example.test',a,b,key,'stale-plan')
+    row=next(r for r in ledger.preparation_rows('qc@example.test') if r['id']==d['id'])
+    assert row['inspection_state'] is None
 
 def test_expired_claim_can_be_taken_and_old_owner_rejected(ready_pc):
     ledger,d,key,a,b=ready_pc

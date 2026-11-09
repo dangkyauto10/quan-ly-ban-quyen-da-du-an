@@ -172,7 +172,7 @@ def render(ledger,actor,role,page,is_demo):
     if is_demo:st.warning('Dữ liệu riêng từng phiên; để đội thử chung, dùng preview_app.py mới hoặc test_app.py.')
     notice=st.session_state.get('packing-notice')
     if notice and notice['actor']==actor:st.success(notice['text'])
-    st.caption('Mỗi người chọn danh tính kiểm tra khác nhau. Chụp lần lượt hai tem QR, đối chiếu serial mainboard thực rồi gửi kết quả. Đây là đọc ảnh chụp QR, chưa phải camera quét liên tục.')
+    st.caption('Bên thứ ba quét QR trên thân máy và hộp vỏ. Nếu đúng cặp và khớp hồ sơ, app tự ghi nhận QC hoàn tất.')
     if role in {'ADMIN','QC'}:
         reservations=ledger.check_claims(actor)
         states={'PACKED':'Đã đóng gói','PASSED':'Đã kiểm tra đạt','FAILED':'Lỗi — chờ KTV'}
@@ -228,36 +228,14 @@ def render(ledger,actor,role,page,is_demo):
         any(local[k]!=matched[k] for k in ['unit','project','number','quantity'])):
         st.error('Tem đã cũ so với hồ sơ. Cần in lại cả cặp tem.');return
     if local['inspection_state']=='PACKED':
-        st.info('Máy này đã đóng gói hoàn tất. Chuyển sang máy tiếp theo.');return
-    claim=ledger.check_claims(actor).get(local['id'])
-    owned=claim and claim['owner']==actor and claim['until']>int(time.time())
-    if st.button('Nhận máy / gia hạn 15 phút kiểm tra'):
-        try:ledger.claim_for_check(actor,local['id'],secrets.token_hex(16));st.rerun()
-        except DomainError as e:st.error(str(e))
-    if not owned:
-        if claim and claim['until']>int(time.time()):st.warning('Máy đang do '+claim['owner']+' kiểm tra.')
-        else:st.info('Bấm Nhận máy để giữ lượt kiểm tra, tránh hai người xử lý trùng.')
-        return
-    st.info('Anh/chị đang giữ lượt kiểm tra máy này trong tối đa 15 phút. Có thể gia hạn hoặc trả máy.')
-    if st.button('Trả máy — chưa gửi kết quả'):
-        try:ledger.release_check(actor,local['id'],secrets.token_hex(16));st.rerun()
-        except DomainError as e:st.error(str(e))
-    with st.form('mobile-packing-'+str(round_id)):
-        serial=st.text_input('Serial mainboard đọc trực tiếp trên PC')
-        passed=st.radio('Kết quả kiểm tra kỹ thuật',['Đạt','Không đạt'],index=None)
-        note=st.text_area('Nội dung kiểm tra / lỗi phát hiện')
-        checked=st.checkbox('Đã đối chiếu serial mainboard thực và thực hiện kiểm tra kỹ thuật')
-        send=st.form_submit_button('Gửi kết quả — đạt thì hoàn tất đóng gói',type='primary')
-        if send:
-            if not checked or passed is None:st.error('Chọn kết quả và xác nhận đã kiểm tra trước khi gửi.')
-            else:
-                operation=st.session_state.setdefault(f'pack-op-{actor}-{round_id}',secrets.token_hex(16))
-                try:
-                    ledger.submit_packing(actor,*tokens,key,passed=='Đạt',note,serial,operation)
-                    text=f"Đã lưu {local['asset_tag']} · {local['unit']}. "+('ĐÓNG GÓI HOÀN TẤT.' if passed=='Đạt' else 'KHÔNG ĐẠT — đã chuyển KTV xử lý lại.')
-                    st.session_state['packing-notice']={'actor':actor,'text':text}
-                    st.session_state['scan-round']=round_id+1
-                    st.rerun()
-                except DomainError as e:st.error(str(e))
-                except Exception:st.error('Chưa xác nhận lưu thành công. Giữ nguyên màn hình và thử gửi lại; không chuyển máy khi chưa có xác nhận.')
+        st.success('PC này đã được QC xác nhận hoàn tất. Chuyển sang máy tiếp theo.');return
+    operation=st.session_state.setdefault(f'pack-op-{actor}-{round_id}',secrets.token_hex(16))
+    try:
+        ledger.confirm_paired_labels(actor,*tokens,key,operation)
+        st.session_state['packing-notice']={'actor':actor,
+            'text':f"Đã quét đúng cặp tem cho {local['asset_tag']} · {local['unit']}. QC HOÀN TẤT; có thể niêm phong hộp."}
+        st.session_state['scan-round']=round_id+1
+        st.rerun()
+    except DomainError as e:st.error(str(e))
+    except Exception:st.error('Chưa ghi nhận QC. Giữ nguyên hai mã và thử lại; không niêm phong hộp khi chưa có xác nhận.')
 
