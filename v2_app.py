@@ -216,11 +216,21 @@ else:
             from license_app.shared_test import shared_config
             os.environ['LICENSE_TEST_DATA_DIR']=str(Path(__file__).with_name('activation-test-data'))
             @st.cache_resource
-            def activation_test_ledger(test_url,test_key,test_fp):
+            def activation_test_ledger(test_url,test_key,test_fp,seed_version):
                 test_ledger=connect(test_url,test_key,test_fp)
                 seed_activation_demo(test_ledger)
+                # Older isolated test databases may predate PC numbering. Repair only
+                # the synthetic activation fixture so successful jobs can enter label queue.
+                admin='admin@example.test'
+                unit=next((r for r in test_ledger.rows(admin,'units')
+                    if r.get('project')=='TEST-KICH-HOAT'),None)
+                device=next((r for r in test_ledger.rows(admin,'devices')
+                    if r.get('asset_tag')=='TEST-PC-01'),None)
+                if unit and device:
+                    test_ledger.set_plan(admin,unit['id'],1,'activation-seed-plan-repair-v1')
+                    test_ledger.number_device(admin,device['id'],'activation-seed-number-repair-v1')
                 return test_ledger
-            ledger=activation_test_ledger(*shared_config())
+            ledger=activation_test_ledger(*shared_config(),seed_version='activation-seed-numbering-v1')
             actor=st.sidebar.selectbox('Xem thử vai trò',[
                 'admin@example.test','vy@example.test','ktv@example.test',
                 'ktv2@example.test','qc@example.test'],
