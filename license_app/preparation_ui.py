@@ -220,7 +220,7 @@ def render(ledger,actor,role,page,is_demo):
     if st.button('Xóa hai mã / quét máy tiếp theo'):
         st.session_state['scan-round']=round_id+1
         st.rerun()
-    if role!='QC' or not matched:return
+    if role not in {'QC','KTV'} or not matched:return
     local=next((r for r in data if r['id']==matched['id']),None)
     if not local:
         st.error('Không có hồ sơ máy trong kho dữ liệu này. Kiểm tra đang mở đúng app và dùng đúng tem.');return
@@ -228,8 +228,24 @@ def render(ledger,actor,role,page,is_demo):
         any(local[k]!=matched[k] for k in ['unit','project','number','quantity'])):
         st.error('Tem đã cũ so với hồ sơ. Cần in lại cả cặp tem.');return
     if local['inspection_state']=='PACKED':
-        st.success('PC này đã được QC xác nhận hoàn tất. Chuyển sang máy tiếp theo.');return
+        st.success('PC này đã xác nhận đúng cặp tem và hoàn tất đóng gói. Chuyển sang máy tiếp theo.');return
     operation=st.session_state.setdefault(f'pack-op-{actor}-{round_id}',secrets.token_hex(16))
+    if role=='KTV':
+        st.info('Quét độc lập trên điện thoại sau khi bên thứ ba đã kiểm tra PC; không cần quay lại các bước kích hoạt.')
+        external_qc=st.checkbox('Bên thứ ba đã kiểm tra PC và cho phép đóng gói.',key=f'external-qc-{round_id}')
+        if st.button('Xác nhận cặp tem khớp và hoàn tất đóng gói',type='primary',key=f'final-pack-{round_id}'):
+            if not external_qc:
+                st.error('Cần xác nhận bên thứ ba đã kiểm tra trước khi đóng gói.')
+            else:
+                try:
+                    ledger.confirm_paired_labels(actor,*tokens,key,operation,external_qc_passed=True)
+                    st.session_state['packing-notice']={'actor':actor,
+                        'text':f"Đã quét đúng cặp tem cho {local['asset_tag']} · {local['unit']} sau khi bên thứ ba kiểm tra; hoàn tất đóng gói."}
+                    st.session_state['scan-round']=round_id+1
+                    st.rerun()
+                except DomainError as e:st.error(str(e))
+                except Exception:st.error('Chưa ghi nhận đối chiếu. Giữ nguyên hai mã và thử lại.')
+        return
     try:
         ledger.confirm_paired_labels(actor,*tokens,key,operation)
         st.session_state['packing-notice']={'actor':actor,
@@ -237,5 +253,5 @@ def render(ledger,actor,role,page,is_demo):
         st.session_state['scan-round']=round_id+1
         st.rerun()
     except DomainError as e:st.error(str(e))
-    except Exception:st.error('Chưa ghi nhận QC. Giữ nguyên hai mã và thử lại; không niêm phong hộp khi chưa có xác nhận.')
+    except Exception:st.error('Chưa ghi nhận QC. Giữ nguyên hai mã và không niêm phong hộp khi chưa có xác nhận.')
 

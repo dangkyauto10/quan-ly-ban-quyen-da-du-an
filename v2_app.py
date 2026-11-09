@@ -245,7 +245,7 @@ except DomainError:
     st.info('Tài khoản chưa được cấp quyền hoặc đã tạm dừng. Liên hệ Admin để được phân công.')
     st.stop()
 st.sidebar.caption(actor+' · '+ROLE_NAMES[role])
-menus=['Việc của tôi','Tem của tôi'] if role=='KTV' else ['Hàng đợi in'] if role=='PRINT' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
+menus=['Việc của tôi','Tem của tôi','Đối chiếu tem và kiểm tra'] if role=='KTV' else ['Hàng đợi in'] if role=='PRINT' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
 if role=='ADMIN':menus.extend(['Người dùng','Đồng bộ Google Sheet'])
 if role=='QC':menus=['Đối chiếu tem và kiểm tra']
 elif role=='ADMIN':menus.extend(['Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra','Hàng đợi in'])
