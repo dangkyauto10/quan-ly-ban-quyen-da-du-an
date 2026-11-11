@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<style>
+*{box-sizing:border-box}body{margin:0;padding:8px;font:15px system-ui,-apple-system,Segoe UI,sans-serif;color:#19314a;background:#f7faff}
+.card{max-width:640px;margin:auto;padding:12px;border:1px solid #d7e3ef;border-radius:14px;background:#fff;box-shadow:0 4px 12px #19314a12}
+video{display:none;width:100%;max-height:260px;object-fit:cover;border-radius:10px;background:#0b1724}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+button{min-height:42px;border:0;border-radius:9px;padding:9px 14px;background:#12375a;color:white;font-weight:700;font-size:15px}
+button.secondary{background:#e8eef5;color:#18324d}
+.status{margin:4px 0;color:#52677d;line-height:1.4}.hint{font-size:13px;color:#62758b;margin-top:8px}
+canvas{display:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="title"><b>Quét QR</b></div>
+  <div id="status" class="status">Camera sẽ dùng camera sau nếu thiết bị hỗ trợ.</div>
+  <video id="video" autoplay muted playsinline></video>
+  <div class="row">
+    <button id="start" type="button">Mở camera và quét</button>
+    <button id="stop" class="secondary" type="button" style="display:none">Dừng camera</button>
+  </div>
+  <div class="hint">Mã được đọc ngay trên điện thoại. Ảnh/video không được tải lên hoặc lưu.</div>
+  <canvas id="canvas"></canvas>
+</div>
+<script src="./jsQR.js"></script>
+<script>
+(function(){
+  const video=document.getElementById('video'),canvas=document.getElementById('canvas');
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  const statusEl=document.getElementById('status'),titleEl=document.getElementById('title');
+  const startBtn=document.getElementById('start'),stopBtn=document.getElementById('stop');
+  let args={},stream=null,scanTimer=null,busy=false,scanId=null,stopped=true,detector=null;
+  function send(type,extra){window.parent.postMessage(Object.assign({isStreamlitMessage:true,type},extra||{}),'*')}
+  function setHeight(){send('streamlit:setFrameHeight',{height:document.body.scrollHeight+4})}
+  function stopCamera(){
+    stopped=true;
+    if(scanTimer){clearTimeout(scanTimer);scanTimer=null}
+    if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+    video.srcObject=null;video.style.display='none';
+    startBtn.style.display='inline-block';stopBtn.style.display='none';
+  }
+  function render(event){
+    const d=event.detail||{};args=d.args||{};
+    titleEl.textContent='';
+    const b=document.createElement('b');b.textContent=args.label||'Quét QR';titleEl.appendChild(b);
+    if(args.scan_id!==scanId){
+      stopCamera();scanId=args.scan_id;busy=false;
+      statusEl.textContent='Bấm “Mở camera và quét”, hướng camera sau vào giữa mã QR.';
+    }
+    setHeight();
+  }
+  async function startCamera(){
+    statusEl.textContent='Đang mở camera…';
+    try{
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('Trình duyệt không hỗ trợ camera trực tiếp. Mở app bằng Chrome/Safari bản mới và HTTPS.');
+      if(!window.isSecureContext)throw new Error('Camera chỉ hoạt động khi mở app bằng kết nối HTTPS.');
+      const supported=window.BarcodeDetector?await BarcodeDetector.getSupportedFormats().catch(()=>[]):[];
+      if(supported.includes('qr_code'))detector=new BarcodeDetector({formats:['qr_code']});
+      else if(typeof window.jsQR!=='function')throw new Error('Trình duyệt chưa hỗ trợ bộ đọc QR này.');
+      try{
+        stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
+      }catch(firstError){
+        stream=await navigator.mediaDevices.getUserMedia({audio:false,video:true});
+      }
+      video.srcObject=stream;video.style.display='block';await video.play();
+      stopped=false;startBtn.style.display='none';stopBtn.style.display='inline-block';
+      const track=stream.getVideoTracks()[0],settings=track&&track.getSettings?track.getSettings():{};
+      statusEl.textContent=(settings.facingMode==='environment'?'Đang dùng camera sau. ':'Camera đã mở. ')+'Đưa mã QR vào khung hình.';
+      setHeight();scanFrame();
+    }catch(e){
+      stopCamera();
+      statusEl.textContent=e&&e.message?e.message:'Không mở được camera. Kiểm tra quyền camera của trình duyệt.';
+      setHeight();
+    }
+  }
+  async function scanFrame(){
+    if(stopped||busy||!stream)return;
+    if(video.readyState>=2&&video.videoWidth){
+      const scale=Math.min(1,900/video.videoWidth);
+      canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      try{
+        let value='';
+        if(detector){
+          const found=await detector.detect(canvas);
+          if(found&&found.length)value=found[0].rawValue||'';
+        }else{
+          const image=ctx.getImageData(0,0,canvas.width,canvas.height);
+          const code=window.jsQR(image.data,image.width,image.height,{inversionAttempts:'attemptBoth'});
+          if(code)value=code.data||'';
+        }
+        if(value){
+          busy=true;statusEl.textContent='Đã đọc mã QR. Đang đối chiếu…';stopCamera();
+          send('streamlit:setComponentValue',{value:{scan_id:scanId,text:value},dataType:'json'});
+          return;
+        }
+      }catch(e){/* Continue scanning; frames can be blurred or partially covered. */}
+    }
+    if(!stopped)scanTimer=setTimeout(scanFrame,140);
+  }
+  startBtn.addEventListener('click',startCamera);
+  stopBtn.addEventListener('click',function(){stopCamera();statusEl.textContent='Đã dừng camera.';setHeight()});
+  window.addEventListener('message',function(event){if(event.data&&event.data.type==='streamlit:render')render(event)});
+  window.addEventListener('pagehide',stopCamera);
+  send('streamlit:componentReady',{apiVersion:1});
+  setHeight();
+})();
+</script>
+</body>
+</html>
