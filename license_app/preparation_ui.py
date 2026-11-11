@@ -4,10 +4,14 @@ import hashlib
 import csv
 import io
 import time
+from pathlib import Path
 import streamlit as st
 import streamlit.components.v1 as components
 from .core import DomainError
-from .labels import label_token,print_html,print_html_batch,compare_labels,decode_photo
+from .labels import label_token,print_html,print_html_batch,compare_labels
+
+live_qr_scanner=components.declare_component(
+    'license_live_qr_scanner',path=str(Path(__file__).parent/'qr_scanner'))
 
 @st.cache_resource
 def preview_signing_key():
@@ -193,23 +197,24 @@ def render(ledger,actor,role,page,is_demo):
                     try:ledger.release_check(actor,release['id'],secrets.token_hex(16));st.rerun()
                     except DomainError as e:st.error(str(e))
     round_id=st.session_state.get('scan-round',0)
-    tokens=[]
-    for i,title in enumerate(['1. Tem THÂN MÁY','2. Tem VỎ HỘP']):
+    titles=['Tem THÂN MÁY','Tem VỎ HỘP']
+    token_keys=[f'scan-text-{round_id}-{i}' for i in range(2)]
+    tokens=[st.session_state.get(k,'') for k in token_keys]
+    next_index=next((i for i,value in enumerate(tokens) if not value),None)
+    if next_index is not None:
+        title=titles[next_index]
         st.subheader(title)
-        field=f'scan-text-{round_id}-{i}'
-        photo=None
-        if os.getenv('APP_MODE')!='shared_test':
-            photo=st.camera_input('Chụp '+title[3:].lower(),key=f'camera-{round_id}-{i}')
-        upload=st.file_uploader('Hoặc chọn ảnh tem',type=['png','jpg','jpeg'],key=f'upload-{round_id}-{i}')
-        source=photo or upload
-        if source:
-            raw=source.getvalue();digest=hashlib.sha256(raw).hexdigest()
-            marker=f'scan-image-{round_id}-{i}'
-            if st.session_state.get(marker)!=digest:
-                try:st.session_state[field]=decode_photo(raw)
-                except DomainError as e:st.session_state[field]='';st.error(str(e))
-                st.session_state[marker]=digest
-        tokens.append(st.text_input('Nội dung QR '+str(i+1)+' (dán mã khi thử chưa có tem)',key=field))
+        st.caption('Đưa camera sau vào gần mã QR. App đọc trực tiếp từ hình ảnh đang xem trước; không chụp, tải lên hoặc lưu ảnh.')
+        scan_id=f'{round_id}-{next_index}'
+        result=live_qr_scanner(scan_id=scan_id,label=title,default=None,
+            key=f'live-qr-{round_id}',height=300)
+        if isinstance(result,dict) and result.get('scan_id')==scan_id and result.get('text'):
+            st.session_state[token_keys[next_index]]=result['text']
+            st.rerun()
+        if next_index==1 and tokens[0]:
+            st.success('Đã đọc QR tem THÂN MÁY. Tiếp tục quét tem VỎ HỘP.')
+    else:
+        st.success('Đã đọc đủ hai mã QR. Đang đối chiếu cặp tem.')
     matched=None
     if all(tokens):
         try:
