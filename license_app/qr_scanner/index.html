@@ -33,13 +33,37 @@ canvas{display:none}
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
   const statusEl=document.getElementById('status'),titleEl=document.getElementById('title');
   const startBtn=document.getElementById('start'),stopBtn=document.getElementById('stop');
-  let args={},stream=null,scanTimer=null,busy=false,scanId=null,stopped=true,detector=null;
+  let args={},stream=null,videoTrack=null,scanTimer=null,busy=false,scanId=null,stopped=true,detector=null,torchSupported=false,torchOn=false,torchAttempted=false,lowLightCount=0,brightLightCount=0,lastLightCheck=0;
+  async function setTorch(enabled){
+    if(!videoTrack||!torchSupported||!videoTrack.applyConstraints)return false;
+    try{await videoTrack.applyConstraints({advanced:[{torch:enabled}]});torchOn=enabled;return true}catch(e){return false}
+  }
+  function checkLight(){
+    const now=Date.now();if(now-lastLightCheck<650)return;lastLightCheck=now;
+    try{
+      const frame=ctx.getImageData(0,0,canvas.width,canvas.height),data=frame.data,step=Math.max(4,Math.floor(Math.min(canvas.width,canvas.height)/36))*4;
+      let sum=0,count=0;
+      for(let i=0;i<data.length;i+=step){sum+=(0.2126*data[i]+0.7152*data[i+1]+0.0722*data[i+2]);count++}
+      const level=count?sum/count:255;
+      if(level<68){lowLightCount++;brightLightCount=0}
+      else if(level>118){brightLightCount++;lowLightCount=0}
+      else {lowLightCount=0;brightLightCount=0}
+      if(lowLightCount>=2&&!torchAttempted&&!torchOn){
+        torchAttempted=true;
+        if(torchSupported){statusEl.textContent='Ánh sáng yếu — đang tự bật đèn camera…';setTorch(true).then(ok=>{statusEl.textContent=ok?'Ánh sáng yếu — đèn camera đã tự bật.':'Không bật được đèn camera; hãy tăng ánh sáng rồi quét tiếp.';setHeight()})}
+        else statusEl.textContent='Ánh sáng yếu — trình duyệt/điện thoại không hỗ trợ bật đèn tự động. Hãy tăng ánh sáng rồi quét tiếp.';
+      }
+      if(brightLightCount>=3&&torchOn){setTorch(false);torchAttempted=false;statusEl.textContent='Đủ sáng — đã tự tắt đèn camera.'}
+    }catch(e){}
+  }
   function send(type,extra){window.parent.postMessage(Object.assign({isStreamlitMessage:true,type},extra||{}),'*')}
   function setHeight(){send('streamlit:setFrameHeight',{height:document.body.scrollHeight+4})}
   function stopCamera(){
     stopped=true;
     if(scanTimer){clearTimeout(scanTimer);scanTimer=null}
+    if(videoTrack&&torchOn)setTorch(false);
     if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+    videoTrack=null;torchSupported=false;torchOn=false;torchAttempted=false;lowLightCount=0;brightLightCount=0;
     video.srcObject=null;video.style.display='none';
     startBtn.style.display='inline-block';stopBtn.style.display='none';
   }
@@ -66,6 +90,8 @@ canvas{display:none}
       }catch(firstError){
         stream=await navigator.mediaDevices.getUserMedia({audio:false,video:true});
       }
+      videoTrack=stream.getVideoTracks()[0];
+      try{const caps=videoTrack.getCapabilities?videoTrack.getCapabilities():{};torchSupported=!!caps.torch}catch(e){torchSupported=false}
       video.srcObject=stream;video.style.display='block';await video.play();
       stopped=false;startBtn.style.display='none';stopBtn.style.display='inline-block';
       const track=stream.getVideoTracks()[0],settings=track&&track.getSettings?track.getSettings():{};
@@ -83,6 +109,7 @@ canvas{display:none}
       const scale=Math.min(1,900/video.videoWidth);
       canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);
       ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      checkLight();
       try{
         let value='';
         if(detector){
