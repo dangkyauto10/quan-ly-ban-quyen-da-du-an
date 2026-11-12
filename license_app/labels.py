@@ -5,6 +5,7 @@ import hmac
 import html
 import io
 import json
+import zlib
 from urllib.parse import urlparse, parse_qs
 import qrcode
 import qrcode.image.svg
@@ -22,19 +23,32 @@ def label_token(record,kind,key):
     else:data['v']=2
     data['kind']=kind
     raw=json.dumps(data,ensure_ascii=False,separators=(',',':')).encode()
-    body=base64.urlsafe_b64encode(raw).decode().rstrip('=')
-    sig=hmac.new(key,body.encode(),hashlib.sha256).hexdigest()
-    return body+'.'+sig
+    body=base64.urlsafe_b64encode(zlib.compress(raw,9)).decode().rstrip('=')
+    signed='v4.'+body
+    sig=base64.urlsafe_b64encode(hmac.new(key,signed.encode(),hashlib.sha256).digest()[:16]).decode().rstrip('=')
+    return signed+'.'+sig
 
 def read_label(value,key):
     value=value.strip()
     if value.startswith('https://'):value=parse_qs(urlparse(value).query).get('tem',[''])[0]
     if len(value)>6000:raise DomainError('Tem quá dài hoặc không hợp lệ.')
     try:
-        body,sig=value.split('.')
-        expected=hmac.new(key,body.encode(),hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(sig,expected):raise ValueError()
-        data=json.loads(base64.urlsafe_b64decode(body+'='*(-len(body)%4)))
+        if value.startswith('v4.'):
+            version,body,sig=value.split('.')
+            signed=version+'.'+body
+            expected=base64.urlsafe_b64encode(
+                hmac.new(key,signed.encode(),hashlib.sha256).digest()[:16]).decode().rstrip('=')
+            if not hmac.compare_digest(sig,expected):raise ValueError()
+            compressed=base64.urlsafe_b64decode(body+'='*(-len(body)%4))
+            decoder=zlib.decompressobj()
+            raw=decoder.decompress(compressed,8193)
+            if len(raw)>8192 or decoder.unconsumed_tail or not decoder.eof:raise ValueError()
+            data=json.loads(raw)
+        else:
+            body,sig=value.split('.')
+            expected=hmac.new(key,body.encode(),hashlib.sha256).hexdigest()
+            if not hmac.compare_digest(sig,expected):raise ValueError()
+            data=json.loads(base64.urlsafe_b64decode(body+'='*(-len(body)%4)))
         if data['v'] not in {2,3} or data['kind'] not in {'PC','BOX'}:raise ValueError()
         if any(k not in data for k in ['id','asset_tag','serial','unit','project','number','quantity']):raise ValueError()
         if data['v']==3 and any(k not in data for k in ['point','point_code']):raise ValueError()
