@@ -91,7 +91,7 @@ canvas{display:none}
         stream=await navigator.mediaDevices.getUserMedia({audio:false,video:true});
       }
       videoTrack=stream.getVideoTracks()[0];
-      try{const caps=videoTrack.getCapabilities?videoTrack.getCapabilities():{};torchSupported=!!caps.torch}catch(e){torchSupported=false}
+      try{const caps=videoTrack.getCapabilities?videoTrack.getCapabilities():{};torchSupported=!!videoTrack.applyConstraints&&(caps.torch!==false)}catch(e){torchSupported=false}
       video.srcObject=stream;video.style.display='block';await video.play();
       stopped=false;startBtn.style.display='none';stopBtn.style.display='inline-block';
       const track=stream.getVideoTracks()[0],settings=track&&track.getSettings?track.getSettings():{};
