@@ -18,7 +18,7 @@ canvas{display:none}
 <div class="card">
   <div id="title"><b>Quét QR</b></div>
   <div id="status" class="status">Camera sẽ dùng camera sau nếu thiết bị hỗ trợ.</div>
-  <div id="engine" class="engine">Bộ đọc QR cục bộ v4 · đang kiểm tra…</div>
+  <div id="engine" class="engine">Bộ đọc QR cục bộ v5 · đang kiểm tra…</div>
   <video id="video" autoplay muted playsinline></video>
   <div class="row">
     <button id="start" type="button">Mở camera và quét</button>
@@ -74,7 +74,7 @@ canvas{display:none}
     const d=event.detail||{};args=d.args||{};
     titleEl.textContent='';
     const b=document.createElement('b');b.textContent=args.label||'Quét QR';titleEl.appendChild(b);
-    engineEl.textContent=typeof window.jsQR==='function'?'Bộ đọc QR cục bộ v4 · sẵn sàng':'Bộ đọc QR cục bộ v4 · chưa tải được thư viện';
+    if(stopped)engineEl.textContent=typeof window.jsQR==='function'?'Bộ đọc QR cục bộ v5 · sẵn sàng':'Bộ đọc QR cục bộ v5 · chưa tải được thư viện';
     if(args.scan_id!==scanId){
       stopCamera();scanId=args.scan_id;busy=false;
       statusEl.textContent='Bấm “Mở camera và quét”, hướng camera sau vào giữa mã QR.';
@@ -87,7 +87,7 @@ canvas{display:none}
       if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('Trình duyệt không hỗ trợ camera trực tiếp. Mở app bằng Chrome/Safari bản mới và HTTPS.');
       if(!window.isSecureContext)throw new Error('Camera chỉ hoạt động khi mở app bằng kết nối HTTPS.');
       if(typeof window.jsQR!=='function')throw new Error('Chưa tải được bộ đọc QR cục bộ. Tải lại trang để tải đủ thành phần quét.');
-      scanAttempts=0;engineEl.textContent='Bộ đọc QR cục bộ v4 · đang phân tích hình camera';
+      scanAttempts=0;engineEl.textContent='Bộ đọc QR cục bộ v5 · đang phân tích hình camera';
       try{
         stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
       }catch(firstError){
@@ -99,7 +99,7 @@ canvas{display:none}
       stopped=false;startBtn.style.display='none';stopBtn.style.display='inline-block';
       const track=stream.getVideoTracks()[0],settings=track&&track.getSettings?track.getSettings():{};
       statusEl.textContent=(settings.facingMode==='environment'?'Đang dùng camera sau. ':'Camera đã mở. ')+'Đưa mã QR vào khung hình.';
-      engineEl.textContent='Bộ đọc QR cục bộ v4 · camera '+(settings.width||video.videoWidth)+'×'+(settings.height||video.videoHeight)+' · lượt đọc 0';
+      engineEl.textContent='Bộ đọc QR cục bộ v5 · camera '+(settings.width||video.videoWidth)+'×'+(settings.height||video.videoHeight)+' · lượt đọc 0';
       setHeight();scanFrame();
     }catch(e){
       stopCamera();
@@ -115,30 +115,30 @@ canvas{display:none}
       ctx.drawImage(video,0,0,canvas.width,canvas.height);
       checkLight();
       try{
-        const image=ctx.getImageData(0,0,canvas.width,canvas.height);
-        let code=window.jsQR(image.data,image.width,image.height,{inversionAttempts:'dontInvert'});
-        if(!code){
-          const cropWidth=Math.round(canvas.width*0.78),cropHeight=Math.round(canvas.height*0.78);
-          const cropX=Math.round((canvas.width-cropWidth)/2),cropY=Math.round((canvas.height-cropHeight)/2);
-          const focusWidth=Math.min(1280,Math.max(720,canvas.width));
-          const focusHeight=Math.round(focusWidth*cropHeight/cropWidth);
-          focusCanvas.width=focusWidth;focusCanvas.height=focusHeight;
-          focusContext.drawImage(canvas,cropX,cropY,cropWidth,cropHeight,0,0,focusWidth,focusHeight);
-          const focused=focusContext.getImageData(0,0,focusWidth,focusHeight);
-          code=window.jsQR(focused.data,focused.width,focused.height,{inversionAttempts:'attemptBoth'});
+        scanAttempts++;
+        const cropWidth=Math.round(canvas.width*0.74),cropHeight=Math.round(canvas.height*0.78);
+        const cropX=Math.round((canvas.width-cropWidth)/2),cropY=Math.round((canvas.height-cropHeight)/2);
+        const focusWidth=Math.min(1120,Math.max(720,cropWidth));
+        const focusHeight=Math.round(focusWidth*cropHeight/cropWidth);
+        focusCanvas.width=focusWidth;focusCanvas.height=focusHeight;
+        focusContext.drawImage(canvas,cropX,cropY,cropWidth,cropHeight,0,0,focusWidth,focusHeight);
+        const focused=focusContext.getImageData(0,0,focusWidth,focusHeight);
+        let code=window.jsQR(focused.data,focused.width,focused.height,{inversionAttempts:'attemptBoth'});
+        if(!code&&scanAttempts%6===0){
+          const full=ctx.getImageData(0,0,canvas.width,canvas.height);
+          code=window.jsQR(full.data,full.width,full.height,{inversionAttempts:'attemptBoth'});
         }
         const value=code?code.data||'':'';
-        scanAttempts++;
-        if(scanAttempts%20===0){
-          engineEl.textContent='Bộ đọc QR cục bộ v4 · camera '+canvas.width+'×'+canvas.height+' · đã đọc '+scanAttempts+' khung hình';
-          if(scanAttempts>=40)statusEl.textContent='Chưa nhận QR: đưa mã vào giữa khung, giữ máy ổn định và chạm màn hình để lấy nét.';
+        if(scanAttempts%6===0){
+          engineEl.textContent='Bộ đọc QR cục bộ v5 · đã xử lý '+scanAttempts+' khung hình · '+canvas.width+'×'+canvas.height;
+          if(scanAttempts>=24)statusEl.textContent='Đang đọc QR: giữ mã ở giữa khung hình, tránh rung và phản chiếu sáng.';
         }
         if(value){
           busy=true;statusEl.textContent='Đã đọc mã QR. Đang đối chiếu…';stopCamera();
           send('streamlit:setComponentValue',{value:{scan_id:scanId,text:value},dataType:'json'});
           return;
         }
-      }catch(e){/* Continue scanning; frames can be blurred or partially covered. */}
+      }catch(e){engineEl.textContent='Bộ đọc QR cục bộ v5 · lỗi đọc: '+String(e&&e.message||e).slice(0,90);}
     }
     if(!stopped)scanTimer=setTimeout(scanFrame,140);
   }
