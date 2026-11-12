@@ -106,16 +106,20 @@ canvas{display:none}
   async function scanFrame(){
     if(stopped||busy||!stream)return;
     if(video.readyState>=2&&video.videoWidth){
-      const scale=Math.min(1,900/video.videoWidth);
+      const scale=Math.min(1,1280/video.videoWidth);
       canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);
       ctx.drawImage(video,0,0,canvas.width,canvas.height);
       checkLight();
       try{
         let value='';
         if(detector){
-          const found=await detector.detect(canvas);
-          if(found&&found.length)value=found[0].rawValue||'';
-        }else{
+          try{
+            const found=await detector.detect(canvas);
+            if(found&&found.length)value=found[0].rawValue||'';
+          }catch(e){detector=null}
+        }
+        // Keep the local decoder as a fallback when the browser detector misses a dense or blurred QR.
+        if(!value&&typeof window.jsQR==='function'){
           const image=ctx.getImageData(0,0,canvas.width,canvas.height);
           const code=window.jsQR(image.data,image.width,image.height,{inversionAttempts:'attemptBoth'});
           if(code)value=code.data||'';
