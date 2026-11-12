@@ -134,7 +134,10 @@ canvas{display:none}
           if(scanAttempts>=24)statusEl.textContent='Đang đọc QR: giữ mã ở giữa khung hình, tránh rung và phản chiếu sáng.';
         }
         if(value){
-          busy=true;statusEl.textContent='Đã đọc mã QR. Đang đối chiếu…';stopCamera();
+          busy=true;stopCamera();
+          startBtn.style.display='none';stopBtn.style.display='none';
+          statusEl.textContent='Đã nhận QR. Đang chuyển sang bước đối chiếu…';
+          engineEl.textContent='Mã QR đã gửi cho app.';
           send('streamlit:setComponentValue',{value:{scan_id:scanId,text:value},dataType:'json'});
           return;
         }
