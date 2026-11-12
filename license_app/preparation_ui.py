@@ -207,7 +207,7 @@ def render(ledger,actor,role,page,is_demo):
         st.caption('Đưa camera sau vào gần mã QR. App đọc trực tiếp từ hình ảnh đang xem trước; không chụp, tải lên hoặc lưu ảnh.')
         scan_id=f'{round_id}-{next_index}'
         result=live_qr_scanner(scan_id=scan_id,label=title,default=None,
-            key=f'live-qr-{round_id}',height=300)
+            key=f'live-qr-{scan_id}',height=300)
         if isinstance(result,dict) and result.get('scan_id')==scan_id and result.get('text'):
             st.session_state[token_keys[next_index]]=result['text']
             st.rerun()
