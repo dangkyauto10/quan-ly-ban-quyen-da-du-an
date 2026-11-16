@@ -19,8 +19,11 @@ def preview_signing_key():
     # It never grants access to another browser's ledger.
     return secrets.token_bytes(32)
 
-def render(ledger,actor,role,page,is_demo):
-    if os.getenv('APP_MODE') in {'shared_test','team_test'}:
+def render(ledger,actor,role,page,is_demo,stable_test_labels=False):
+    if stable_test_labels:
+        # Synthetic activation labels must remain readable across app restarts/deploys.
+        key=hashlib.sha256(b'license-activation-demo-label-v1').digest()
+    elif os.getenv('APP_MODE') in {'shared_test','team_test'}:
         key=hashlib.sha256(ledger.fingerprint_key+b'paired-label-v1').digest()
     elif not is_demo:
         key_text=os.getenv('QR_SIGNING_KEY') or st.secrets.get('qr_signing_key','')
