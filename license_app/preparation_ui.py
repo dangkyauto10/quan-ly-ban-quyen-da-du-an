@@ -208,9 +208,14 @@ def render(ledger,actor,role,page,is_demo):
         scan_id=f'{round_id}-{next_index}'
         result=live_qr_scanner(scan_id=scan_id,label=title,default=None,
             key=f'live-qr-{scan_id}',height=300)
-        if isinstance(result,dict) and result.get('scan_id')==scan_id and result.get('text'):
-            st.session_state[token_keys[next_index]]=result['text']
+        scan_result=result
+        if isinstance(scan_result,dict) and isinstance(scan_result.get('value'),dict):
+            scan_result=scan_result['value']
+        if isinstance(scan_result,dict) and scan_result.get('scan_id')==scan_id and scan_result.get('text'):
+            st.session_state[token_keys[next_index]]=scan_result['text']
             st.rerun()
+        elif result is not None:
+            st.warning('App đã nhận phản hồi từ camera nhưng chưa khớp lượt quét. Giữ nguyên tem, không quét lại; tải lại trang để thử lại.')
         if next_index==1 and tokens[0]:
             st.success('Đã đọc QR tem THÂN MÁY. Tiếp tục quét tem VỎ HỘP.')
     else:
