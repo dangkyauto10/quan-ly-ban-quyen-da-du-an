@@ -176,7 +176,8 @@ def render(ledger,actor,role,page,is_demo):
     if is_demo:st.warning('Dữ liệu riêng từng phiên; để đội thử chung, dùng preview_app.py mới hoặc test_app.py.')
     notice=st.session_state.get('packing-notice')
     if notice and notice['actor']==actor:st.success(notice['text'])
-    st.caption('Bên thứ ba quét QR trên thân máy và hộp vỏ. Nếu đúng cặp và khớp hồ sơ, app tự ghi nhận QC hoàn tất.')
+    st.markdown('### Đối chiếu tem độc lập')
+    st.caption('Không phụ thuộc các bước kích hoạt trên PC. Quét tem VỎ HỘP trước, rồi tem THÂN MÁY; đủ hai mã thì app tự đối chiếu và ghi nhận QC.')
     if role in {'ADMIN','QC'}:
         reservations=ledger.check_claims(actor)
         states={'PACKED':'Đã đóng gói','PASSED':'Đã kiểm tra đạt','FAILED':'Lỗi — chờ KTV'}
@@ -197,7 +198,7 @@ def render(ledger,actor,role,page,is_demo):
                     try:ledger.release_check(actor,release['id'],secrets.token_hex(16));st.rerun()
                     except DomainError as e:st.error(str(e))
     round_id=st.session_state.get('scan-round',0)
-    titles=['Tem THÂN MÁY','Tem VỎ HỘP']
+    titles=['Tem VỎ HỘP','Tem THÂN MÁY']
     token_keys=[f'scan-text-{round_id}-{i}' for i in range(2)]
     tokens=[st.session_state.get(k,'') for k in token_keys]
     next_index=next((i for i,value in enumerate(tokens) if not value),None)
@@ -217,7 +218,7 @@ def render(ledger,actor,role,page,is_demo):
         elif result is not None:
             st.warning('App đã nhận phản hồi từ camera nhưng chưa khớp lượt quét. Giữ nguyên tem, không quét lại; tải lại trang để thử lại.')
         if next_index==1 and tokens[0]:
-            st.success('Đã đọc QR tem THÂN MÁY. Tiếp tục quét tem VỎ HỘP.')
+            st.success('Đã đọc QR tem VỎ HỘP. Tiếp tục quét tem THÂN MÁY.')
     else:
         st.success('Đã đọc đủ hai mã QR. Đang đối chiếu cặp tem.')
     matched=None

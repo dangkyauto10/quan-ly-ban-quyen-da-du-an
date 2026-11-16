@@ -245,6 +245,11 @@ except DomainError:
     st.info('Tài khoản chưa được cấp quyền hoặc đã tạm dừng. Liên hệ Admin để được phân công.')
     st.stop()
 st.sidebar.caption(actor+' · '+ROLE_NAMES[role])
+def open_pair_check():
+    section='03 · Tem QR & kiểm tra'
+    st.session_state['nav-section']=section
+    st.session_state['nav-page-'+section]='Đối chiếu tem và kiểm tra'
+
 menus=['Việc của tôi','Tem của tôi','Đối chiếu tem và kiểm tra'] if role=='KTV' else ['Hàng đợi in'] if role=='PRINT' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
 if role=='ADMIN':menus.extend(['Người dùng','Đồng bộ Google Sheet'])
 if role=='QC':menus=['Đối chiếu tem và kiểm tra']
@@ -271,12 +276,15 @@ if post_action_page:
 st.sidebar.divider()
 section=st.sidebar.selectbox('Nhóm công việc',list(groups),key='nav-section')
 page=st.sidebar.radio('Chức năng',groups[section],key='nav-page-'+section)
+if role in {'KTV','QC','ADMIN'}:
+    st.button('📷 Mở đối chiếu tem',key='open-pair-check',
+        on_click=open_pair_check,use_container_width=True,type='primary')
 st.sidebar.divider()
 st.sidebar.caption('V2 · Giao diện sáng · 05/11/2026')
 st.subheader(page)
 flow_phases=[('01','Chuẩn bị'),('02','Redeem & giao việc'),('03','Kích hoạt & in QR'),('04','Quét & đóng gói')]
 flow_stage={'Đơn vị & tài khoản':0,'Kế hoạch PC theo điểm':0,'Kho key':0,'Redeem Office':1,'Thiết bị':1,'Phân bổ':1,'Kích hoạt':2,'Việc của tôi':2,'Tem của tôi':2,'In tem PC và vỏ hộp':2,'Hàng đợi in':2,'Đối chiếu tem và kiểm tra':3}
-if page in flow_stage:
+if page in flow_stage and not (page=='Đối chiếu tem và kiểm tra' and role in {'KTV','QC'}):
     current=flow_stage[page]
     flow_html=''.join(f'<div class="process-phase {"active" if i==current else "prior" if i<current else ""}"><b>{number}</b><span>{title}</span></div>' for i,(number,title) in enumerate(flow_phases))
     st.markdown(f'<div class="process-breadcrumb">{flow_html}</div>',unsafe_allow_html=True)
