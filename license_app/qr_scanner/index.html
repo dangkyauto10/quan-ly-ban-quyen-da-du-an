@@ -36,7 +36,7 @@ canvas{display:none}
   const focusContext=focusCanvas.getContext('2d',{willReadFrequently:true});
   const statusEl=document.getElementById('status'),titleEl=document.getElementById('title'),engineEl=document.getElementById('engine');
   const startBtn=document.getElementById('start'),stopBtn=document.getElementById('stop');
-  let args={},stream=null,videoTrack=null,scanTimer=null,busy=false,scanId=null,stopped=true,torchSupported=false,torchOn=false,torchAttempted=false,lowLightCount=0,brightLightCount=0,lastLightCheck=0,scanAttempts=0;
+  let args={},stream=null,videoTrack=null,scanTimer=null,busy=false,scanId=null,stopped=true,torchSupported=false,torchOn=false,torchAttempted=false,lowLightCount=0,brightLightCount=0,lastLightCheck=0,scanAttempts=0,pendingResult=null,pendingTimer=null,pendingAttempts=0;
   async function setTorch(enabled){
     if(!videoTrack||!torchSupported||!videoTrack.applyConstraints)return false;
     try{await videoTrack.applyConstraints({advanced:[{torch:enabled}]});torchOn=enabled;return true}catch(e){return false}
@@ -60,6 +60,14 @@ canvas{display:none}
     }catch(e){}
   }
   function send(type,extra){window.parent.postMessage(Object.assign({isStreamlitMessage:true,type},extra||{}),'*')}
+  function clearPending(){pendingResult=null;pendingAttempts=0;if(pendingTimer){clearTimeout(pendingTimer);pendingTimer=null}}
+  function deliverPending(){
+    if(!pendingResult)return;
+    pendingAttempts++;
+    send('streamlit:setComponentValue',{value:pendingResult,dataType:'json'});
+    if(pendingAttempts<6)pendingTimer=setTimeout(deliverPending,500);
+    else engineEl.textContent='App chưa phản hồi QR. Giữ nguyên tem; không cần quét lại.';
+  }
   function setHeight(){send('streamlit:setFrameHeight',{height:document.body.scrollHeight+4})}
   function stopCamera(){
     stopped=true;
@@ -76,7 +84,7 @@ canvas{display:none}
     const b=document.createElement('b');b.textContent=args.label||'Quét QR';titleEl.appendChild(b);
     if(stopped)engineEl.textContent=typeof window.jsQR==='function'?'Bộ đọc QR cục bộ v5 · sẵn sàng':'Bộ đọc QR cục bộ v5 · chưa tải được thư viện';
     if(args.scan_id!==scanId){
-      stopCamera();scanId=args.scan_id;busy=false;
+      clearPending();stopCamera();scanId=args.scan_id;busy=false;
       statusEl.textContent='Bấm “Mở camera và quét”, hướng camera sau vào giữa mã QR.';
     }
     setHeight();
@@ -137,8 +145,8 @@ canvas{display:none}
           busy=true;stopCamera();
           startBtn.style.display='none';stopBtn.style.display='none';
           statusEl.textContent='Đã nhận QR. Đang chuyển sang bước đối chiếu…';
-          engineEl.textContent='Mã QR đã gửi cho app.';
-          send('streamlit:setComponentValue',{value:{scan_id:scanId,text:value},dataType:'json'});
+          engineEl.textContent='Đang gửi QR cho app…';
+          pendingResult={scan_id:scanId,text:value};pendingAttempts=0;deliverPending();
           return;
         }
       }catch(e){engineEl.textContent='Bộ đọc QR cục bộ v5 · lỗi đọc: '+String(e&&e.message||e).slice(0,90);}
@@ -148,7 +156,7 @@ canvas{display:none}
   startBtn.addEventListener('click',startCamera);
   stopBtn.addEventListener('click',function(){stopCamera();statusEl.textContent='Đã dừng camera.';setHeight()});
   window.addEventListener('message',function(event){if(event.data&&event.data.type==='streamlit:render')render(event)});
-  window.addEventListener('pagehide',stopCamera);
+  window.addEventListener('pagehide',function(){clearPending();stopCamera()});
   send('streamlit:componentReady',{apiVersion:1});
   setHeight();
 })();
