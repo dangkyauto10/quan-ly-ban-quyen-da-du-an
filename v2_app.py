@@ -337,7 +337,9 @@ def serial_usb_archive():
     return bundle.getvalue()
 if page in {'Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra','Tem của tôi','Hàng đợi in'}:
     from license_app.preparation_ui import render
-    render(ledger,actor,role,page,os.getenv('APP_MODE') in {'demo','activation_demo'} or activation_demo)
+    render(ledger,actor,role,page,
+        os.getenv('APP_MODE') in {'demo','activation_demo'} or activation_demo,
+        stable_test_labels=activation_demo)
 elif page=='Tổng quan':
     data=rows('licenses'); cols=st.columns(4)
     for col,title,n in zip(cols,['Đã nhận','Chưa phân bổ','Đã giao máy','Đã kích hoạt'],[len(data),sum(r['state'] in {'RECEIVED','VERIFIED','REDEEMED'} for r in data),sum(r['state']=='ASSIGNED' for r in data),sum(r['state']=='ACTIVATED' for r in data)]):col.metric(title,n)
