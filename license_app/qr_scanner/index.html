@@ -79,7 +79,7 @@ canvas{display:none}
     startBtn.style.display='inline-block';stopBtn.style.display='none';
   }
   function render(event){
-    const d=event.detail||{};args=d.args||{};
+    const d=event.data||event.detail||{};args=d.args||{};
     titleEl.textContent='';
     const b=document.createElement('b');b.textContent=args.label||'Quét QR';titleEl.appendChild(b);
     if(stopped)engineEl.textContent=typeof window.jsQR==='function'?'Bộ đọc QR cục bộ v5 · sẵn sàng':'Bộ đọc QR cục bộ v5 · chưa tải được thư viện';
