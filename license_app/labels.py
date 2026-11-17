@@ -83,13 +83,14 @@ def print_html_batch(records,key,width=60,height=40):
             token=label_token(record,kind,key)
             board_serial=(record.get('board_serial') or '').strip()
             if not board_serial:raise DomainError('Cần ghi nhận serial mainboard trước khi tạo tem.')
-            lines=[title,'ĐƠN VỊ ĐƯỢC CẤP',record['unit']]
+            lines=['ĐƠN VỊ ĐƯỢC CẤP',record['unit']]
             if record.get('point'):lines.append(record['point'])
             lines.extend([f"PC: {record['number']:02d}/{record['quantity']:02d}",record['asset_tag'],'S/N Main: '+board_serial])
-            labels.append('<section>'+qr_svg(token)+'<div>'+''.join('<p>'+html.escape(s)+'</p>' for s in lines)+'</div></section>')
+            info=''.join('<p>'+html.escape(s)+'</p>' for s in lines)
+            labels.append('<section><header>'+html.escape(title)+'</header><div class="label-body">'+qr_svg(token)+'<div class="label-info">'+info+'</div></div></section>')
     batch_note=f'Lô gồm {len(records)} PC, in liên tục theo số thứ tự; mỗi PC có hai tem liền nhau.'
     return f'''<!doctype html><html lang="vi"><meta charset="utf-8"><title>Tem PC và vỏ hộp</title>
-<style>@page{{size:{width}mm {height}mm;margin:0}}*{{box-sizing:border-box}}body{{margin:0;font-family:Arial,sans-serif}}section{{width:{width}mm;height:{height}mm;padding:2mm;display:flex;align-items:center;gap:1mm;break-after:page;overflow:hidden}}section:last-child{{break-after:auto}}svg{{width:29mm;height:29mm;flex-shrink:0}}div{{flex:1;min-width:0}}p{{margin:0 0 1mm;font-size:8pt;overflow-wrap:anywhere}}p:first-child{{font-weight:bold}}p:nth-child(3){{font-weight:bold;font-size:11pt}}@media screen{{section{{border:1px solid #aaa;margin:10px}}}}@media print{{button,aside{{display:none}}}}</style>
+<style>@page{{size:{width}mm {height}mm;margin:0}}*{{box-sizing:border-box}}body{{margin:0;font-family:Arial,sans-serif}}section{{width:{width}mm;height:{height}mm;padding:1.5mm;display:flex;flex-direction:column;gap:1mm;break-after:page;overflow:hidden}}section:last-child{{break-after:auto}}section>header{{height:4.2mm;flex:0 0 4.2mm;text-align:center;font-size:8pt;font-weight:800;line-height:4.2mm;color:#102a46}}.label-body{{display:flex;align-items:center;gap:1mm;min-height:0;flex:1}}.label-body svg{{width:27mm;height:27mm;flex:0 0 27mm}}.label-info{{flex:1;min-width:0;line-height:1.05}}p{{margin:0 0 .7mm;font-size:6.5pt;line-height:1.05;overflow-wrap:anywhere}}.label-info p:nth-child(2){{font-size:8pt;font-weight:bold}}@media screen{{section{{border:1px solid #aaa;margin:10px}}}}@media print{{button,aside{{display:none}}}}</style>
 <button onclick="window.print()">In {len(labels)} tem</button><aside>{html.escape(batch_note)} Chọn đúng khổ tem, tỷ lệ 100%, tắt đầu/chân trang. QR chứa thông tin tem đã ký, không chứa key.</aside>{''.join(labels)}</html>'''
 
 def decode_photo(raw):
