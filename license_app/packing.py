@@ -3,7 +3,7 @@ import time
 from sqlalchemy import Table,Column,String,Integer,ForeignKey,select,insert,update,delete
 from .core import DomainError,meta,devices,jobs,units
 from .preparation import PreparationLedger,plans,slots,inspections,ktv_completions
-from .labels import compare_labels
+from .labels import compare_labels,label_matches_record
 
 claims = meta.tables.get('packing_claims')
 if claims is None:
@@ -32,7 +32,7 @@ class PackingLedger(PreparationLedger):
                 point=self._get(c,meta.tables['receiving_points'],d['point_id']) if d['point_id'] else None
                 actual['point']=point['name'] if point else ''
                 actual['point_code']=point['code'] if point else ''
-            if any(actual[k]!=matched[k] for k in actual):
+            if not label_matches_record(matched,actual):
                 raise DomainError('Tem cũ hoặc không khớp hồ sơ máy hiện tại. Dừng kiểm tra và báo Admin.')
 
             linked=c.execute(select(jobs).where(jobs.c.device_id==device_id)).mappings().all()
@@ -68,8 +68,8 @@ class PackingLedger(PreparationLedger):
                 ktv_completions.c.device_id==device_id).values(state='QC_PASSED'))
             c.execute(delete(claims).where(claims.c.id==device_id))
             self._log(c,actor,'FINAL_PACK_SCAN' if role=='KTV' else 'PACK_PC',device_id,{
-                **values,'paired_labels':True,'serial':matched['serial'],
-                'number':matched['number'],'quantity':matched['quantity'],
+                **values,'paired_labels':True,'serial':actual['serial'],
+                'number':actual['number'],'quantity':actual['quantity'],
                 'external_qc_passed':bool(role=='KTV' and external_qc_passed)})
             return device_id
         return self._atomic(actor,{'QC','KTV'},op,fn)
@@ -132,7 +132,7 @@ class PackingLedger(PreparationLedger):
             if matched.get('v')==3:
                 actual['point']=point['name'] if point else ''
                 actual['point_code']=point['code'] if point else ''
-            if any(actual[k]!=matched[k] for k in actual):raise DomainError('Tem đã cũ hoặc không thuộc hồ sơ hiện tại. In lại cả cặp.')
+            if not label_matches_record(matched,actual):raise DomainError('Tem đã cũ hoặc không thuộc hồ sơ hiện tại. In lại cả cặp.')
             if serial.strip().upper()!=d['board_serial'].strip().upper():raise DomainError('Serial mainboard thực không khớp hồ sơ máy/tem.')
             claim=c.execute(select(claims).where(claims.c.id==device_id)).mappings().first()
             if not claim or claim['owner']!=actor or claim['until']<=int(time.time()):
