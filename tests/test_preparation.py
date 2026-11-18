@@ -6,7 +6,8 @@ from cryptography.fernet import Fernet
 from license_app.preparation import PreparationLedger
 from license_app.core import DomainError
 from license_app.demo import seed_demo
-from license_app.labels import label_token,label_matches_record,compare_labels,decode_photo,print_html
+from license_app.labels import (activation_test_signing_key,label_token,label_matches_record,
+    compare_labels,decode_photo,print_html)
 
 @pytest.fixture
 def setup_pc(tmp_path):
@@ -36,6 +37,18 @@ def test_label_matching_tamper_and_same_kind(setup_pc):
     other=dict(d,id='other')
     with pytest.raises(DomainError):compare_labels(a,label_token(other,'BOX',k),k)
     assert 'THÂN MÁY' in print_html(d,k) and 'VỎ HỘP' in print_html(d,k)
+
+def test_activation_demo_pair_survives_mock_database_reseed(setup_pc):
+    _,base=setup_pc
+    record=dict(base,asset_tag='TEST-PC-01',unit='Đơn vị mô phỏng — không có thật',
+        project='TEST-KICH-HOAT',number=1,quantity=1,board_serial='MB-SERIAL-MAU-01')
+    key=activation_test_signing_key()
+    first=label_token(record,'PC',key);second=label_token(record,'BOX',key)
+    assert first.startswith('v7.') and second.startswith('v7.')
+    matched=compare_labels(first,second,key)
+    reseeded=dict(record,id='e17a0cf1-81a8-48cc-96f2-cda9bc48311e')
+    assert label_matches_record(matched,reseeded)
+    assert not label_matches_record(matched,dict(reseeded,board_serial='SERIAL-KHAC'))
 
 def test_real_qr_image_decode(setup_pc):
     _,d=setup_pc;token=label_token(d,'PC',b'x'*32)
