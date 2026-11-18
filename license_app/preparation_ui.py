@@ -8,7 +8,7 @@ from pathlib import Path
 import streamlit as st
 import streamlit.components.v1 as components
 from .core import DomainError
-from .labels import label_token,print_html,print_html_batch,compare_labels
+from .labels import label_token,label_matches_record,print_html,print_html_batch,compare_labels
 
 live_qr_scanner=components.declare_component(
     'license_live_qr_scanner',path=str(Path(__file__).parent/'qr_scanner'))
@@ -197,6 +197,10 @@ def render(ledger,actor,role,page,is_demo,stable_test_labels=False):
     else:
         st.success('Đã đọc đủ hai mã QR. Đang đối chiếu cặp tem.')
     auto_start_camera=st.session_state.pop('open-pair-check-auto-camera',False)
+    focus_pair_scan=st.session_state.pop('focus-pair-scan',False)
+    if focus_pair_scan:
+        st.markdown('<div id="pair-scan-camera" style="scroll-margin-top:12px"></div>',unsafe_allow_html=True)
+        components.html('<script>setTimeout(()=>{try{window.parent.document.getElementById("pair-scan-camera")?.scrollIntoView({behavior:"smooth",block:"start"})}catch(e){}},350)</script>',height=1)
     result=live_qr_scanner(scan_id=scan_id,scan_round=round_id,
         scan_step=next_index,scan_enabled=(next_index is not None),
         auto_start=auto_start_camera,
@@ -239,8 +243,14 @@ def render(ledger,actor,role,page,is_demo,stable_test_labels=False):
     if all(tokens):
         try:
             matched=compare_labels(*tokens,key)
+            if matched['v']==5:
+                current=next((r for r in data if r['id']==matched['id']),None)
+                if not current:raise DomainError('Không có hồ sơ máy trong kho dữ liệu này. Kiểm tra đang mở đúng app và dùng đúng tem.')
+                if not label_matches_record(matched,current):
+                    raise DomainError('Tem đã cũ so với hồ sơ máy. Cần in lại cả cặp tem trước khi đối chiếu.')
+                matched.update({k:current[k] for k in ['asset_tag','serial','unit','project','number','quantity']})
             st.success(f"ĐÚNG CẶP · {matched['unit']} · PC {matched['number']}/{matched['quantity']} · {matched['asset_tag']} · Serial mainboard {matched['serial']}")
-        except DomainError as e:st.error(str(e))
+        except DomainError as e:matched=None;st.error(str(e))
     else:st.info('CHƯA ĐỦ ĐỐI CHIẾU: cần một tem thân máy và một tem vỏ hộp.')
     if st.button('Xóa hai mã / quét máy tiếp theo'):
         st.session_state['scan-round']=round_id+1
