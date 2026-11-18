@@ -287,7 +287,7 @@ st.sidebar.caption('V2 · Giao diện sáng · 05/11/2026')
 st.subheader(page)
 flow_phases=[('01','Chuẩn bị'),('02','Redeem & giao việc'),('03','Kích hoạt & in QR'),('04','Đối chiếu tem · chốt QC')]
 flow_stage={'Đơn vị & tài khoản':0,'Kế hoạch PC theo điểm':0,'Kho key':0,'Redeem Office':1,'Thiết bị':1,'Phân bổ':1,'Kích hoạt':2,'Việc của tôi':2,'Tem của tôi':2,'In tem PC và vỏ hộp':2,'Hàng đợi in':2,'Đối chiếu tem và kiểm tra':3}
-if page in flow_stage and not (page=='Đối chiếu tem và kiểm tra' and role in {'KTV','QC'}):
+if page in flow_stage and page!='Đối chiếu tem và kiểm tra':
     current=flow_stage[page]
     flow_html=''.join(f'<div class="process-phase {"active" if i==current else "prior" if i<current else ""}"><b>{number}</b><span>{title}</span></div>' for i,(number,title) in enumerate(flow_phases))
     st.markdown(f'<div class="process-breadcrumb">{flow_html}</div>',unsafe_allow_html=True)
