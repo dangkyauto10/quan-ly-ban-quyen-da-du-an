@@ -27,6 +27,7 @@ def test_plan_and_number_are_stable(setup_pc):
 def test_label_matching_tamper_and_same_kind(setup_pc):
     _,d=setup_pc;k=b'x'*32
     a,b=label_token(d,'PC',k),label_token(d,'BOX',k)
+    assert a.startswith('v5.') and len(a)<90
     assert compare_labels(a,b,k)['id']==d['id']
     with pytest.raises(DomainError):compare_labels(a,a,k)
     with pytest.raises(DomainError):compare_labels(a,b[:-1]+'x',k)
