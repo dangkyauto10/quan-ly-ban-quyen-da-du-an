@@ -36,7 +36,7 @@ canvas{display:none}
   const focusContext=focusCanvas.getContext('2d',{willReadFrequently:true});
   const statusEl=document.getElementById('status'),titleEl=document.getElementById('title'),engineEl=document.getElementById('engine');
   const startBtn=document.getElementById('start'),stopBtn=document.getElementById('stop');
-  let args={},stream=null,videoTrack=null,scanTimer=null,busy=false,scanId=null,stopped=true,torchSupported=false,torchOn=false,torchAttempted=false,lowLightCount=0,brightLightCount=0,lastLightCheck=0,scanAttempts=0,pendingResult=null,pendingTimer=null,pendingAttempts=0;
+  let args={},stream=null,videoTrack=null,scanTimer=null,busy=false,scanId=null,scanRound=null,scanStep=null,scanEnabled=true,stopped=true,torchSupported=false,torchOn=false,torchAttempted=false,lowLightCount=0,brightLightCount=0,lastLightCheck=0,scanAttempts=0,pendingResult=null,pendingTimer=null,pendingAttempts=0,lastDeliveredText=null;
   async function setTorch(enabled){
     if(!videoTrack||!torchSupported||!videoTrack.applyConstraints)return false;
     try{await videoTrack.applyConstraints({advanced:[{torch:enabled}]});torchOn=enabled;return true}catch(e){return false}
@@ -83,9 +83,20 @@ canvas{display:none}
     titleEl.textContent='';
     const b=document.createElement('b');b.textContent=args.label||'Quét QR';titleEl.appendChild(b);
     if(stopped)engineEl.textContent=typeof window.jsQR==='function'?'Bộ đọc QR cục bộ v5 · sẵn sàng':'Bộ đọc QR cục bộ v5 · chưa tải được thư viện';
-    if(args.scan_id!==scanId){
-      clearPending();stopCamera();scanId=args.scan_id;busy=false;
-      statusEl.textContent='Bấm “Mở camera và quét”, hướng camera sau vào giữa mã QR.';
+    const changed=args.scan_id!==scanId||args.scan_step!==scanStep||args.scan_enabled!==scanEnabled;
+    if(args.scan_round!==scanRound)lastDeliveredText=null;
+    if(changed){
+      clearPending();scanId=args.scan_id;scanRound=args.scan_round;scanStep=args.scan_step;
+      scanEnabled=args.scan_enabled!==false;busy=!scanEnabled;
+      if(!scanEnabled){
+        statusEl.textContent='Đã nhận đủ hai tem. Đang đối chiếu; camera vẫn mở.';
+      }else if(stream&&!stopped){
+        startBtn.style.display='none';stopBtn.style.display='inline-block';
+        statusEl.textContent='Camera vẫn mở. Đưa vào giữa khung hình tem '+(args.label||'QR')+'.';
+        setTimeout(scanFrame,350);
+      }else{
+        statusEl.textContent='Bấm “Mở camera và quét”, hướng camera sau vào giữa mã QR.';
+      }
     }
     setHeight();
   }
@@ -142,11 +153,11 @@ canvas{display:none}
           if(scanAttempts>=24)statusEl.textContent='Đang đọc QR: giữ mã ở giữa khung hình, tránh rung và phản chiếu sáng.';
         }
         if(value){
-          busy=true;stopCamera();
-          startBtn.style.display='none';stopBtn.style.display='none';
-          statusEl.textContent='Đã nhận QR. Đang chuyển sang bước đối chiếu…';
-          engineEl.textContent='Đang gửi QR cho app…';
-          pendingResult={scan_id:scanId,text:value};pendingAttempts=0;deliverPending();
+          if(value===lastDeliveredText){scanTimer=setTimeout(scanFrame,180);return}
+          lastDeliveredText=value;busy=true;
+          statusEl.textContent='Đã nhận tem '+(args.label||'QR')+'. Camera vẫn mở cho tem tiếp theo.';
+          engineEl.textContent='Đang gửi mã QR cho app…';
+          pendingResult={scan_id:scanId,scan_step:scanStep,text:value};pendingAttempts=0;deliverPending();
           return;
         }
       }catch(e){engineEl.textContent='Bộ đọc QR cục bộ v5 · lỗi đọc: '+String(e&&e.message||e).slice(0,90);}

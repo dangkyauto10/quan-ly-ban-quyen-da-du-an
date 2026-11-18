@@ -208,25 +208,31 @@ def render(ledger,actor,role,page,is_demo,stable_test_labels=False):
     token_keys=[f'scan-text-{round_id}-{i}' for i in range(2)]
     tokens=[st.session_state.get(k,'') for k in token_keys]
     next_index=next((i for i,value in enumerate(tokens) if not value),None)
+    scan_id=f'{round_id}-{next_index if next_index is not None else "done"}'
     if next_index is not None:
         title=titles[next_index]
         st.subheader(title)
-        st.caption('Đưa camera sau vào gần mã QR. App đọc trực tiếp từ hình ảnh đang xem trước; không chụp, tải lên hoặc lưu ảnh.')
-        scan_id=f'{round_id}-{next_index}'
-        result=live_qr_scanner(scan_id=scan_id,label=title,default=None,
-            key=f'live-qr-{scan_id}',height=300)
-        scan_result=result
-        if isinstance(scan_result,dict) and isinstance(scan_result.get('value'),dict):
-            scan_result=scan_result['value']
-        if isinstance(scan_result,dict) and scan_result.get('scan_id')==scan_id and scan_result.get('text'):
-            st.session_state[token_keys[next_index]]=scan_result['text']
-            st.rerun()
-        elif result is not None:
-            st.warning('App đã nhận phản hồi từ camera nhưng chưa khớp lượt quét. Giữ nguyên tem, không quét lại; tải lại trang để thử lại.')
-        if next_index==1 and tokens[0]:
-            st.success('Đã đọc QR tem VỎ HỘP. Tiếp tục quét tem THÂN MÁY.')
+        st.caption('Mở camera một lần. Quét liên tiếp tem VỎ HỘP, tem THÂN MÁY rồi các PC tiếp theo; không xin quyền lại sau mỗi tem. Bấm “Dừng camera” khi xong.')
     else:
         st.success('Đã đọc đủ hai mã QR. Đang đối chiếu cặp tem.')
+    result=live_qr_scanner(scan_id=scan_id,scan_round=round_id,
+        scan_step=next_index,scan_enabled=(next_index is not None),
+        label=titles[next_index] if next_index is not None else 'Đang đối chiếu cặp tem',
+        default=None,key='live-qr-pair-scan',height=300)
+    scan_result=result
+    if isinstance(scan_result,dict) and isinstance(scan_result.get('value'),dict):
+        scan_result=scan_result['value']
+    if (next_index is not None and isinstance(scan_result,dict) and
+        scan_result.get('scan_id')==scan_id and scan_result.get('scan_step')==next_index and
+        scan_result.get('text')):
+        st.session_state[token_keys[next_index]]=scan_result['text']
+        st.rerun()
+    elif (next_index is not None and isinstance(scan_result,dict) and
+        scan_result.get('scan_id')==scan_id and scan_result.get('error')):
+        st.warning(scan_result['error'])
+    if next_index is not None:
+        if next_index==1 and tokens[0]:
+            st.success('Đã đọc QR tem VỎ HỘP. Tiếp tục quét tem THÂN MÁY.')
     matched=None
     if all(tokens):
         try:
