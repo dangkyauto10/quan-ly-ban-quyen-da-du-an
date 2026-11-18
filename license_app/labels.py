@@ -6,6 +6,7 @@ import html
 import io
 import json
 import zlib
+import uuid
 from urllib.parse import urlparse, parse_qs
 import qrcode
 import qrcode.image.svg
@@ -16,6 +17,35 @@ def label_token(record,kind,key):
     if not record.get('number') or not record.get('quantity'):raise DomainError('Cần cấp số thứ tự PC trước khi in tem.')
     board_serial=(record.get('board_serial') or '').strip()
     if not board_serial:raise DomainError('Cần ghi nhận serial mainboard trước khi tạo tem.')
+    try:
+        device_id=uuid.UUID(str(record['id'])).bytes
+    except (KeyError,ValueError,TypeError):
+        device_id=None
+    if device_id is not None:
+        kind_code=0 if kind=='PC' else 1
+        payload=bytes([5,kind_code])+device_id+label_snapshot_digest(record)
+        signature=hmac.new(key,b'v5.'+payload,hashlib.sha256).digest()[:16]
+        compact=base64.urlsafe_b64encode(payload+signature).decode().rstrip('=')
+        return 'v5.'+compact
+    return _legacy_label_token(record,kind,key,board_serial)
+
+def label_snapshot_digest(record):
+    """Bind a compact QR to the equipment details printed beside it."""
+    data={k:record[k] for k in ['id','asset_tag','unit','project','number','quantity']}
+    data['serial']=(record.get('board_serial') or record.get('serial') or '').strip()
+    if (record.get('point_id') or record.get('point') is not None or
+            record.get('point_code') is not None):
+        data.update(v=3,point=record.get('point') or '',point_code=record.get('point_code') or '')
+    else:data['v']=2
+    raw=json.dumps(data,ensure_ascii=False,separators=(',',':')).encode()
+    return hashlib.sha256(raw).digest()[:12]
+
+def label_matches_record(matched,actual):
+    if matched.get('id')!=actual.get('id'):return False
+    if matched.get('v')==5:return hmac.compare_digest(matched.get('snapshot',b''),label_snapshot_digest(actual))
+    return all(actual.get(k)==matched.get(k) for k in actual)
+
+def _legacy_label_token(record,kind,key,board_serial):
     data={k:record[k] for k in ['id','asset_tag','unit','project','number','quantity']}
     data['serial']=board_serial
     if record.get('point_id'):
@@ -33,6 +63,17 @@ def read_label(value,key):
     if value.startswith('https://'):value=parse_qs(urlparse(value).query).get('tem',[''])[0]
     if len(value)>6000:raise DomainError('Tem quá dài hoặc không hợp lệ.')
     try:
+        if value.startswith('v5.'):
+            encoded=value[3:]
+            packed=base64.urlsafe_b64decode(encoded+'='*(-len(encoded)%4))
+            if base64.urlsafe_b64encode(packed).decode().rstrip('=')!=encoded:raise ValueError()
+            if len(packed)!=46:raise ValueError()
+            payload,signature=packed[:30],packed[30:]
+            expected=hmac.new(key,b'v5.'+payload,hashlib.sha256).digest()[:16]
+            if not hmac.compare_digest(signature,expected) or payload[0]!=5 or payload[1] not in {0,1}:raise ValueError()
+            return {'v':5,'id':str(uuid.UUID(bytes=payload[2:18])),
+                'snapshot':payload[18:30],
+                'kind':'PC' if payload[1]==0 else 'BOX'}
         if value.startswith('v4.'):
             version,body,sig=value.split('.')
             signed=version+'.'+body
@@ -58,6 +99,11 @@ def read_label(value,key):
 def compare_labels(first,second,key):
     a,b=read_label(first,key),read_label(second,key)
     if a['kind']==b['kind']:raise DomainError('CHƯA ĐỦ ĐỐI CHIẾU: cần một tem THÂN MÁY và một tem VỎ HỘP.')
+    if a['v']==5 or b['v']==5:
+        if a['v']!=5 or b['v']!=5:raise DomainError('Hai tem khác phiên bản. Hãy in lại đúng cả cặp tem.')
+        if a['id']!=b['id'] or a['snapshot']!=b['snapshot']:
+            raise DomainError('SAI CẶP: hai tem không cùng hồ sơ máy hoặc tem đã thay đổi.')
+        return a
     fields=['id','asset_tag','serial','unit','project','number','quantity']
     if a['v']==3 or b['v']==3:
         fields+=['point','point_code']
