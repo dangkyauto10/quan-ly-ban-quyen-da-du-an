@@ -23,10 +23,11 @@ def label_token(record,kind,key):
         device_id=None
     if device_id is not None:
         kind_code=0 if kind=='PC' else 1
-        payload=bytes([5,kind_code])+device_id+label_snapshot_digest(record)
-        signature=hmac.new(key,b'v5.'+payload,hashlib.sha256).digest()[:16]
+        # v6 reduces the signed payload and QR matrix for faster phone scanning.
+        payload=bytes([6,kind_code])+device_id+label_snapshot_digest(record)[:8]
+        signature=hmac.new(key,b'v6.'+payload,hashlib.sha256).digest()[:8]
         compact=base64.urlsafe_b64encode(payload+signature).decode().rstrip('=')
-        return 'v5.'+compact
+        return 'v6.'+compact
     return _legacy_label_token(record,kind,key,board_serial)
 
 def label_snapshot_digest(record):
@@ -42,7 +43,9 @@ def label_snapshot_digest(record):
 
 def label_matches_record(matched,actual):
     if matched.get('id')!=actual.get('id'):return False
-    if matched.get('v')==5:return hmac.compare_digest(matched.get('snapshot',b''),label_snapshot_digest(actual))
+    if matched.get('v') in {5,6}:
+        snapshot=matched.get('snapshot',b'')
+        return hmac.compare_digest(snapshot,label_snapshot_digest(actual)[:len(snapshot)])
     return all(actual.get(k)==matched.get(k) for k in actual)
 
 def _legacy_label_token(record,kind,key,board_serial):
@@ -63,6 +66,17 @@ def read_label(value,key):
     if value.startswith('https://'):value=parse_qs(urlparse(value).query).get('tem',[''])[0]
     if len(value)>6000:raise DomainError('Tem quá dài hoặc không hợp lệ.')
     try:
+        if value.startswith('v6.'):
+            encoded=value[3:]
+            packed=base64.urlsafe_b64decode(encoded+'='*(-len(encoded)%4))
+            if base64.urlsafe_b64encode(packed).decode().rstrip('=')!=encoded:raise ValueError()
+            if len(packed)!=34:raise ValueError()
+            payload,signature=packed[:26],packed[26:]
+            expected=hmac.new(key,b'v6.'+payload,hashlib.sha256).digest()[:8]
+            if not hmac.compare_digest(signature,expected) or payload[0]!=6 or payload[1] not in {0,1}:raise ValueError()
+            return {'v':6,'id':str(uuid.UUID(bytes=payload[2:18])),
+                'snapshot':payload[18:26],
+                'kind':'PC' if payload[1]==0 else 'BOX'}
         if value.startswith('v5.'):
             encoded=value[3:]
             packed=base64.urlsafe_b64decode(encoded+'='*(-len(encoded)%4))
@@ -99,8 +113,8 @@ def read_label(value,key):
 def compare_labels(first,second,key):
     a,b=read_label(first,key),read_label(second,key)
     if a['kind']==b['kind']:raise DomainError('CHƯA ĐỦ ĐỐI CHIẾU: cần một tem THÂN MÁY và một tem VỎ HỘP.')
-    if a['v']==5 or b['v']==5:
-        if a['v']!=5 or b['v']!=5:raise DomainError('Hai tem khác phiên bản. Hãy in lại đúng cả cặp tem.')
+    if a['v'] in {5,6} or b['v'] in {5,6}:
+        if a['v']!=b['v']:raise DomainError('Hai tem khác phiên bản. Hãy in lại đúng cả cặp tem.')
         if a['id']!=b['id'] or a['snapshot']!=b['snapshot']:
             raise DomainError('SAI CẶP: hai tem không cùng hồ sơ máy hoặc tem đã thay đổi.')
         return a
