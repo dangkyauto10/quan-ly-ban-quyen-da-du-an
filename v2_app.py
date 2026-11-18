@@ -155,7 +155,9 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain
 @media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.hero-tech {min-height:205px;padding:20px 14px;border-radius:16px;background-position:center 50%;}.hero-content {padding:8px 4px;background:radial-gradient(ellipse at center,#061529d9 0%,#061529a8 65%,transparent 100%);}.hero-tech h1 {font-size:27px!important;}.hero-logo {width:38px;height:38px;}.hero-name {font-size:12px;letter-spacing:1.3px;}.hero-sub,.hero-note {font-size:12px;}.process-breadcrumb {gap:5px;padding:8px;}.process-phase {flex:1 1 calc(50% - 6px);padding:7px 8px;font-size:11px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 @media(prefers-reduced-motion:reduce) {[data-testid="stMetric"],[data-testid="stForm"],[data-testid="stExpander"],.stButton button,.stDownloadButton button,.stLinkButton a,.step-card {transition:none!important;}}
 </style>''',unsafe_allow_html=True)
-st.markdown(f'''<section class="hero-tech" style="--hero-photo:url('{hero_photo_src}')">
+pair_check_selected=st.session_state.get('nav-page-03 · Tem QR & kiểm tra')=='Đối chiếu tem và kiểm tra'
+if not pair_check_selected:
+    st.markdown(f'''<section class="hero-tech" style="--hero-photo:url('{hero_photo_src}')">
 <div class="hero-content"><div class="hero-lockup"><img class="hero-logo" src="{logo_src}" alt="Logo KEY BẢN QUYỀN"><div><div class="hero-name">KEY BẢN QUYỀN</div><div class="hero-sub">Điều phối bản quyền và thiết bị</div></div></div><h1>TỪ KHO KEY ĐẾN MÁY SẴN SÀNG BÀN GIAO</h1><div class="hero-note">Nhận key → Redeem → Giao KTV → Kích hoạt · In tem QR → QC đóng gói</div></div></section>''',unsafe_allow_html=True)
 st.sidebar.markdown(f'<div class="side-brand-row"><div class="side-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div class="side-brand">KEY BẢN QUYỀN</div></div>',unsafe_allow_html=True)
 LABELS={'RECEIVED':'Mới nhận','VERIFIED':'Đã kiểm tra','REDEEMED':'Đã redeem','ASSIGNED':'Đã giao máy','ACTIVATED':'Đã kích hoạt','WARRANTY_REVIEW':'Chờ xét bảo hành','PENDING':'Chờ kích hoạt','SUCCESS':'Thành công','FAILED':'Thất bại'}
@@ -249,6 +251,7 @@ def open_pair_check():
     section='03 · Tem QR & kiểm tra'
     st.session_state['nav-section']=section
     st.session_state['nav-page-'+section]='Đối chiếu tem và kiểm tra'
+    st.session_state['open-pair-check-auto-camera']=True
 
 menus=['Việc của tôi','Tem của tôi','Đối chiếu tem và kiểm tra'] if role=='KTV' else ['Hàng đợi in'] if role=='PRINT' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
 if role=='ADMIN':menus.extend(['Người dùng','Đồng bộ Google Sheet'])
@@ -302,11 +305,11 @@ page_notes={
     'Đối chiếu tem và kiểm tra':'Sau khi bên thứ ba đã kiểm tra và đóng gói: quét tem vỏ hộp rồi tem thân máy để app đối chiếu, ghi nhận hoàn tất QC và sẵn sàng chuyển sang phân bổ.',
     'Người dùng':'Cấp quyền theo nhiệm vụ cho từng tài khoản Google.',
 }
-if page in page_notes:st.markdown('<div class="page-note">'+page_notes[page]+'</div>',unsafe_allow_html=True)
+if page in page_notes and page!='Đối chiếu tem và kiểm tra':st.markdown('<div class="page-note">'+page_notes[page]+'</div>',unsafe_allow_html=True)
 if page=='Người dùng':
     notice=st.session_state.get('report-confirmation')
     if notice and notice[0]==actor:st.success(notice[1])
-if page in PAGE_GUIDES:
+if page in PAGE_GUIDES and page!='Đối chiếu tem và kiểm tra':
     title, steps=PAGE_GUIDES[page]
     with st.expander('Cách thực hiện: '+title):
         for index,step in enumerate(steps,1):st.write(f'{index}. {step}')
