@@ -285,7 +285,7 @@ if role in {'KTV','QC','ADMIN'}:
     st.button('📷 Mở đối chiếu tem',key='open-pair-check',
         on_click=open_pair_check,use_container_width=True,type='primary')
 st.sidebar.divider()
-st.sidebar.caption('V2 · Quét tem v9 · 18/11/2026')
+st.sidebar.caption('V2 · Quét tem v10 · 18/11/2026')
 st.subheader(page)
 flow_phases=[('01','Chuẩn bị'),('02','Redeem & giao việc'),('03','Kích hoạt & in QR'),('04','Đối chiếu tem · chốt QC')]
 flow_stage={'Đơn vị & tài khoản':0,'Kế hoạch PC theo điểm':0,'Kho key':0,'Redeem Office':1,'Thiết bị':1,'Phân bổ':1,'Kích hoạt':2,'Việc của tôi':2,'Tem của tôi':2,'In tem PC và vỏ hộp':2,'Hàng đợi in':2,'Đối chiếu tem và kiểm tra':3}
