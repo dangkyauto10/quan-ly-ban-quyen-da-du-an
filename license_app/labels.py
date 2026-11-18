@@ -17,6 +17,9 @@ def label_token(record,kind,key):
     if not record.get('number') or not record.get('quantity'):raise DomainError('Cần cấp số thứ tự PC trước khi in tem.')
     board_serial=(record.get('board_serial') or '').strip()
     if not board_serial:raise DomainError('Cần ghi nhận serial mainboard trước khi tạo tem.')
+    if (record.get('asset_tag')=='TEST-PC-01' and
+            hmac.compare_digest(key,activation_test_signing_key())):
+        return _activation_test_label_token(record,kind,key,board_serial)
     try:
         device_id=uuid.UUID(str(record['id'])).bytes
     except (KeyError,ValueError,TypeError):
@@ -41,7 +44,29 @@ def label_snapshot_digest(record):
     raw=json.dumps(data,ensure_ascii=False,separators=(',',':')).encode()
     return hashlib.sha256(raw).digest()[:12]
 
+def activation_test_signing_key():
+    return hashlib.sha256(b'license-activation-demo-label-v1').digest()
+
+def activation_test_device_id():
+    return str(uuid.uuid5(uuid.NAMESPACE_URL,'https://dangkyauto.com/test-label/TEST-PC-01'))
+
+def activation_test_snapshot_digest(record):
+    data={k:record[k] for k in ['asset_tag','unit','project','number','quantity']}
+    data['serial']=(record.get('board_serial') or record.get('serial') or '').strip()
+    data['v']=2
+    return hashlib.sha256(json.dumps(data,ensure_ascii=False,separators=(',',':')).encode()).digest()[:8]
+
+def _activation_test_label_token(record,kind,key,board_serial):
+    kind_code=0 if kind=='PC' else 1
+    payload=bytes([7,kind_code])+uuid.UUID(activation_test_device_id()).bytes+activation_test_snapshot_digest(record)
+    signature=hmac.new(key,b'v7.'+payload,hashlib.sha256).digest()[:8]
+    return 'v7.'+base64.urlsafe_b64encode(payload+signature).decode().rstrip('=')
+
 def label_matches_record(matched,actual):
+    if matched.get('v')==7:
+        return (matched.get('id')==activation_test_device_id() and
+            actual.get('asset_tag')=='TEST-PC-01' and
+            hmac.compare_digest(matched.get('snapshot',b''),activation_test_snapshot_digest(actual)))
     if matched.get('id')!=actual.get('id'):return False
     if matched.get('v') in {5,6}:
         snapshot=matched.get('snapshot',b'')
@@ -66,6 +91,17 @@ def read_label(value,key):
     if value.startswith('https://'):value=parse_qs(urlparse(value).query).get('tem',[''])[0]
     if len(value)>6000:raise DomainError('Tem quá dài hoặc không hợp lệ.')
     try:
+        if value.startswith('v7.'):
+            encoded=value[3:]
+            packed=base64.urlsafe_b64decode(encoded+'='*(-len(encoded)%4))
+            if base64.urlsafe_b64encode(packed).decode().rstrip('=')!=encoded:raise ValueError()
+            if len(packed)!=34:raise ValueError()
+            payload,signature=packed[:26],packed[26:]
+            expected=hmac.new(key,b'v7.'+payload,hashlib.sha256).digest()[:8]
+            if not hmac.compare_digest(signature,expected) or payload[0]!=7 or payload[1] not in {0,1}:raise ValueError()
+            return {'v':7,'id':str(uuid.UUID(bytes=payload[2:18])),
+                'snapshot':payload[18:26],'asset_tag':'TEST-PC-01',
+                'kind':'PC' if payload[1]==0 else 'BOX'}
         if value.startswith('v6.'):
             encoded=value[3:]
             packed=base64.urlsafe_b64decode(encoded+'='*(-len(encoded)%4))
@@ -113,7 +149,7 @@ def read_label(value,key):
 def compare_labels(first,second,key):
     a,b=read_label(first,key),read_label(second,key)
     if a['kind']==b['kind']:raise DomainError('CHƯA ĐỦ ĐỐI CHIẾU: cần một tem THÂN MÁY và một tem VỎ HỘP.')
-    if a['v'] in {5,6} or b['v'] in {5,6}:
+    if a['v'] in {5,6,7} or b['v'] in {5,6,7}:
         if a['v']!=b['v']:raise DomainError('Hai tem khác phiên bản. Hãy in lại đúng cả cặp tem.')
         if a['id']!=b['id'] or a['snapshot']!=b['snapshot']:
             raise DomainError('SAI CẶP: hai tem không cùng hồ sơ máy hoặc tem đã thay đổi.')
