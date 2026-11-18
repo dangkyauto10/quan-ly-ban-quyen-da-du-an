@@ -36,7 +36,7 @@ canvas{display:none}
   const focusContext=focusCanvas.getContext('2d',{willReadFrequently:true});
   const statusEl=document.getElementById('status'),titleEl=document.getElementById('title'),engineEl=document.getElementById('engine');
   const startBtn=document.getElementById('start'),stopBtn=document.getElementById('stop');
-  let args={},stream=null,videoTrack=null,scanTimer=null,busy=false,opening=false,autoStartConsumed=false,scanId=null,scanRound=null,scanStep=null,scanEnabled=true,stopped=true,torchSupported=false,torchOn=false,torchAttempted=false,lowLightCount=0,brightLightCount=0,lastLightCheck=0,scanAttempts=0,pendingResult=null,pendingTimer=null,pendingAttempts=0,lastDeliveredText=null;
+  let args={},stream=null,videoTrack=null,barcodeDetector=null,scanTimer=null,busy=false,opening=false,autoStartConsumed=false,scanId=null,scanRound=null,scanStep=null,scanEnabled=true,stopped=true,torchSupported=false,torchOn=false,torchAttempted=false,lowLightCount=0,brightLightCount=0,lastLightCheck=0,scanAttempts=0,pendingResult=null,pendingTimer=null,pendingAttempts=0,lastDeliveredText=null;
   async function setTorch(enabled){
     if(!videoTrack||!torchSupported||!videoTrack.applyConstraints)return false;
     try{await videoTrack.applyConstraints({advanced:[{torch:enabled}]});torchOn=enabled;return true}catch(e){return false}
@@ -112,15 +112,19 @@ canvas{display:none}
       if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('Trình duyệt không hỗ trợ camera trực tiếp. Mở app bằng Chrome/Safari bản mới và HTTPS.');
       if(!window.isSecureContext)throw new Error('Camera chỉ hoạt động khi mở app bằng kết nối HTTPS.');
       if(typeof window.jsQR!=='function')throw new Error('Chưa tải được bộ đọc QR cục bộ. Tải lại trang để tải đủ thành phần quét.');
-      scanAttempts=0;engineEl.textContent='Bộ đọc QR cục bộ v6 · đang phân tích hình camera';
+      scanAttempts=0;engineEl.textContent='Bộ đọc QR cục bộ v7 · đang phân tích hình camera';
       stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
       videoTrack=stream.getVideoTracks()[0];
+      barcodeDetector=null;
+      if('BarcodeDetector' in window){
+        try{const formats=await window.BarcodeDetector.getSupportedFormats();if(formats.includes('qr_code'))barcodeDetector=new window.BarcodeDetector({formats:['qr_code']})}catch(e){}
+      }
       try{const caps=videoTrack.getCapabilities?videoTrack.getCapabilities():{};torchSupported=!!videoTrack.applyConstraints&&(caps.torch!==false)}catch(e){torchSupported=false}
       video.srcObject=stream;video.style.display='block';await video.play();
       stopped=false;startBtn.style.display='none';stopBtn.style.display='inline-block';
       const track=stream.getVideoTracks()[0],settings=track&&track.getSettings?track.getSettings():{};
       statusEl.textContent=(settings.facingMode==='environment'?'Đang dùng camera sau. ':'Camera đã mở. ')+'Đưa mã QR vào khung hình.';
-      engineEl.textContent='Bộ đọc QR cục bộ v6 · camera '+(settings.width||video.videoWidth)+'×'+(settings.height||video.videoHeight)+' · lượt đọc 0';
+      engineEl.textContent='Bộ đọc QR cục bộ v7 · camera '+(settings.width||video.videoWidth)+'×'+(settings.height||video.videoHeight)+' · lượt đọc 0';
       opening=false;startBtn.disabled=false;
       setHeight();scanFrame();
     }catch(e){
@@ -133,27 +137,34 @@ canvas{display:none}
   async function scanFrame(){
     if(stopped||busy||!stream)return;
     if(video.readyState>=2&&video.videoWidth){
-      const scale=Math.min(1,1280/video.videoWidth);
+      const scale=Math.min(1,960/video.videoWidth);
       canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);
       ctx.drawImage(video,0,0,canvas.width,canvas.height);
       checkLight();
       try{
         scanAttempts++;
-        const cropWidth=Math.round(canvas.width*0.74),cropHeight=Math.round(canvas.height*0.78);
-        const cropX=Math.round((canvas.width-cropWidth)/2),cropY=Math.round((canvas.height-cropHeight)/2);
-        const focusWidth=Math.min(1120,Math.max(720,cropWidth));
-        const focusHeight=Math.round(focusWidth*cropHeight/cropWidth);
-        focusCanvas.width=focusWidth;focusCanvas.height=focusHeight;
-        focusContext.drawImage(canvas,cropX,cropY,cropWidth,cropHeight,0,0,focusWidth,focusHeight);
-        const focused=focusContext.getImageData(0,0,focusWidth,focusHeight);
-        let code=window.jsQR(focused.data,focused.width,focused.height,{inversionAttempts:'attemptBoth'});
-        if(!code&&scanAttempts%6===0){
-          const full=ctx.getImageData(0,0,canvas.width,canvas.height);
-          code=window.jsQR(full.data,full.width,full.height,{inversionAttempts:'attemptBoth'});
+        let value='';
+        if(barcodeDetector){
+          try{const hits=await barcodeDetector.detect(video);if(hits.length)value=hits[0].rawValue||''}
+          catch(e){barcodeDetector=null}
         }
-        const value=code?code.data||'':'';
+        const cropWidth=Math.round(canvas.width*0.84),cropHeight=Math.round(canvas.height*0.86);
+        const cropX=Math.round((canvas.width-cropWidth)/2),cropY=Math.round((canvas.height-cropHeight)/2);
+        const focusWidth=Math.min(820,Math.max(560,cropWidth));
+        const focusHeight=Math.round(focusWidth*cropHeight/cropWidth);
+        if(!value){
+          focusCanvas.width=focusWidth;focusCanvas.height=focusHeight;
+          focusContext.drawImage(canvas,cropX,cropY,cropWidth,cropHeight,0,0,focusWidth,focusHeight);
+          const focused=focusContext.getImageData(0,0,focusWidth,focusHeight);
+          let code=window.jsQR(focused.data,focused.width,focused.height,{inversionAttempts:'dontInvert'});
+          if(!code&&scanAttempts%8===0){
+            const full=ctx.getImageData(0,0,canvas.width,canvas.height);
+            code=window.jsQR(full.data,full.width,full.height,{inversionAttempts:'dontInvert'});
+          }
+          value=code?code.data||'':'';
+        }
         if(scanAttempts%6===0){
-          engineEl.textContent='Bộ đọc QR cục bộ v6 · đã xử lý '+scanAttempts+' khung hình · '+canvas.width+'×'+canvas.height;
+          engineEl.textContent='Bộ đọc QR cục bộ v7 · đã xử lý '+scanAttempts+' khung hình · '+canvas.width+'×'+canvas.height+(barcodeDetector?' · đọc nhanh':' · đọc tương thích');
           if(scanAttempts>=24)statusEl.textContent='Đang đọc QR: giữ mã ở giữa khung hình, tránh rung và phản chiếu sáng.';
         }
         if(value){
@@ -164,9 +175,9 @@ canvas{display:none}
           pendingResult={scan_id:scanId,scan_step:scanStep,text:value};pendingAttempts=0;deliverPending();
           return;
         }
-      }catch(e){engineEl.textContent='Bộ đọc QR cục bộ v6 · lỗi đọc: '+String(e&&e.message||e).slice(0,90);}
+      }catch(e){engineEl.textContent='Bộ đọc QR cục bộ v7 · lỗi đọc: '+String(e&&e.message||e).slice(0,90);}
     }
-    if(!stopped)scanTimer=setTimeout(scanFrame,140);
+    if(!stopped)scanTimer=setTimeout(scanFrame,100);
   }
   startBtn.addEventListener('click',startCamera);
   stopBtn.addEventListener('click',function(){stopCamera();statusEl.textContent='Đã dừng camera.';setHeight()});
