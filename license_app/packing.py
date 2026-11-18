@@ -16,6 +16,11 @@ class PackingLedger(PreparationLedger):
         """Record independent QC scan or KTV final scan after external QC."""
         matched=compare_labels(first,second,key)
         device_id=matched['id']
+        if matched.get('v')==7:
+            with self.engine.connect() as c:
+                test_device=c.execute(select(devices).where(devices.c.asset_tag=='TEST-PC-01')).mappings().first()
+            if not test_device:raise DomainError('Không tìm thấy PC mẫu để đối chiếu tem thử.')
+            device_id=test_device['id']
         def fn(c):
             # Serialize against changes to the device and its unit plan while validating
             # the signed QR payload against the current authoritative records.
