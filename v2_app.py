@@ -253,6 +253,7 @@ def open_pair_check():
     st.session_state['nav-section']=section
     st.session_state['nav-page-'+section]='Đối chiếu tem và kiểm tra'
     st.session_state['open-pair-check-auto-camera']=True
+    st.session_state['focus-pair-scan']=True
 
 menus=['Việc của tôi','Tem của tôi','Đối chiếu tem và kiểm tra'] if role=='KTV' else ['Hàng đợi in'] if role=='PRINT' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
 if role=='ADMIN':menus.extend(['Người dùng','Đồng bộ Google Sheet'])
