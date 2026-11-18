@@ -21,6 +21,9 @@ def test_mobile_pair_scan_keeps_camera_component_and_stream_between_labels():
     assert 'if(opening||stream&&!stopped)return' in scanner
     assert scanner.count('navigator.mediaDevices.getUserMedia(')==1
     assert "if(args.auto_start===true&&!autoStartConsumed){autoStartConsumed=true;startCamera()}" in scanner
+    assert 'scrollScannerIntoView();' in scanner
+    assert 'const scale=Math.min(1,720/video.videoWidth)' in scanner
+    assert 'scanAttempts%12===0' in scanner
     assert 'window.parent.navigator.mediaDevices.getUserMedia' in scanner
     assert 'owner.__licensePairScanStream' in scanner
     assert 'window.addEventListener(\'pagehide\',clearPending)' in scanner
