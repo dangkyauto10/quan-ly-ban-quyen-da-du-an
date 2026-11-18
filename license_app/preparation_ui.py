@@ -243,7 +243,7 @@ def render(ledger,actor,role,page,is_demo,stable_test_labels=False):
     if all(tokens):
         try:
             matched=compare_labels(*tokens,key)
-            if matched['v']==5:
+            if matched['v'] in {5,6}:
                 current=next((r for r in data if r['id']==matched['id']),None)
                 if not current:raise DomainError('Không có hồ sơ máy trong kho dữ liệu này. Kiểm tra đang mở đúng app và dùng đúng tem.')
                 if not label_matches_record(matched,current):
