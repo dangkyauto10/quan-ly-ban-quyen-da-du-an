@@ -184,6 +184,24 @@ def render(ledger,actor,role,page,is_demo,stable_test_labels=False):
     if notice and notice['actor']==actor:st.success(notice['text'])
     st.markdown('### Đối chiếu tem độc lập')
     st.caption('Khâu này diễn ra sau khi bên thứ ba đã kiểm tra thiết bị và đóng gói. Quét tem VỎ HỘP rồi tem THÂN MÁY; khi khớp hồ sơ, app ghi nhận QC/đóng gói hoàn tất và máy sẵn sàng chuyển phân bổ.')
+    round_id=st.session_state.get('scan-round',0)
+    titles=['Tem VỎ HỘP','Tem THÂN MÁY']
+    token_keys=[f'scan-text-{round_id}-{i}' for i in range(2)]
+    tokens=[st.session_state.get(k,'') for k in token_keys]
+    next_index=next((i for i,value in enumerate(tokens) if not value),None)
+    scan_id=f'{round_id}-{next_index if next_index is not None else "done"}'
+    if next_index is not None:
+        title=titles[next_index]
+        st.subheader(title)
+        st.caption('Camera mở ngay tại đây. Cho phép camera một lần khi trình duyệt hỏi; giữ trang mở để quét liên tiếp tem VỎ HỘP, tem THÂN MÁY và các PC tiếp theo. Bấm “Dừng camera” khi xong.')
+    else:
+        st.success('Đã đọc đủ hai mã QR. Đang đối chiếu cặp tem.')
+    auto_start_camera=st.session_state.pop('open-pair-check-auto-camera',False)
+    result=live_qr_scanner(scan_id=scan_id,scan_round=round_id,
+        scan_step=next_index,scan_enabled=(next_index is not None),
+        auto_start=auto_start_camera,
+        label=titles[next_index] if next_index is not None else 'Đang đối chiếu cặp tem',
+        default=None,key='live-qr-pair-scan',height=300)
     if role in {'ADMIN','QC'}:
         reservations=ledger.check_claims(actor)
         states={'PACKED':'Đã QC · đóng gói','PASSED':'Đã kiểm tra đạt','FAILED':'Lỗi — chờ KTV'}
@@ -203,22 +221,6 @@ def render(ledger,actor,role,page,is_demo,stable_test_labels=False):
                 if st.button('Thu hồi lượt kiểm tra'):
                     try:ledger.release_check(actor,release['id'],secrets.token_hex(16));st.rerun()
                     except DomainError as e:st.error(str(e))
-    round_id=st.session_state.get('scan-round',0)
-    titles=['Tem VỎ HỘP','Tem THÂN MÁY']
-    token_keys=[f'scan-text-{round_id}-{i}' for i in range(2)]
-    tokens=[st.session_state.get(k,'') for k in token_keys]
-    next_index=next((i for i,value in enumerate(tokens) if not value),None)
-    scan_id=f'{round_id}-{next_index if next_index is not None else "done"}'
-    if next_index is not None:
-        title=titles[next_index]
-        st.subheader(title)
-        st.caption('Mở camera một lần. Quét liên tiếp tem VỎ HỘP, tem THÂN MÁY rồi các PC tiếp theo; không xin quyền lại sau mỗi tem. Bấm “Dừng camera” khi xong.')
-    else:
-        st.success('Đã đọc đủ hai mã QR. Đang đối chiếu cặp tem.')
-    result=live_qr_scanner(scan_id=scan_id,scan_round=round_id,
-        scan_step=next_index,scan_enabled=(next_index is not None),
-        label=titles[next_index] if next_index is not None else 'Đang đối chiếu cặp tem',
-        default=None,key='live-qr-pair-scan',height=300)
     scan_result=result
     if isinstance(scan_result,dict) and isinstance(scan_result.get('value'),dict):
         scan_result=scan_result['value']
