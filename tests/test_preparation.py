@@ -6,7 +6,7 @@ from cryptography.fernet import Fernet
 from license_app.preparation import PreparationLedger
 from license_app.core import DomainError
 from license_app.demo import seed_demo
-from license_app.labels import label_token,compare_labels,decode_photo,print_html
+from license_app.labels import label_token,label_matches_record,compare_labels,decode_photo,print_html
 
 @pytest.fixture
 def setup_pc(tmp_path):
@@ -27,8 +27,10 @@ def test_plan_and_number_are_stable(setup_pc):
 def test_label_matching_tamper_and_same_kind(setup_pc):
     _,d=setup_pc;k=b'x'*32
     a,b=label_token(d,'PC',k),label_token(d,'BOX',k)
-    assert a.startswith('v5.') and len(a)<90
+    assert a.startswith('v6.') and len(a)<55
     assert compare_labels(a,b,k)['id']==d['id']
+    assert label_matches_record(compare_labels(a,b,k),d)
+    assert not label_matches_record(compare_labels(a,b,k),dict(d,board_serial='SERIAL-THU-2'))
     with pytest.raises(DomainError):compare_labels(a,a,k)
     with pytest.raises(DomainError):compare_labels(a,b[:-1]+'x',k)
     other=dict(d,id='other')
