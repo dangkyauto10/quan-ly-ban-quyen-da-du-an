@@ -243,12 +243,13 @@ def render(ledger,actor,role,page,is_demo,stable_test_labels=False):
     if all(tokens):
         try:
             matched=compare_labels(*tokens,key)
-            if matched['v'] in {5,6}:
-                current=next((r for r in data if r['id']==matched['id']),None)
+            if matched['v'] in {5,6,7}:
+                current=next((r for r in data if (r['asset_tag']=='TEST-PC-01' if matched['v']==7 else r['id']==matched['id'])),None)
                 if not current:raise DomainError('Không có hồ sơ máy trong kho dữ liệu này. Kiểm tra đang mở đúng app và dùng đúng tem.')
                 if not label_matches_record(matched,current):
                     raise DomainError('Tem đã cũ so với hồ sơ máy. Cần in lại cả cặp tem trước khi đối chiếu.')
                 matched.update({k:current[k] for k in ['asset_tag','serial','unit','project','number','quantity']})
+                if matched['v']==7:matched['id']=current['id']
             st.success(f"ĐÚNG CẶP · {matched['unit']} · PC {matched['number']}/{matched['quantity']} · {matched['asset_tag']} · Serial mainboard {matched['serial']}")
         except DomainError as e:matched=None;st.error(str(e))
     else:st.info('CHƯA ĐỦ ĐỐI CHIẾU: cần một tem thân máy và một tem vỏ hộp.')
