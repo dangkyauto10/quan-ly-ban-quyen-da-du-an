@@ -57,7 +57,7 @@ class PackingLedger(PreparationLedger):
                 raise DomainError('PC đã được QC xác nhận hoàn tất trước đó.')
 
             values={'state':'PACKED',
-                'note':('KTV quét đúng cặp QR sau khi bên thứ ba kiểm tra.' if role=='KTV'
+                'note':('KTV quét đúng cặp QR sau khi bên thứ ba kiểm tra và đóng gói.' if role=='KTV'
                         else 'QC quét đúng cặp QR thân máy và vỏ hộp.'),
                 'inspector':actor}
             if prior:

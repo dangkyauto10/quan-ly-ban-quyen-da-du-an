@@ -66,6 +66,17 @@ def test_scanning_matching_pair_completes_qc_without_extra_form(ready_pc):
     assert completion['state']=='QC_PASSED'
     assert len(events)==1
 
+def test_ktv_pair_scan_after_third_party_qc_completes_without_extra_confirmation(ready_pc):
+    ledger,d,key,a,b=ready_pc
+    with pytest.raises(DomainError):
+        ledger.confirm_paired_labels('ktv@example.test',a,b,key,'ktv-scan-no-attestation')
+    assert ledger.confirm_paired_labels('ktv@example.test',a,b,key,'ktv-scan',external_qc_passed=True)==d['id']
+    with ledger.engine.connect() as c:
+        packed=c.execute(select(inspections).where(inspections.c.id==d['id'])).mappings().one()
+        events=c.execute(select(audit).where(audit.c.action=='FINAL_PACK_SCAN',audit.c.entity==d['id'])).all()
+    assert packed['state']=='PACKED' and packed['inspector']=='ktv@example.test'
+    assert len(events)==1
+
 def test_pair_scan_blocks_wrong_pair_role_and_stale_plan(ready_pc):
     ledger,d,key,a,b=ready_pc
     with pytest.raises(DomainError):ledger.confirm_paired_labels('qc@example.test',a,a,key,'same-label')

@@ -282,7 +282,7 @@ if role in {'KTV','QC','ADMIN'}:
 st.sidebar.divider()
 st.sidebar.caption('V2 · Giao diện sáng · 05/11/2026')
 st.subheader(page)
-flow_phases=[('01','Chuẩn bị'),('02','Redeem & giao việc'),('03','Kích hoạt & in QR'),('04','Quét & đóng gói')]
+flow_phases=[('01','Chuẩn bị'),('02','Redeem & giao việc'),('03','Kích hoạt & in QR'),('04','Đối chiếu tem · chốt QC')]
 flow_stage={'Đơn vị & tài khoản':0,'Kế hoạch PC theo điểm':0,'Kho key':0,'Redeem Office':1,'Thiết bị':1,'Phân bổ':1,'Kích hoạt':2,'Việc của tôi':2,'Tem của tôi':2,'In tem PC và vỏ hộp':2,'Hàng đợi in':2,'Đối chiếu tem và kiểm tra':3}
 if page in flow_stage and not (page=='Đối chiếu tem và kiểm tra' and role in {'KTV','QC'}):
     current=flow_stage[page]
@@ -299,7 +299,7 @@ page_notes={
     'In tem PC và vỏ hộp':'Admin xử lý tem lẻ khi cần; lô của KTV được in tại trạm USB.',
     'Tem của tôi':'Gửi PC đã kích hoạt thành công theo lô đến trạm in USB.',
     'Hàng đợi in':'Trạm in USB xử lý lô tem theo đơn vị và KTV.',
-    'Đối chiếu tem và kiểm tra':'Quét tem PC và hộp, kiểm tra thiết bị rồi xác nhận đóng gói.',
+    'Đối chiếu tem và kiểm tra':'Sau khi bên thứ ba đã kiểm tra và đóng gói: quét tem vỏ hộp rồi tem thân máy để app đối chiếu, ghi nhận hoàn tất QC và sẵn sàng chuyển sang phân bổ.',
     'Người dùng':'Cấp quyền theo nhiệm vụ cho từng tài khoản Google.',
 }
 if page in page_notes:st.markdown('<div class="page-note">'+page_notes[page]+'</div>',unsafe_allow_html=True)
@@ -344,10 +344,10 @@ elif page=='Tổng quan':
     data=rows('licenses'); cols=st.columns(4)
     for col,title,n in zip(cols,['Đã nhận','Chưa phân bổ','Đã giao máy','Đã kích hoạt'],[len(data),sum(r['state'] in {'RECEIVED','VERIFIED','REDEEMED'} for r in data),sum(r['state']=='ASSIGNED' for r in data),sum(r['state']=='ACTIVATED' for r in data)]):col.metric(title,n)
     st.markdown('### Một quy trình · Bốn chặng')
-    st.caption('Từ lúc nhận key đến khi QC xác nhận đủ cặp tem PC và hộp; mỗi chặng có màn hình thao tác riêng.')
+    st.caption('Máy kích hoạt trên PC; sau khi bên thứ ba kiểm tra và đóng gói, điện thoại quét hai tem để xác nhận đúng cặp và ghi nhận sẵn sàng chuyển phân bổ.')
     step2_target='Redeem Office' if role=='ADMIN' else 'Phân bổ'
     step3_target='Việc của tôi' if role=='KTV' else 'Kích hoạt'
-    steps=[('01','Chuẩn bị','Đơn vị, số lượng PC, key và tài khoản.','Đơn vị & tài khoản','ADMIN'),('02','Redeem & giao việc','Ghi nhận redeem, gắn license với máy và giao KTV.',step2_target,'ADMIN'),('03','Kích hoạt · in tem QR','KTV báo kết quả; in tem PC và vỏ hộp đúng số thứ tự.',step3_target,'KTV'),('04','Quét · kiểm tra · đóng gói','QC quét hai tem, đối chiếu máy, đơn vị và số lượng.','Đối chiếu tem và kiểm tra','QC')]
+    steps=[('01','Chuẩn bị','Đơn vị, số lượng PC, key và tài khoản.','Đơn vị & tài khoản','ADMIN'),('02','Redeem & giao việc','Ghi nhận redeem, gắn license với máy và giao KTV.',step2_target,'ADMIN'),('03','Kích hoạt · in QR','KTV kích hoạt trên PC, ghi serial, in và dán đúng cặp tem.',step3_target,'KTV'),('04','Đối chiếu tem · chốt QC','Sau khi bên thứ ba kiểm tra và đóng gói, quét cặp tem để ghi nhận hoàn tất trước khi chuyển phân bổ.','Đối chiếu tem và kiểm tra','KTV / QC')]
     def open_page(target):
         for group,items in groups.items():
             if target in items:

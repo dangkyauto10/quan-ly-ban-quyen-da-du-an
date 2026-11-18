@@ -167,9 +167,12 @@ def render(ledger,actor,role,page,is_demo,stable_test_labels=False):
         width=st.number_input('Rộng tem (mm)',50,100,60)
         height=st.number_input('Cao tem (mm)',35,100,40)
         content=print_html(record,key,int(width),int(height))
-        st.caption('Tải tệp, mở bằng trình duyệt trên PC rồi bấm In 2 tem. Chọn tỷ lệ 100%, tắt đầu/chân trang. In thử và quét kiểm tra trước in hàng loạt.')
+        st.caption('In cặp tem của PC đang chọn trên giấy, đúng khổ 60 × 40 mm, tỷ lệ 100%, tắt đầu/chân trang. QR đã rút gọn để dễ quét bằng điện thoại.')
         components.html(content,height=410,scrolling=True)
-        st.download_button('Tải cặp tem để in (HTML)',content,'tem_pc_vo_hop.html','text/html')
+        if stable_test_labels:
+            st.info('Cặp tem thử được ký theo đúng môi trường mô phỏng đang mở. In hai tem này trên giấy rồi dùng nút “Mở đối chiếu tem” để quét thử.')
+            st.download_button('Tải cặp tem thử để in giấy (HTML)',content,'tem_thu_pc_vo_hop.html','text/html')
+        else:st.download_button('Tải cặp tem để in (HTML)',content,'tem_pc_vo_hop.html','text/html')
         if role=='KTV':
             st.info('KTV nhận tem theo hàng đợi chung và xác nhận từng PC tại “Tem của tôi”.')
         with st.expander('Mã tem để thử đối chiếu khi chưa có máy in'):
@@ -180,16 +183,16 @@ def render(ledger,actor,role,page,is_demo,stable_test_labels=False):
     notice=st.session_state.get('packing-notice')
     if notice and notice['actor']==actor:st.success(notice['text'])
     st.markdown('### Đối chiếu tem độc lập')
-    st.caption('Không phụ thuộc các bước kích hoạt trên PC. Quét tem VỎ HỘP trước, rồi tem THÂN MÁY; đủ hai mã thì app tự đối chiếu và ghi nhận QC.')
+    st.caption('Khâu này diễn ra sau khi bên thứ ba đã kiểm tra thiết bị và đóng gói. Quét tem VỎ HỘP rồi tem THÂN MÁY; khi khớp hồ sơ, app ghi nhận QC/đóng gói hoàn tất và máy sẵn sàng chuyển phân bổ.')
     if role in {'ADMIN','QC'}:
         reservations=ledger.check_claims(actor)
-        states={'PACKED':'Đã đóng gói','PASSED':'Đã kiểm tra đạt','FAILED':'Lỗi — chờ KTV'}
+        states={'PACKED':'Đã QC · đóng gói','PASSED':'Đã kiểm tra đạt','FAILED':'Lỗi — chờ KTV'}
         summary=[]
         for r in data:
             claim=reservations.get(r['id'])
             busy=claim and claim['until']>int(time.time())
             summary.append({'Máy':r['asset_tag'],'Điểm':r['unit'],
-                'Trạng thái':states.get(r['inspection_state'],'Chưa kiểm tra'),
+                'Trạng thái':states.get(r['inspection_state'],'Chưa ghi nhận QC'),
                 'Đang kiểm tra':claim['owner'] if busy else ''})
         st.dataframe(summary,hide_index=True,width='stretch')
         if st.button('Cập nhật danh sách máy'):st.rerun()
@@ -242,30 +245,17 @@ def render(ledger,actor,role,page,is_demo,stable_test_labels=False):
         any(local[k]!=matched[k] for k in ['unit','project','number','quantity'])):
         st.error('Tem đã cũ so với hồ sơ. Cần in lại cả cặp tem.');return
     if local['inspection_state']=='PACKED':
-        st.success('PC này đã xác nhận đúng cặp tem và hoàn tất đóng gói. Chuyển sang máy tiếp theo.');return
+        st.success('Đã ghi nhận QC và đóng gói hoàn tất. Máy sẵn sàng chuyển sang phân bổ.');return
     operation=st.session_state.setdefault(f'pack-op-{actor}-{round_id}',secrets.token_hex(16))
     if role=='KTV':
-        st.info('Quét độc lập trên điện thoại sau khi bên thứ ba đã kiểm tra PC; không cần quay lại các bước kích hoạt.')
-        external_qc=st.checkbox('Bên thứ ba đã kiểm tra PC và cho phép đóng gói.',key=f'external-qc-{round_id}')
-        if st.button('Xác nhận cặp tem khớp và hoàn tất đóng gói',type='primary',key=f'final-pack-{round_id}'):
-            if not external_qc:
-                st.error('Cần xác nhận bên thứ ba đã kiểm tra trước khi đóng gói.')
-            else:
-                try:
-                    ledger.confirm_paired_labels(actor,*tokens,key,operation,external_qc_passed=True)
-                    st.session_state['packing-notice']={'actor':actor,
-                        'text':f"Đã quét đúng cặp tem cho {local['asset_tag']} · {local['unit']} sau khi bên thứ ba kiểm tra; hoàn tất đóng gói."}
-                    st.session_state['scan-round']=round_id+1
-                    st.rerun()
-                except DomainError as e:st.error(str(e))
-                except Exception:st.error('Chưa ghi nhận đối chiếu. Giữ nguyên hai mã và thử lại.')
-        return
+        st.caption('Sau khi quét tem thứ hai, app tự ghi nhận kết quả. Không cần bấm xác nhận thêm hay quay lại bước kích hoạt trên PC.')
     try:
-        ledger.confirm_paired_labels(actor,*tokens,key,operation)
+        ledger.confirm_paired_labels(actor,*tokens,key,operation,
+            external_qc_passed=(role=='KTV'))
         st.session_state['packing-notice']={'actor':actor,
-            'text':f"Đã quét đúng cặp tem cho {local['asset_tag']} · {local['unit']}. QC HOÀN TẤT; có thể niêm phong hộp."}
+            'text':f"Đã đối chiếu đúng cặp tem cho {local['asset_tag']} · {local['unit']}. Ghi nhận QC và đóng gói hoàn tất; máy sẵn sàng chuyển phân bổ."}
         st.session_state['scan-round']=round_id+1
         st.rerun()
     except DomainError as e:st.error(str(e))
-    except Exception:st.error('Chưa ghi nhận QC. Giữ nguyên hai mã và không niêm phong hộp khi chưa có xác nhận.')
+    except Exception:st.error('Chưa ghi nhận kết quả đối chiếu. Giữ hai mã trên màn hình và thử lại; liên hệ Admin nếu trạng thái vẫn chưa cập nhật.')
 
