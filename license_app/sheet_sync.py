@@ -9,7 +9,11 @@ from .core import units, receiving_points, users, accounts, licenses, devices, j
 from .guidance import ROLE_NAMES, ACTION_NAMES
 from .preparation import inspections
 
-SHEET_ID = '1H5j9IK1U7CBef94utPNbhUQ1A31bcQD03yCEaP2L7-U'
+SHEET_ID = '1Qdftk3jOKZMSbRzX-JCtXm_AJv87CUcwYHu-0EpcyRM'
+SUPPLIER_TAB = '18_TIEP_NHAN_NCC'
+SUPPLIER_TAB_GID = 2062764401
+SUPPLIER_HEADERS = ['Mã tiếp nhận','NCC','Ngày nhận','Số chứng từ','Mã lô NCC','Dòng máy / model',
+    'Cấu hình trên tem','Mã 1 tem thùng','Mã 2 tem thùng','Mã 1 tem PC','Mã 2 tem PC','Kết quả đối chiếu tem NCC']
 PLAN_TAB = '16_KE_HOACH_CAP_PC'
 PLAN_HEADERS = ['Mã dự án','Tên dự án','Tên đơn vị được cấp','Mã xã/điểm',
     'Tên xã/phường/đơn vị','Số PC tại điểm','Phần mềm','SKU','Số license được cấp']
@@ -20,11 +24,8 @@ SYNC_TAB = '15_DONG_BO_APP'
 STATUS_HEADERS = ['Mã lần đồng bộ','Thời điểm','Loại dữ liệu','Nguồn dữ liệu','Số bản ghi nguồn','Kết quả','Ghi chú']
 
 def configured_spreadsheet_id(settings):
-    try:
-        return settings.get('google_sheets',{}).get('spreadsheet_id',SHEET_ID)
-    except Exception:
-        # Streamlit raises when secrets.toml is absent (for example in AppTest/demo).
-        return SHEET_ID
+    """Always use the one spreadsheet explicitly approved for this app."""
+    return SHEET_ID
 
 def build_sheets_service(settings):
     """Build the runtime Google Sheets client from the configured service identity."""
@@ -113,6 +114,75 @@ def read_account_roster(service,spreadsheet_id):
             'email':email,'owner':owner or 'Chưa ghi người quản lý'})
     if not records:raise DomainError('Tab '+ACCOUNT_TAB+' chưa có dòng tài khoản để nạp.')
     return records
+
+def compare_supplier_codes(box_1, box_2, pc_1, pc_2):
+    """Compare the two vendor label codes without assuming what each code represents."""
+    box=[str(box_1 or '').strip(),str(box_2 or '').strip()]
+    pc=[str(pc_1 or '').strip(),str(pc_2 or '').strip()]
+    box=[value for value in box if value]
+    pc=[value for value in pc if value]
+    if len(box)<2 or len(pc)<2:
+        return 'CHƯA ĐỦ MÃ ĐỐI CHIẾU'
+    if sorted(box)==sorted(pc):
+        return 'KHỚP HAI MÃ THÙNG/PC'
+    if set(box).intersection(pc):
+        return 'CÓ MÃ CHUNG; CÒN MÃ LỆCH — CHỜ XÁC MINH'
+    return 'KHÔNG KHỚP — CHỜ XÁC MINH'
+
+def parse_supplier_receipts(values):
+    """Validate tab 18 and return supplier intake rows with a non-destructive comparison."""
+    if not values or values[0][:len(SUPPLIER_HEADERS)] != SUPPLIER_HEADERS:
+        raise DomainError('Tiêu đề tab '+SUPPLIER_TAB+' chưa đúng mẫu; không ghi dữ liệu.')
+    records=[];seen=set()
+    for line,row in enumerate(values[1:],2):
+        cells=list(row[:len(SUPPLIER_HEADERS)])+['']*max(0,len(SUPPLIER_HEADERS)-len(row))
+        if not any(str(value).strip() for value in cells):continue
+        if any(isinstance(value,str) and value.startswith('=') for value in cells):
+            raise DomainError(f'Dòng {line}: không dùng công thức trong tab tiếp nhận NCC.')
+        record={header:str(value).strip() for header,value in zip(SUPPLIER_HEADERS,cells)}
+        receipt_id=record['Mã tiếp nhận']
+        if not receipt_id or not record['NCC']:
+            raise DomainError(f'Dòng {line}: cần có Mã tiếp nhận và NCC.')
+        if receipt_id in seen:raise DomainError(f'Dòng {line}: Mã tiếp nhận bị lặp.')
+        seen.add(receipt_id)
+        record['Đối chiếu mã tự động']=compare_supplier_codes(
+            record['Mã 1 tem thùng'],record['Mã 2 tem thùng'],
+            record['Mã 1 tem PC'],record['Mã 2 tem PC'])
+        records.append(record)
+    return records
+
+def read_supplier_receipts(service,spreadsheet_id):
+    """Read supplier intake records from the approved workbook's tab 18."""
+    api=service.spreadsheets()
+    book=api.get(spreadsheetId=spreadsheet_id,fields='sheets(properties(title))').execute()
+    titles={sheet['properties']['title'] for sheet in book.get('sheets',[])}
+    if SUPPLIER_TAB not in titles:
+        raise DomainError('Chưa có tab '+SUPPLIER_TAB+' trong Google Sheet đã chốt.')
+    values=api.values().get(spreadsheetId=spreadsheet_id,
+        range="'"+SUPPLIER_TAB+"'!A1:L1000",valueRenderOption='FORMULA').execute().get('values',[])
+    return parse_supplier_receipts(values)
+
+def append_supplier_receipt(service,spreadsheet_id,receipt):
+    """Append one Admin-entered vendor intake row; repeated submit IDs are idempotent."""
+    api=service.spreadsheets()
+    current=read_supplier_receipts(service,spreadsheet_id)
+    receipt_id=str(receipt.get('Mã tiếp nhận','')).strip()
+    if not receipt_id:raise DomainError('Thiếu Mã tiếp nhận.')
+    row=[str(receipt.get(header,'') or '').strip() for header in SUPPLIER_HEADERS[:-1]]
+    if not row[1]:raise DomainError('Cần chọn hoặc nhập NCC.')
+    existing=next((item for item in current if item['Mã tiếp nhận']==receipt_id),None)
+    if existing:
+        if all(existing[h]==row[i] for i,h in enumerate(SUPPLIER_HEADERS[:-1])):
+            return existing
+        raise DomainError('Mã tiếp nhận đã tồn tại với nội dung khác; tải lại tab 18 để kiểm tra.')
+    comparison=compare_supplier_codes(row[7],row[8],row[9],row[10])
+    status=('CHỜ XÁC MINH — '+comparison if 'CHỜ XÁC MINH' in comparison
+            else comparison)
+    values=row+[status]
+    api.values().append(spreadsheetId=spreadsheet_id,
+        range="'"+SUPPLIER_TAB+"'!A:L",valueInputOption='RAW',
+        insertDataOption='INSERT_ROWS',body={'values':[values]}).execute()
+    return dict(zip(SUPPLIER_HEADERS,values))
 
 def ident(kind, value): return 'APP-' + kind + '-' + str(value)
 def scrub(value):
