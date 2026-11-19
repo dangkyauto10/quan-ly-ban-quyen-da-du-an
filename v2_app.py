@@ -499,7 +499,7 @@ elif page=='Tiếp nhận NCC':
                         build_sheets_service(st.secrets),target)
                     st.success(f"Đã đọc {len(st.session_state[read_key])} hồ sơ từ tab 18.")
                 except DomainError as err:st.error(str(err))
-                except Exception:st.error('Không đọc được tab 18. Kiểm tra quyền Editor của danh tính chạy app trên đúng Sheet BẢN QUYỀN.')
+                except Exception:st.error('Không đọc được tab 18 hoặc kết nối quá thời gian chờ. Kiểm tra Google Sheets API, kết nối và quyền Editor của danh tính app trên đúng Sheet BẢN QUYỀN.')
             st.markdown('#### Ghi nhận máy mới nhập')
             receipt_id_key='supplier-intake-id-'+actor
             receipt_id=st.session_state.setdefault(receipt_id_key,'NCC-'+uuid.uuid4().hex[:12].upper())
@@ -534,7 +534,7 @@ elif page=='Tiếp nhận NCC':
                     st.session_state.pop(receipt_id_key,None)
                     st.rerun()
                 except DomainError as err:st.error(str(err))
-                except Exception:st.error('Chưa xác nhận được kết quả ghi tab 18. Tải lại danh sách trước khi gửi lại để tránh tạo dòng trùng.')
+                except Exception:st.error('Chưa xác nhận được kết quả ghi tab 18 (có thể kết nối đã hết thời gian chờ). Đọc lại danh sách trước khi gửi lại để tránh tạo dòng trùng.')
             records=st.session_state.get(read_key)
             if records is not None:
                 st.markdown('#### Danh sách máy đã tiếp nhận')
