@@ -490,12 +490,16 @@ elif page=='Tiếp nhận NCC':
         scan_target_key='supplier-barcode-target-'+actor
         scan_id_key='supplier-barcode-id-'+actor
         scan_notice_key='supplier-barcode-notice-'+actor
+        scan_choice_key='supplier-barcode-choice-'+actor
+        clear_codes_key='supplier-intake-clear-codes-'+actor
         scan_fields={
             'Tem thùng · mã 1':'supplier-box-code-1-'+actor,
             'Tem thùng · mã 2':'supplier-box-code-2-'+actor,
             'Tem trên PC · mã 1':'supplier-pc-code-1-'+actor,
             'Tem trên PC · mã 2':'supplier-pc-code-2-'+actor,
         }
+        if st.session_state.pop(clear_codes_key,False):
+            for code_key in scan_fields.values():st.session_state.pop(code_key,None)
         scan_notice=st.session_state.pop(scan_notice_key,None)
         if scan_notice:st.success(scan_notice)
         active_target=st.session_state.get(scan_target_key)
@@ -509,6 +513,10 @@ elif page=='Tiếp nhận NCC':
             if (isinstance(scan_result,dict) and scan_result.get('scan_id')==scan_id
                     and str(scan_result.get('text','')).strip()):
                 st.session_state[scan_fields[active_target]]=str(scan_result['text']).strip()
+                field_order=list(scan_fields)
+                next_index=field_order.index(active_target)+1
+                if next_index<len(field_order):
+                    st.session_state[scan_choice_key]=field_order[next_index]
                 st.session_state[scan_notice_key]='Đã quét '+active_target+'; mã đã điền vào ô tương ứng.'
                 st.session_state.pop(scan_target_key,None)
                 st.session_state.pop(scan_id_key,None)
@@ -529,7 +537,7 @@ elif page=='Tiếp nhận NCC':
                 except DomainError as err:st.error(str(err))
                 except Exception:st.error('Không đọc được tab 18 hoặc kết nối quá thời gian chờ. Kiểm tra Google Sheets API, kết nối và quyền Editor của danh tính app trên đúng Sheet BẢN QUYỀN.')
             st.markdown('#### Ghi nhận máy mới nhập')
-            scan_choice=st.selectbox('Chọn mã vạch cần quét',list(scan_fields),key='supplier-barcode-choice-'+actor)
+            scan_choice=st.selectbox('Chọn mã vạch cần quét',list(scan_fields),key=scan_choice_key)
             def open_supplier_barcode_scan():
                 st.session_state[scan_target_key]=st.session_state['supplier-barcode-choice-'+actor]
                 st.session_state[scan_id_key]=uuid.uuid4().hex
@@ -566,6 +574,7 @@ elif page=='Tiếp nhận NCC':
                     st.success('Đã lưu hồ sơ '+result['Mã tiếp nhận']+' vào tab 18.')
                     st.info('Kết quả so mã: '+result['Kết quả đối chiếu tem NCC'])
                     st.session_state.pop(receipt_id_key,None)
+                    st.session_state[clear_codes_key]=True
                     st.rerun()
                 except DomainError as err:st.error(str(err))
                 except Exception:st.error('Chưa xác nhận được kết quả ghi tab 18 (có thể kết nối đã hết thời gian chờ). Đọc lại danh sách trước khi gửi lại để tránh tạo dòng trùng.')
