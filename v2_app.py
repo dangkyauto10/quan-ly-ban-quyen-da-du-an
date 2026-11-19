@@ -20,6 +20,7 @@ st.set_page_config(page_title='KEY BẢN QUYỀN',page_icon='assets/key-ban-quye
 logo_data=base64.b64encode(Path('assets/key-ban-quyen-icon.svg').read_bytes()).decode('ascii')
 logo_src='data:image/svg+xml;base64,'+logo_data
 hero_photo_src='data:image/webp;base64,'+base64.b64encode(Path('assets/hero-tech-operations.webp').read_bytes()).decode('ascii')
+supplier_barcode_scanner=components.declare_component('license_supplier_barcode_scanner',path=str(Path(__file__).parent/'license_app'/'supplier_barcode'))
 st.markdown('''<style>
 :root {color-scheme:light;--ink:#13243b;--teal:#9a6a00;--mint:#fff2c7;--line:#dce5ef;--muted:#61738a;}
 [data-testid="stAppViewContainer"] {background:radial-gradient(ellipse at 92% 0%,#fff0c2 0,transparent 24%),#f2f5fa;}
@@ -486,6 +487,33 @@ elif page=='Tiếp nhận NCC':
             append_supplier_receipt,compare_supplier_codes)
         target=configured_spreadsheet_id(st.secrets)
         sheet_url=f'https://docs.google.com/spreadsheets/d/{target}/edit?gid={SUPPLIER_TAB_GID}#gid={SUPPLIER_TAB_GID}'
+        scan_target_key='supplier-barcode-target-'+actor
+        scan_id_key='supplier-barcode-id-'+actor
+        scan_notice_key='supplier-barcode-notice-'+actor
+        scan_fields={
+            'Tem thùng · mã 1':'supplier-box-code-1-'+actor,
+            'Tem thùng · mã 2':'supplier-box-code-2-'+actor,
+            'Tem trên PC · mã 1':'supplier-pc-code-1-'+actor,
+            'Tem trên PC · mã 2':'supplier-pc-code-2-'+actor,
+        }
+        scan_notice=st.session_state.pop(scan_notice_key,None)
+        if scan_notice:st.success(scan_notice)
+        active_target=st.session_state.get(scan_target_key)
+        if active_target in scan_fields:
+            scan_id=st.session_state.get(scan_id_key,'')
+            scan_result=supplier_barcode_scanner(
+                scan_id=scan_id,label=active_target,auto_start=True,
+                default=None,key='supplier-barcode-'+actor+'-'+scan_id,height=380)
+            if isinstance(scan_result,dict) and isinstance(scan_result.get('value'),dict):
+                scan_result=scan_result['value']
+            if (isinstance(scan_result,dict) and scan_result.get('scan_id')==scan_id
+                    and str(scan_result.get('text','')).strip()):
+                st.session_state[scan_fields[active_target]]=str(scan_result['text']).strip()
+                st.session_state[scan_notice_key]='Đã quét '+active_target+'; mã đã điền vào ô tương ứng.'
+                st.session_state.pop(scan_target_key,None)
+                st.session_state.pop(scan_id_key,None)
+                st.rerun()
+        st.caption('Quét trực tiếp mã vạch 1D trên tem bằng camera sau của điện thoại. Ảnh/video chỉ xử lý trên máy, không tải lên hoặc lưu. Có thể sửa lại mã sau khi quét.')
         st.markdown('### Tiếp nhận PC từ nhà cung cấp')
         st.caption('Nhập thông tin tem thùng và tem PC. App lưu một dòng vào tab 18 của Sheet BẢN QUYỀN; mã lệch được giữ ở trạng thái chờ xác minh, không tự kết luận nguyên nhân.')
         st.link_button('Mở tab 18 · Tiếp nhận NCC',sheet_url)
@@ -501,6 +529,12 @@ elif page=='Tiếp nhận NCC':
                 except DomainError as err:st.error(str(err))
                 except Exception:st.error('Không đọc được tab 18 hoặc kết nối quá thời gian chờ. Kiểm tra Google Sheets API, kết nối và quyền Editor của danh tính app trên đúng Sheet BẢN QUYỀN.')
             st.markdown('#### Ghi nhận máy mới nhập')
+            scan_choice=st.selectbox('Chọn mã vạch cần quét',list(scan_fields),key='supplier-barcode-choice-'+actor)
+            def open_supplier_barcode_scan():
+                st.session_state[scan_target_key]=st.session_state['supplier-barcode-choice-'+actor]
+                st.session_state[scan_id_key]=uuid.uuid4().hex
+            st.button('📷 Mở camera sau và quét mã vạch',key='open-supplier-barcode-'+actor,
+                on_click=open_supplier_barcode_scan)
             receipt_id_key='supplier-intake-id-'+actor
             receipt_id=st.session_state.setdefault(receipt_id_key,'NCC-'+uuid.uuid4().hex[:12].upper())
             with st.form('supplier-intake-form',clear_on_submit=False):
@@ -513,11 +547,11 @@ elif page=='Tiếp nhận NCC':
                 model_name=st.text_input('Dòng máy / model')
                 configuration=st.text_input('Cấu hình ghi trên tem')
                 st.markdown('##### Mã trên tem thùng')
-                box_1=st.text_input('Mã 1 tem thùng')
-                box_2=st.text_input('Mã 2 tem thùng')
+                box_1=st.text_input('Mã 1 tem thùng',key=scan_fields['Tem thùng · mã 1'])
+                box_2=st.text_input('Mã 2 tem thùng',key=scan_fields['Tem thùng · mã 2'])
                 st.markdown('##### Mã trên tem PC')
-                pc_1=st.text_input('Mã 1 tem PC')
-                pc_2=st.text_input('Mã 2 tem PC')
+                pc_1=st.text_input('Mã 1 tem PC',key=scan_fields['Tem trên PC · mã 1'])
+                pc_2=st.text_input('Mã 2 tem PC',key=scan_fields['Tem trên PC · mã 2'])
                 submitted=st.form_submit_button('Lưu vào tab 18',type='primary')
             if submitted:
                 supplier=supplier_other.strip() if supplier_kind=='Khác' else supplier_kind
