@@ -33,6 +33,8 @@ def build_sheets_service(settings):
     from google.auth.exceptions import DefaultCredentialsError
     from google.oauth2.service_account import Credentials
     from googleapiclient.discovery import build
+    from google_auth_httplib2 import AuthorizedHttp
+    import httplib2
     scopes=['https://www.googleapis.com/auth/spreadsheets']
     info=settings.get('google_service_account')
     if info:
@@ -41,7 +43,10 @@ def build_sheets_service(settings):
         try:credentials=google.auth.default(scopes=scopes)[0]
         except DefaultCredentialsError:
             raise DomainError('Chưa cấu hình danh tính Google Sheets cho app. Thêm [google_service_account] trong Secrets và chia sẻ Sheet quyền Editor cho email service account.') from None
-    return build('sheets','v4',credentials=credentials,cache_discovery=False)
+    # Bound every Sheets API call so an unavailable API or stalled connection
+    # cannot leave the Streamlit page spinning indefinitely.
+    http=AuthorizedHttp(credentials,http=httplib2.Http(timeout=12))
+    return build('sheets','v4',http=http,cache_discovery=False)
 
 def _sheet_integer(value,line,label,minimum):
     if isinstance(value,bool) or value is None or value=='':
