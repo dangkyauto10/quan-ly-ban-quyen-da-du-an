@@ -5,7 +5,7 @@ from cryptography.fernet import Fernet
 from license_app.core import Ledger, DomainError
 from license_app.demo import seed_demo
 from license_app.sheet_sync import (make_snapshot, plan_sync, HEADERS, scrub,
-    SHEET_ID, SUPPLIER_HEADERS, configured_spreadsheet_id, parse_supplier_receipts)
+    SHEET_ID, SUPPLIER_TAB_GID, SUPPLIER_HEADERS, configured_spreadsheet_id, parse_supplier_receipts)
 
 @pytest.fixture
 def snapshot(tmp_path):
@@ -55,6 +55,7 @@ def test_literal_export_and_key_scrub():
     assert scrub('=IMPORTXML("x")')=='=IMPORTXML("x")' # Writer uses stringValue; never formulaValue.
 def test_app_uses_only_the_approved_workbook_even_if_old_secret_remains():
     assert SHEET_ID == '1Qdftk3jOKZMSbRzX-JCtXm_AJv87CUcwYHu-0EpcyRM'
+    assert SUPPLIER_TAB_GID == 906599733
     assert configured_spreadsheet_id({'google_sheets':{'spreadsheet_id':'1H5j9IK1U7CBef94utPNbhUQ1A31bcQD03yCEaP2L7-U'}}) == SHEET_ID
 
 def test_supplier_intake_keeps_mismatched_codes_pending_review():
