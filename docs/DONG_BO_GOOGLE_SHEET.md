@@ -1,6 +1,6 @@
 # Kết nối app BẢN QUYỀN với Google Sheet
 
-Google Sheet: https://docs.google.com/spreadsheets/d/1H5j9IK1U7CBef94utPNbhUQ1A31bcQD03yCEaP2L7-U/edit
+Google Sheet: https://docs.google.com/spreadsheets/d/1Qdftk3jOKZMSbRzX-JCtXm_AJv87CUcwYHu-0EpcyRM/edit
 
 ## Phân công dữ liệu
 
@@ -16,8 +16,9 @@ Google Sheet: https://docs.google.com/spreadsheets/d/1H5j9IK1U7CBef94utPNbhUQ1A3
   hoặc MFA. Không ghi key đầy đủ, mật khẩu hoặc MFA lên Sheet.
 - Báo cáo do app tạo được ghi theo mã `APP-` vào các tab `01`–`12`; tab `08` có
   thêm mã và tên xã/điểm của PC. Tab `15_DONG_BO_APP` ghi lần xuất báo cáo.
+- Tab `18_TIEP_NHAN_NCC` lưu nhà cung cấp, chứng từ/lô, model và hai mã tem trên thùng/PC. Admin có thể nhập qua trang “Tiếp nhận NCC”; app ghi trực tiếp vào tab 18. Mã lệch được giữ chờ xác minh; app không tự khẳng định đó là lỗi hay serial.
 - Sheet không đọc kết quả ngược từ các tab báo cáo để thay đổi hồ sơ trong app.
-  Kế hoạch và danh sách email chỉ được lấy từ tab 16/17 sau thao tác xác nhận của Admin.
+  Kế hoạch và danh sách email chỉ được lấy từ tab 16/17 sau thao tác xác nhận của Admin. Tab 18 là hồ sơ tiếp nhận NCC, được ghi trực tiếp bởi Admin và chỉ thuộc workbook đã chốt.
 
 ## Mẫu tab kế hoạch
 
@@ -63,8 +64,7 @@ Các dòng có mã `MAU-` được giữ làm ví dụ; dòng `APP-` được c�
 Không sửa trực tiếp dòng `APP-`, vì lần xuất sau sẽ ghi lại theo dữ liệu app.
 
 Google Sheets API cần được bật. Tài khoản runtime của app phải có quyền Editor trên
-file. Mặc định app dùng spreadsheet ID ở `SHEET_ID`; secret
-`google_sheets.spreadsheet_id` có thể ghi đè. Demo không đọc kế hoạch thật hoặc ghi
+file. App luôn dùng đúng spreadsheet ID đã chốt trong `SHEET_ID`; giá trị cũ trong `google_sheets.spreadsheet_id` không được dùng để tránh chuyển sang một workbook khác. Demo không đọc kế hoạch thật hoặc ghi
 báo cáo lên file dùng chung.
 
 ## Lưu ý vận hành
