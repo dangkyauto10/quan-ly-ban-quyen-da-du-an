@@ -11,7 +11,7 @@ from .preparation import inspections
 
 SHEET_ID = '1Qdftk3jOKZMSbRzX-JCtXm_AJv87CUcwYHu-0EpcyRM'
 SUPPLIER_TAB = '18_TIEP_NHAN_NCC'
-SUPPLIER_TAB_GID = 2062764401
+SUPPLIER_TAB_GID = 906599733
 SUPPLIER_HEADERS = ['Mã tiếp nhận','NCC','Ngày nhận','Số chứng từ','Mã lô NCC','Dòng máy / model',
     'Cấu hình trên tem','Mã 1 tem thùng','Mã 2 tem thùng','Mã 1 tem PC','Mã 2 tem PC','Kết quả đối chiếu tem NCC']
 PLAN_TAB = '16_KE_HOACH_CAP_PC'
