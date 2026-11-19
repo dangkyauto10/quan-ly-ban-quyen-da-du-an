@@ -256,14 +256,14 @@ def open_pair_check():
     st.session_state['focus-pair-scan']=True
 
 menus=['Việc của tôi','Tem của tôi','Đối chiếu tem và kiểm tra'] if role=='KTV' else ['Hàng đợi in'] if role=='PRINT' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
-if role=='ADMIN':menus.extend(['Người dùng','Đồng bộ Google Sheet'])
+if role=='ADMIN':menus.extend(['Người dùng','Đồng bộ Google Sheet','Tiếp nhận NCC'])
 if role=='QC':menus=['Đối chiếu tem và kiểm tra']
 elif role=='ADMIN':menus.extend(['Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra','Hàng đợi in'])
 if role=='OPERATOR':menus=[name for name in menus if name!='Redeem Office']
 menus.append('Hướng dẫn theo vai trò')
 groups={
     'Tổng quan':['Tổng quan'],
-    '01 · Chuẩn bị & bản quyền':['Đơn vị & tài khoản','Kế hoạch PC theo điểm','Kho key','Redeem Office'],
+    '01 · Chuẩn bị & bản quyền':['Tiếp nhận NCC','Đơn vị & tài khoản','Kế hoạch PC theo điểm','Kho key','Redeem Office'],
     '02 · Giao việc & kích hoạt':['Thiết bị','Phân bổ','Kích hoạt','Việc của tôi'],
     '03 · Tem QR & kiểm tra':['Tem của tôi','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra','Hàng đợi in'],
     '04 · Bảo hành & lịch sử':['Bảo hành','Nhật ký'],
@@ -477,6 +477,73 @@ elif page=='Đơn vị & tài khoản':
         else:st.info('Tài khoản sẽ xuất hiện tại đây sau khi được redeem vào Microsoft.')
     st.markdown('### Danh sách tài khoản')
     table(account_rows)
+elif page=='Tiếp nhận NCC':
+    if role!='ADMIN':
+        st.error('Chỉ Admin được tiếp nhận và đối chiếu mã NCC.')
+    else:
+        from license_app.sheet_sync import (SUPPLIER_TAB,SUPPLIER_TAB_GID,
+            build_sheets_service,configured_spreadsheet_id,read_supplier_receipts,
+            append_supplier_receipt,compare_supplier_codes)
+        target=configured_spreadsheet_id(st.secrets)
+        sheet_url=f'https://docs.google.com/spreadsheets/d/{target}/edit?gid={SUPPLIER_TAB_GID}#gid={SUPPLIER_TAB_GID}'
+        st.markdown('### Tiếp nhận PC từ nhà cung cấp')
+        st.caption('Nhập thông tin tem thùng và tem PC. App lưu một dòng vào tab 18 của Sheet BẢN QUYỀN; mã lệch được giữ ở trạng thái chờ xác minh, không tự kết luận nguyên nhân.')
+        st.link_button('Mở tab 18 · Tiếp nhận NCC',sheet_url)
+        if os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'} or activation_demo:
+            st.info('Môi trường mô phỏng không đọc hoặc ghi Google Sheet dùng chung.')
+        else:
+            read_key='supplier-intake-rows-'+actor
+            if st.button('Đọc danh sách tiếp nhận từ tab 18',key='read-supplier-intake'):
+                try:
+                    st.session_state[read_key]=read_supplier_receipts(
+                        build_sheets_service(st.secrets),target)
+                    st.success(f"Đã đọc {len(st.session_state[read_key])} hồ sơ từ tab 18.")
+                except DomainError as err:st.error(str(err))
+                except Exception:st.error('Không đọc được tab 18. Kiểm tra quyền Editor của danh tính chạy app trên đúng Sheet BẢN QUYỀN.')
+            st.markdown('#### Ghi nhận máy mới nhập')
+            receipt_id_key='supplier-intake-id-'+actor
+            receipt_id=st.session_state.setdefault(receipt_id_key,'NCC-'+uuid.uuid4().hex[:12].upper())
+            with st.form('supplier-intake-form',clear_on_submit=False):
+                st.text_input('Mã tiếp nhận do app tạo',value=receipt_id,disabled=True)
+                supplier_kind=st.selectbox('Nhà cung cấp',['FPT','CMS','Khác'],key='supplier-kind')
+                supplier_other=st.text_input('Tên nhà cung cấp',key='supplier-other') if supplier_kind=='Khác' else ''
+                received_date=st.date_input('Ngày nhận')
+                doc_number=st.text_input('Số chứng từ')
+                supplier_lot=st.text_input('Mã lô NCC')
+                model_name=st.text_input('Dòng máy / model')
+                configuration=st.text_input('Cấu hình ghi trên tem')
+                st.markdown('##### Mã trên tem thùng')
+                box_1=st.text_input('Mã 1 tem thùng')
+                box_2=st.text_input('Mã 2 tem thùng')
+                st.markdown('##### Mã trên tem PC')
+                pc_1=st.text_input('Mã 1 tem PC')
+                pc_2=st.text_input('Mã 2 tem PC')
+                submitted=st.form_submit_button('Lưu vào tab 18',type='primary')
+            if submitted:
+                supplier=supplier_other.strip() if supplier_kind=='Khác' else supplier_kind
+                receipt={'Mã tiếp nhận':receipt_id,'NCC':supplier,
+                    'Ngày nhận':received_date.isoformat(),'Số chứng từ':doc_number,
+                    'Mã lô NCC':supplier_lot,'Dòng máy / model':model_name,
+                    'Cấu hình trên tem':configuration,'Mã 1 tem thùng':box_1,
+                    'Mã 2 tem thùng':box_2,'Mã 1 tem PC':pc_1,'Mã 2 tem PC':pc_2}
+                try:
+                    result=append_supplier_receipt(build_sheets_service(st.secrets),target,receipt)
+                    st.session_state[read_key]=read_supplier_receipts(build_sheets_service(st.secrets),target)
+                    st.success('Đã lưu hồ sơ '+result['Mã tiếp nhận']+' vào tab 18.')
+                    st.info('Kết quả so mã: '+result['Kết quả đối chiếu tem NCC'])
+                    st.session_state.pop(receipt_id_key,None)
+                    st.rerun()
+                except DomainError as err:st.error(str(err))
+                except Exception:st.error('Chưa xác nhận được kết quả ghi tab 18. Tải lại danh sách trước khi gửi lại để tránh tạo dòng trùng.')
+            records=st.session_state.get(read_key)
+            if records is not None:
+                st.markdown('#### Danh sách máy đã tiếp nhận')
+                columns=['Mã tiếp nhận','NCC','Ngày nhận','Số chứng từ','Mã lô NCC',
+                    'Dòng máy / model','Cấu hình trên tem','Mã 1 tem thùng','Mã 2 tem thùng',
+                    'Mã 1 tem PC','Mã 2 tem PC','Kết quả đối chiếu tem NCC','Đối chiếu mã tự động']
+                st.dataframe([{name:row.get(name,'') for name in columns} for row in records],
+                    hide_index=True,width='stretch')
+                st.caption('Nếu mã trên thùng và PC khác nhau, Admin xác minh ý nghĩa mã với NCC rồi cập nhật kết luận tại tab 18. Hồ sơ này chưa tự liên kết với PC nội bộ hoặc tự chặn phân bổ.')
 elif page=='Kho key':
     if role=='ADMIN':
         with st.form('import',clear_on_submit=True):
