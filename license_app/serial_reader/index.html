@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<style>
+  body { margin: 0; font: 14px Arial, sans-serif; color: #18314d; }
+  button { border: 0; border-radius: 9px; background: #153653; color: #fff; padding: 11px 16px; font-weight: 700; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: wait; }
+  #status { margin: 8px 0 0; line-height: 1.4; }
+  .error { color: #a42f2f; }
+  .ok { color: #087c68; font-weight: 700; }
+</style>
+<button id="read" type="button">Đọc serial mainboard trên PC này</button>
+<div id="status" role="status">Đọc tại chỗ bằng công cụ Windows chỉ đọc serial.</div>
+<script>
+  const button = document.getElementById('read');
+  const status = document.getElementById('status');
+  function setValue(value) {
+    window.parent.postMessage({isStreamlitMessage: true, type: 'streamlit:setComponentValue', value}, '*');
+  }
+  window.parent.postMessage({isStreamlitMessage: true, type: 'streamlit:componentReady', apiVersion: 1}, '*');
+  window.parent.postMessage({isStreamlitMessage: true, type: 'streamlit:setFrameHeight', height: 76}, '*');
+  button.addEventListener('click', async () => {
+    button.disabled = true;
+    status.className = '';
+    status.textContent = 'Đang đọc serial mainboard…';
+    try {
+      const response = await fetch('http://127.0.0.1:8765/serial', {method: 'GET', cache: 'no-store'});
+      const data = await response.json();
+      if (!response.ok || !data.ok || !data.serial) throw new Error(data.error || 'Không nhận được serial.');
+      status.className = 'ok';
+      status.textContent = 'Đã đọc serial: ' + data.serial;
+      setValue({ok: true, serial: data.serial, manufacturer: data.manufacturer || '', product: data.product || ''});
+    } catch (error) {
+      status.className = 'error';
+      status.textContent = 'Chưa đọc được. Hãy chạy START_SERIAL_AGENT.cmd trên PC này, cho phép quyền mạng cục bộ nếu Chrome hỏi, rồi bấm lại.';
+      setValue({ok: false, error: String(error)});
+    } finally {
+      button.disabled = false;
+    }
+  });
+</script>
+</html>
