@@ -1,7 +1,7 @@
 # Đối chiếu Google Sheet với app BẢN QUYỀN
 
 Google Sheet đang dùng:
-https://docs.google.com/spreadsheets/d/1H5j9IK1U7CBef94utPNbhUQ1A31bcQD03yCEaP2L7-U/edit
+https://docs.google.com/spreadsheets/d/1Qdftk3jOKZMSbRzX-JCtXm_AJv87CUcwYHu-0EpcyRM/edit
 
 App quản lý ba nhóm phần mềm: Windows, Microsoft Office và Antivirus (diệt virus).
 Key, SKU, luồng kích hoạt, license, PC, KTV, tem, QC và bảo hành được theo dõi
