@@ -155,6 +155,72 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain
 @media(max-width:900px) {.process-breadcrumb {flex-wrap:wrap;}.process-phase {flex:1 1 42%;}}
 @media(max-width:640px) {.block-container {padding:4rem 1rem 2rem;}.hero-tech {min-height:205px;padding:20px 14px;border-radius:16px;background-position:center 50%;}.hero-content {padding:8px 4px;background:radial-gradient(ellipse at center,#061529d9 0%,#061529a8 65%,transparent 100%);}.hero-tech h1 {font-size:27px!important;}.hero-logo {width:38px;height:38px;}.hero-name {font-size:12px;letter-spacing:1.3px;}.hero-sub,.hero-note {font-size:12px;}.process-breadcrumb {gap:5px;padding:8px;}.process-phase {flex:1 1 calc(50% - 6px);padding:7px 8px;font-size:11px;}[data-testid="stForm"] {padding:14px;}div[data-testid="stMetric"] {padding:14px;}.step-card {height:auto;min-height:130px;}}
 @media(prefers-reduced-motion:reduce) {[data-testid="stMetric"],[data-testid="stForm"],[data-testid="stExpander"],.stButton button,.stDownloadButton button,.stLinkButton a,.step-card {transition:none!important;}}
+/* Compact desktop workspace: retain responsive mobile layout and all controls. */
+@media (min-width: 1024px) {
+  [data-testid="stMainBlockContainer"], .block-container {
+    padding: 3.25rem 1.4rem 1.25rem !important; max-width: none;
+  }
+  [data-testid="stMainBlockContainer"] [data-testid="stVerticalBlock"] {gap: .5rem;}
+  [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child {
+    width: 225px !important; min-width: 225px !important; max-width: 225px !important;
+  }
+  [data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding: .8rem .7rem 1rem !important;}
+  [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {gap: .45rem;}
+  [data-testid="stSidebar"] .side-brand-row {gap: 9px; margin: 3px 0 7px;}
+  [data-testid="stSidebar"] .side-mark {width: 34px; height: 34px; flex-basis: 34px;}
+  [data-testid="stSidebar"] .side-brand {font-size: 14px !important;}
+  [data-testid="stSidebar"] label p, [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {font-size: 14px !important; line-height: 1.35;}
+  [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {font-size: 12px !important; overflow-wrap: anywhere;}
+  [data-testid="stSidebar"] [data-baseweb="select"] {min-height: 36px;}
+  [data-testid="stSidebar"] [data-baseweb="select"] * {font-size: 13px !important;}
+  [data-testid="stSidebar"] [role="radiogroup"] {gap: 3px;}
+  [data-testid="stSidebar"] [role="radio"] {min-height: 33px; padding: 5px 6px !important;}
+  [data-testid="stSidebar"] [role="radio"] p {font-size: 13px !important;}
+  [data-testid="stSidebar"] [data-testid="stButton"] button {min-height: 34px; padding: 5px 10px; font-size: 13px !important;}
+  .hero-tech {min-height: 100px; padding: 8px 14px; margin: 0 0 5px; border-radius: 14px; background-position: center 53%;}
+  .hero-content {max-width: 1000px; padding: 0 6px;}
+  .hero-lockup {gap: 8px; margin: 0 auto 2px;}
+  .hero-logo {width: 28px; height: 28px;}
+  .hero-name {font-size: 12px; letter-spacing: 1px; margin: 0;}
+  .hero-sub {font-size: 11px;}
+  [data-testid="stMain"] .hero-tech h1 {font-size: 24px !important; line-height: 1.16 !important; max-width: none; margin: 3px auto !important;}
+  .hero-note {font-size: 12px;}
+  [data-testid="stMain"] h2 {font-size: 24px !important; line-height: 1.2; margin: .35rem 0 .1rem !important; padding: 0 !important;}
+  [data-testid="stMain"] h3 {font-size: 18px !important; line-height: 1.25; margin: .35rem 0 .1rem !important; padding: 0 !important;}
+  [data-testid="stMain"] h4, [data-testid="stMain"] h5 {margin: .25rem 0 .1rem; padding: 0;}
+  [data-testid="stMain"] [data-testid="stMarkdownContainer"] p {font-size: 14px; line-height: 1.4;}
+  [data-testid="stMain"] label, [data-testid="stMain"] label p {font-size: 13px !important;}
+  [data-testid="stCaptionContainer"] p {font-size: 12.5px !important; line-height: 1.35;}
+  .page-note {margin: 0 0 4px; font-size: 13px;}
+  .process-breadcrumb {gap: 6px; padding: 5px 7px; margin: 0 0 5px; border-radius: 10px;}
+  .process-phase {gap: 6px; padding: 4px 6px; font-size: 12px;}
+  .process-phase b {height: 22px; flex-basis: 22px; font-size: 10px;}
+  [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) {gap: 8px; padding: 0;}
+  div[data-testid="stMetric"] {min-height: 72px; padding: 8px 12px; border-radius: 11px;}
+  [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] p {font-size: 13px !important; line-height: 1.2 !important;}
+  [data-testid="stMetricValue"], [data-testid="stMetricValue"] *, div[data-testid="stMetricValue"] {font-size: 28px !important; line-height: 1.1 !important;}
+  [data-testid="stHorizontalBlock"]:has(.step-card) {gap: 9px; padding: 6px; border-radius: 12px;}
+  .step-card {height: auto; min-height: 110px; padding: 9px 10px; margin: 0; border-radius: 10px;}
+  .step-number {font-size: 10px; padding: 2px 6px; letter-spacing: .3px;}
+  .step-audience {font-size: 9px; padding: 2px 5px; margin-left: 4px;}
+  .step-title {font-size: 15px; line-height: 1.25; margin: 5px 0;}
+  .step-note {font-size: 12px; line-height: 1.35;}
+  [data-testid="stForm"] {padding: 12px !important; border-radius: 12px !important;}
+  [data-testid="stForm"]:hover, .step-card:hover, [data-testid="stMetric"]:hover {transform: none;}
+  .stButton button, .stDownloadButton button, .stLinkButton a {min-height: 34px; padding: 5px 10px; font-size: 13px !important; border-radius: 7px;}
+  [data-testid="stExpander"] {border-radius: 9px !important;}
+  [data-testid="stExpander"] summary {font-size: 13px !important; padding: 5px 9px !important;}
+  [data-testid="stAlert"] {border-radius: 9px !important;}
+  [data-testid="stMain"] [data-baseweb="input"] input {padding-top: 5px; padding-bottom: 5px;}
+}
+/* Short desktop windows: keep the browser's normal scroll as a safe fallback. */
+@media (min-width: 1024px) and (max-height: 800px) {
+  .hero-tech {min-height: 82px; padding: 5px 12px;}
+  [data-testid="stMain"] .hero-tech h1 {font-size: 21px !important;}
+  .hero-logo {width: 24px; height: 24px;}
+  .hero-note {font-size: 11px;}
+  [data-testid="stMainBlockContainer"] [data-testid="stVerticalBlock"] {gap: .35rem;}
+}
 </style>''',unsafe_allow_html=True)
 pair_check_selected=(st.session_state.get('nav-section')=='03 · Tem QR & kiểm tra' and
     st.session_state.get('nav-page-03 · Tem QR & kiểm tra')=='Đối chiếu tem và kiểm tra')
