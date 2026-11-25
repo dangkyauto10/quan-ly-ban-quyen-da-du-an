@@ -1,4 +1,6 @@
 import csv
+from html import escape
+from urllib.parse import urlsplit, urlunsplit
 import hashlib
 import json
 import base64
@@ -221,10 +223,20 @@ button[kind="primary"] *,button[kind="primaryFormSubmit"] *,[data-testid="stMain
   .hero-note {font-size: 11px;}
   [data-testid="stMainBlockContainer"] [data-testid="stVerticalBlock"] {gap: .35rem;}
 }
+/* Readable compact desktop typography; no global page scaling. */
+@media (min-width: 1024px) {
+  .step-note {font-size: 14px; line-height: 1.4;}
+  .step-title {font-size: 16px;}
+  .step-card {min-height: 112px;}
+  [data-testid="stMain"] label, [data-testid="stMain"] label p {font-size: 14px !important;}
+  [data-testid="stSidebar"] [role="radio"] p {font-size: 14px !important;}
+  .stButton button, .stDownloadButton button, .stLinkButton a {font-size: 14px !important;}
+}
 </style>''',unsafe_allow_html=True)
 pair_check_selected=(st.session_state.get('nav-section')=='03 · Tem QR & kiểm tra' and
     st.session_state.get('nav-page-03 · Tem QR & kiểm tra')=='Đối chiếu tem và kiểm tra')
-if not pair_check_selected:
+guide_view=st.query_params.get('view')=='guide'
+if not pair_check_selected and not guide_view:
     st.markdown(f'''<section class="hero-tech" style="--hero-photo:url('{hero_photo_src}')">
 <div class="hero-content"><div class="hero-lockup"><img class="hero-logo" src="{logo_src}" alt="Logo KEY BẢN QUYỀN"><div><div class="hero-name">KEY BẢN QUYỀN</div><div class="hero-sub">Điều phối bản quyền và thiết bị</div></div></div><h1>TỪ KHO KEY ĐẾN MÁY SẴN SÀNG BÀN GIAO</h1><div class="hero-note">Nhận key → Redeem → Giao KTV → Kích hoạt · In tem QR → QC đóng gói</div></div></section>''',unsafe_allow_html=True)
 st.sidebar.markdown(f'<div class="side-brand-row"><div class="side-mark"><img src="{logo_src}" alt="Logo KEY BẢN QUYỀN"></div><div class="side-brand">KEY BẢN QUYỀN</div></div>',unsafe_allow_html=True)
@@ -339,6 +351,87 @@ groups={
 }
 groups={name:[item for item in items if item in menus] for name,items in groups.items()}
 groups={name:items for name,items in groups.items() if items}
+
+def guide_url():
+    fallback='https://quan-ly-ban-quyen-da-du-an-t7yqeumld4e9pkwgwaekpl.streamlit.app/'
+    try:
+        u=urlsplit(st.context.url)
+        if u.scheme in {'http','https'} and u.netloc:
+            return urlunsplit((u.scheme,u.netloc,u.path,'view=guide',''))
+    except Exception:
+        pass
+    return fallback+'?view=guide'
+
+
+def open_guide_window_button():
+    # User-initiated popup: browsers may choose a tab or block window positioning.
+    url=guide_url()
+    js_url=json.dumps(url).replace('<', r'\u003c')
+    html_url=escape(url,quote=True)
+    markup="""<!doctype html><html lang="vi"><head><meta charset="utf-8"><style>
+    body{margin:0;font:14px system-ui,sans-serif;color:#132b49;}
+    .guide-open{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:36px;box-sizing:border-box;border:1px solid #b8cadb;border-radius:7px;background:#fff;color:#132b49;font-weight:700;text-decoration:none;text-align:center;padding:6px 8px;cursor:pointer;}
+    .guide-open:hover,.guide-open:focus-visible{background:#eaf3ff;outline:2px solid #91bce0;outline-offset:-2px;}
+    </style></head><body><a class="guide-open" id="guide-open" href="__HTML_URL__" target="_blank" rel="noopener noreferrer">📖 HDSD · Mở cửa sổ riêng</a>
+    <script>
+    const url=__JS_URL__;
+    document.getElementById('guide-open').addEventListener('click',function(event){
+      const width=Math.min(560,Math.max(320,Math.round(screen.availWidth*0.36)));
+      const height=Math.max(300,screen.availHeight-70);
+      const left=(screen.availLeft||0)+screen.availWidth-width;
+      const top=(screen.availTop||0)+20;
+      let guide=null;
+      try{guide=window.open(url,'KEY_BAN_QUYEN_HDSD',`popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`);}catch(e){}
+      if(guide){event.preventDefault();try{guide.opener=null;guide.focus();}catch(e){}}
+      // If popup is blocked, the anchor retains ordinary new-tab behavior.
+    });
+    </script></body></html>""".replace('__HTML_URL__',html_url).replace('__JS_URL__',js_url)
+    components.html(markup,height=43,scrolling=False)
+
+# Supplemental instructions for pages not described in the existing guide catalog.
+extra_guides={
+    'Tổng quan':['Xem bốn ô thống kê để biết tình trạng kho key.','Chọn nút ở chặng nghiệp vụ cần thực hiện.','Mở Danh sách bản quyền hoặc Biểu đồ và báo cáo khi cần tra cứu.'],
+    'Tiếp nhận NCC':['Mở Tiếp nhận NCC và chọn nhà cung cấp, ngày nhận, chứng từ, model và cấu hình.','Quét hoặc nhập hai mã tem thùng và hai mã tem PC.','Kiểm tra mã rồi bấm Lưu vào tab 18. Đọc lại danh sách nếu chưa xác nhận lưu thành công.','Nếu mã lệch, xác minh với nhà cung cấp trước khi kết luận.'],
+    'Kế hoạch PC theo điểm':['Mở Đơn vị & tài khoản và nạp kế hoạch đã kiểm tra từ tab 16 Google Sheet.','Mở Kế hoạch PC theo điểm để kiểm tra số PC theo đơn vị, xã/điểm nhận.','Đối chiếu kế hoạch và số PC trước khi đánh số, giao nhận.'],
+    'In tem PC và vỏ hộp':['Mở trang in tem và chọn đúng PC đã đủ điều kiện.','Đối chiếu thông tin máy trước khi in và dán đúng cặp tem PC và vỏ hộp.'],
+    'Tem của tôi':['Kiểm tra PC đã kích hoạt thành công.','Mở Tem của tôi và gửi lô tem đến trạm in USB.','Đối chiếu cặp tem với đúng PC trước khi chuyển QC.'],
+    'Hàng đợi in':['Mở Hàng đợi in tại trạm in USB.','Chọn đúng lô tem theo đơn vị và KTV, kiểm tra trước khi in.','Đối chiếu tem in ra với thông tin lô.'],
+    'Đối chiếu tem và kiểm tra':['Mở Đối chiếu tem và kiểm tra sau khi bên thứ ba kiểm tra, đóng gói.','Quét tem vỏ hộp trước, rồi quét tem thân máy.','Đối chiếu serial thực và ghi nhận kết quả theo biểu mẫu.','Chỉ xác nhận hoàn tất khi đúng cặp tem và đủ điều kiện QC.'],
+    'Người dùng':['Vào Quản trị → Người dùng.','Nhập Email Google đã xác minh của thành viên; chọn Quyền Admin (quản trị) nếu được chủ hệ thống cho phép.','Bấm Cấp quyền. Thành viên đăng nhập bằng đúng email đó.','Để đổi hoặc thu hồi quyền, chọn Thành viên cần cập nhật, chọn vai trò và trạng thái Được phép sử dụng app, rồi bấm Lưu quyền thành viên.'],
+    'Đồng bộ Google Sheet':['Vào Quản trị → Đồng bộ Google Sheet.','Bấm Mở Google Sheet để kiểm tra bảng tính cấu hình.','Chỉ bấm Đồng bộ báo cáo lên Google Sheet khi thực sự muốn xuất dữ liệu và đang ở môi trường thật. Key đầy đủ không được xuất.'],
+}
+
+def render_guide():
+    st.markdown('## Hướng dẫn sử dụng KEY BẢN QUYỀN')
+    st.caption('Vai trò: '+ROLE_NAMES[role]+' · Bấm tiêu đề để mở; bấm mục khác hoặc bấm lại để thu gọn.')
+    st.caption('Windows: chọn cửa sổ HDSD, nhấn Windows + →; chọn cửa sổ APP, nhấn Windows + ← để vừa đọc vừa thực hành.')
+    parts=['<style>.key-guide details{border:1px solid #ccd8e5;border-radius:9px;margin:8px 0;background:#fff;overflow:hidden}.key-guide summary{cursor:pointer;padding:12px 14px;font-weight:700;color:#132b49;font-size:15px}.key-guide details[open] summary{background:#eaf3ff}.key-guide ol{margin:8px 12px 14px 32px;padding:0 8px;color:#263c54;line-height:1.6}.key-guide li{padding:4px 0;font-size:14px}.key-guide h3{font-size:15px!important;margin:16px 0 6px!important}</style><div class="key-guide">']
+    for group, names in groups.items():
+        if group=='Hướng dẫn':continue
+        parts.append('<h3>'+escape(group)+'</h3>')
+        for name in names:
+            if name in extra_guides:
+                title, instructions=name,extra_guides[name]
+            elif name in PAGE_GUIDES:
+                title, instructions=PAGE_GUIDES[name]
+            else:
+                title, instructions=name,['Chọn chức năng '+name+' trong nhóm '+group+'.','Kiểm tra đúng hồ sơ và thực hiện theo các trường, nút trên trang.']
+            heading=name if str(title)==name else name+' — '+str(title)
+            parts.append('<details name="key-guide-accordion"><summary>'+escape(heading)+'</summary><ol>'+''.join('<li>'+escape(str(step))+'</li>' for step in instructions)+'</ol></details>')
+    parts.append('</div>')
+    st.markdown(''.join(parts),unsafe_allow_html=True)
+    st.caption('Admin: quản trị · KTV: kỹ thuật viên · QC: kiểm tra · Redeem: quy đổi key · Serial: số nhận dạng · SKU: mã phiên bản.')
+
+if guide_view:
+    st.markdown('<style>[data-testid="stSidebar"]{display:none!important;} [data-testid="stMainBlockContainer"],.block-container{max-width:760px!important;padding:3.1rem .85rem 1rem!important;margin:auto;} [data-testid="stMain"] h2{font-size:21px!important;line-height:1.2!important;}</style>',unsafe_allow_html=True)
+    render_guide()
+    st.stop()
+
+def open_member_page():
+    if role=='ADMIN':
+        st.session_state['nav-section']='Quản trị'
+        st.session_state['nav-page-Quản trị']='Người dùng'
+
 post_action_page=st.session_state.pop('post-action-page',None)
 if post_action_page:
     section_name=next((name for name,items in groups.items() if post_action_page in items),None)
@@ -348,11 +441,29 @@ if post_action_page:
 st.sidebar.divider()
 section=st.sidebar.selectbox('Nhóm công việc',list(groups),key='nav-section')
 page=st.sidebar.radio('Chức năng',groups[section],key='nav-page-'+section)
-if role in {'KTV','QC','ADMIN'}:
-    st.button('📷 Mở đối chiếu tem',key='open-pair-check',
-        on_click=open_pair_check,use_container_width=True,type='primary')
+if page=='Tổng quan':
+    toolbar=st.columns(4 if role=='ADMIN' else 1)
+    if role=='ADMIN':
+        toolbar[0].button('📷 Mở đối chiếu tem',key='open-pair-check',on_click=open_pair_check,use_container_width=True,type='primary')
+        with toolbar[1]:open_guide_window_button()
+        toolbar[2].button('👥 Người dùng',key='home-members',on_click=open_member_page,use_container_width=True)
+        try:
+            from license_app.sheet_sync import configured_spreadsheet_id
+            home_sheet_id=configured_spreadsheet_id(st.secrets)
+        except Exception:
+            home_sheet_id=None
+        if home_sheet_id:
+            toolbar[3].link_button('📊 Mở Google Sheet','https://docs.google.com/spreadsheets/d/'+home_sheet_id+'/edit',use_container_width=True)
+        else:
+            toolbar[3].button('Google Sheet chưa cấu hình',key='home-sheet-unavailable',disabled=True,use_container_width=True)
+    else:
+        with toolbar[0]:open_guide_window_button()
+else:
+    if role in {'KTV','QC','ADMIN'}:
+        st.button('📷 Mở đối chiếu tem',key='open-pair-check',on_click=open_pair_check,use_container_width=True,type='primary')
+    with st.sidebar:open_guide_window_button()
 st.sidebar.divider()
-st.sidebar.caption('V2 · Quét tem v10 · 18/11/2026')
+st.sidebar.caption('V2 · HDSD cửa sổ riêng v3 · 25/11/2026')
 st.subheader(page)
 flow_phases=[('01','Chuẩn bị'),('02','Redeem & giao việc'),('03','Kích hoạt & in QR'),('04','Đối chiếu tem · chốt QC')]
 flow_stage={'Đơn vị & tài khoản':0,'Kế hoạch PC theo điểm':0,'Kho key':0,'Redeem Office':1,'Thiết bị':1,'Phân bổ':1,'Kích hoạt':2,'Việc của tôi':2,'Tem của tôi':2,'In tem PC và vỏ hộp':2,'Hàng đợi in':2,'Đối chiếu tem và kiểm tra':3}
@@ -430,13 +541,14 @@ elif page=='Tổng quan':
         with col:
             st.markdown(f'<div class="step-card"><div class="step-number">CHẶNG {number}<span class="step-audience">{audience}</span></div><div class="step-title">{title}</div><div class="step-note">{note}</div></div>',unsafe_allow_html=True)
             if target in menus:st.button({'01':'Mở chuẩn bị','02':'Mở redeem / giao việc','03':'Mở việc KTV','04':'Mở kiểm tra'}[number]+'  →',key='shortcut-'+number,on_click=open_page,args=(target,),use_container_width=True,type='primary')
-    st.markdown('### Danh sách bản quyền')
-    if not data:st.info('Kho dữ liệu chưa có bản quyền. Nhập kế hoạch đơn vị/điểm/SKU tại tab 16 của Google Sheet, nạp vào app, rồi nhập lô key thử nghiệm.')
-    else:table(data)
+    with st.expander(f'Danh sách bản quyền ({len(data)} hồ sơ)',expanded=False):
+        if not data:st.info('Kho dữ liệu chưa có bản quyền. Nhập kế hoạch đơn vị/điểm/SKU tại tab 16 của Google Sheet, nạp vào app, rồi nhập lô key thử nghiệm.')
+        else:table(data)
     if data:
-        st.bar_chart({LABELS[s]:sum(r['state']==s for r in data) for s in LABELS if any(r['state']==s for r in data)})
-        buf=io.StringIO();writer=csv.DictWriter(buf,fieldnames=list(data[0]));writer.writeheader();writer.writerows([{k:("'"+v if isinstance(v,str) and v[:1] in {'=','+','-','@','\t','\r'} else v) for k,v in row.items()} for row in data])
-        st.download_button('Tải báo cáo CSV',buf.getvalue().encode('utf-8-sig'),'bao_cao.csv','text/csv')
+        with st.expander('Biểu đồ và tải báo cáo CSV',expanded=False):
+            st.bar_chart({LABELS[s]:sum(r['state']==s for r in data) for s in LABELS if any(r['state']==s for r in data)})
+            buf=io.StringIO();writer=csv.DictWriter(buf,fieldnames=list(data[0]));writer.writeheader();writer.writerows([{k:("'"+v if isinstance(v,str) and v[:1] in {'=','+','-','@','\t','\r'} else v) for k,v in row.items()} for row in data])
+            st.download_button('Tải báo cáo CSV',buf.getvalue().encode('utf-8-sig'),'bao_cao.csv','text/csv')
 elif page=='Đơn vị & tài khoản':
     if role=='ADMIN':
         from license_app.sheet_sync import (PLAN_TAB, PLAN_HEADERS, ACCOUNT_TAB, build_sheets_service,
@@ -820,19 +932,11 @@ elif page=='Người dùng':
         email=st.text_input('Email Google đã xác minh');new_role=st.selectbox('Quyền',['KTV','QC','OPERATOR','PRINT','ADMIN'],format_func=ROLE_NAMES.get)
         if st.form_submit_button('Cấp quyền'):run('user',lambda t:ledger.add_user(actor,email,new_role,t))
 elif page=='Hướng dẫn theo vai trò':
-    st.info('Hướng dẫn thao tác theo vai trò trong luồng BẢN QUYỀN: nhận key, redeem phù hợp, giao KTV, kích hoạt, in tem, QC và theo dõi bảo hành.')
-    sequences={
-        'ADMIN':['Người dùng','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký'],
-        'OPERATOR':['Đơn vị & tài khoản','Kho key','Kích hoạt','Nhật ký'],
-        'KTV':['Việc của tôi'],
-        'QC':[],
-    }
-    if role=='QC':st.info('Quét hai tem, đối chiếu serial thực, ghi kết quả kỹ thuật rồi xác nhận đóng gói. Người kiểm tra độc lập với KTV kích hoạt.')
-    for name in sequences[role]:
-        title,steps=PAGE_GUIDES[name]
-        with st.expander(name+' — '+title,expanded=role=='KTV'):
-            for index,step in enumerate(steps,1):st.write(f'{index}. {step}')
-    st.caption('Chữ dùng trong app: Admin = quản trị; KTV = kỹ thuật viên; redeem = quy đổi key; license = giấy phép bản quyền; serial = số nhận dạng; SKU = mã phiên bản sản phẩm.')
+    cols=st.columns([1,2])
+    with cols[0]:open_guide_window_button()
+    st.caption('Nếu trình duyệt không mở cửa sổ riêng, mở tab bằng nút dự phòng dưới đây rồi kéo tab ra cạnh APP.')
+    st.link_button('Mở HDSD ở tab mới (dự phòng)',guide_url())
+    render_guide()
 elif page=='Đồng bộ Google Sheet':
     from license_app.sheet_sync import (make_snapshot, sync_with_service, build_sheets_service,
         configured_spreadsheet_id)
