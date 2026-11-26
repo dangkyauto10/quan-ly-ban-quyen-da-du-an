@@ -398,7 +398,7 @@ extra_guides={
     'Hàng đợi in':['Mở Hàng đợi in tại trạm in USB.','Chọn đúng lô tem theo đơn vị và KTV, kiểm tra trước khi in.','Đối chiếu tem in ra với thông tin lô.'],
     'Đối chiếu tem và kiểm tra':['Mở Đối chiếu tem và kiểm tra sau khi bên thứ ba kiểm tra, đóng gói.','Quét tem vỏ hộp trước, rồi quét tem thân máy.','Đối chiếu serial thực và ghi nhận kết quả theo biểu mẫu.','Chỉ xác nhận hoàn tất khi đúng cặp tem và đủ điều kiện QC.'],
     'Người dùng':['Vào Quản trị → Người dùng.','Nhập Email Google đã xác minh của thành viên; chọn Quyền Admin (quản trị) nếu được chủ hệ thống cho phép.','Bấm Cấp quyền. Thành viên đăng nhập bằng đúng email đó.','Để đổi hoặc thu hồi quyền, chọn Thành viên cần cập nhật, chọn vai trò và trạng thái Được phép sử dụng app, rồi bấm Lưu quyền thành viên.'],
-    'Đồng bộ Google Sheet':['Vào Quản trị → Đồng bộ Google Sheet.','Bấm Mở Google Sheet để kiểm tra bảng tính cấu hình.','V4.2 tự đồng bộ nhóm báo cáo Key sau khi Admin lưu nhập kho, kiểm tra hoặc Redeem ở môi trường thật. Nếu lỗi, bấm Đồng bộ lại báo cáo Key; không nhập/Redeem lại. Key đầy đủ không được xuất.'],
+    'Đồng bộ Google Sheet':['Vào Quản trị → Đồng bộ Google Sheet.','Bấm Mở Google Sheet để kiểm tra bảng tính cấu hình.','Admin chủ động bấm Đồng bộ báo cáo lên Google Sheet hoặc tải bản dữ liệu JSON để đối chiếu. Nhập kho và Redeem lưu trực tiếp trong APP, độc lập với kết nối Sheet. Key đầy đủ không được xuất.'],
 }
 
 # V4.1: shared, role-aware instructions for the two updated workflows.
@@ -494,7 +494,7 @@ else:
         st.button('📷 Mở đối chiếu tem',key='open-pair-check',on_click=open_pair_check,use_container_width=True,type='primary')
     with st.sidebar:open_guide_window_button()
 st.sidebar.divider()
-st.sidebar.caption('V2 · Tự đồng bộ Key v4.2 · 26/11/2026')
+st.sidebar.caption('V2 · Kho Key / Redeem độc lập · 26/11/2026')
 st.subheader(page)
 flow_phases=[('01','Chuẩn bị'),('02','Redeem & giao việc'),('03','Kích hoạt & in QR'),('04','Đối chiếu tem · chốt QC')]
 flow_stage={'Đơn vị & tài khoản':0,'Kế hoạch PC theo điểm':0,'Kho key':0,'Redeem Office':1,'Thiết bị':1,'Phân bổ':1,'Kích hoạt':2,'Việc của tôi':2,'Tem của tôi':2,'In tem PC và vỏ hộp':2,'Hàng đợi in':2,'Đối chiếu tem và kiểm tra':3}
@@ -533,36 +533,11 @@ def table(data):
 def pick(label,data,fmt):
     if not data:st.info('Chưa có lựa chọn phù hợp.');return None
     return st.selectbox(label,data,format_func=fmt)
-def sync_key_report(keys_only=True, immediate=False):
-    from license_app.key_sheet_sync import publish
-    demo=os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'} or activation_demo
-    # The ledger write has already committed. A Sheets error must not be reported as a failed import/redeem.
-    with st.spinner('Đang cập nhật báo cáo Google Sheet...'):
-        try:
-            level,msg=publish(ledger,actor,st.secrets,demo=demo,keys_only=keys_only)
-        except Exception:
-            level,msg='warning','Đã lưu APP. Chưa đồng bộ được Google Sheet; Admin có thể đồng bộ lại.'
-    st.session_state['key-sync-notice']=(actor,bool(demo),level,msg)
-    if immediate: getattr(st,level)(msg)
-
-def key_sync_controls():
-    demo=os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'} or activation_demo
-    notice=st.session_state.get('key-sync-notice')
-    if notice and notice[:2]==(actor,bool(demo)):
-        getattr(st,notice[2])(notice[3])
-    if role=='ADMIN' and not demo:
-        st.caption('Nhập kho, xác nhận kiểm tra và Redeem sẽ tự cập nhật báo cáo Key sau khi lưu APP.')
-        left,right=st.columns(2)
-        if left.button('Đồng bộ lại báo cáo Key',key='key-sync-retry-'+page):sync_key_report(immediate=True)
-        from license_app.sheet_sync import configured_spreadsheet_id
-        right.link_button('Mở Google Sheet', 'https://docs.google.com/spreadsheets/d/'+configured_spreadsheet_id(st.secrets)+'/edit')
-
 def run(name,fn,confirmation=None,next_page=None,select_record=None):
     token=st.session_state.setdefault('op-'+name,str(uuid.uuid4()))
     try:
         fn(token)
         st.session_state.pop('op-'+name,None)
-        if name in {'import','verify','redeem'}:sync_key_report()
         if confirmation:st.session_state['report-confirmation']=(actor,confirmation)
         if next_page:st.session_state['post-action-page']=next_page
         if select_record:st.session_state['last-activated-device-'+actor]=select_record
@@ -824,10 +799,9 @@ elif page=='Tiếp nhận NCC':
                     hide_index=True,width='stretch')
                 st.caption('Nếu mã trên thùng và PC khác nhau, Admin xác minh ý nghĩa mã với NCC rồi cập nhật kết luận tại tab 18. Hồ sơ này chưa tự liên kết với PC nội bộ hoặc tự chặn phân bổ.')
 elif page=='Kho key':
-    key_sync_controls()
     if role=='ADMIN':
         from key_file_import import render_import
-        render_import(st,ledger,actor,on_saved=lambda:sync_key_report(immediate=True))
+        render_import(st,ledger,actor)
         with st.form('import',clear_on_submit=True):
             batch=st.text_input('Mã lô');product=st.selectbox('Phần mềm',['Office','Windows','Antivirus'])
             sku=st.text_input('Phiên bản / SKU');channel=st.selectbox('Kênh cấp phép',['Retail','OEM','Volume','Vendor'])
@@ -841,7 +815,6 @@ elif page=='Kho key':
         if st.form_submit_button('Xác nhận đã kiểm tra') and lic:run('verify',lambda t:ledger.verify(actor,lic['id'],ref,t))
 elif page=='Redeem Office':
     if role!='ADMIN':st.error('Chỉ Admin thực hiện redeem và xem key gốc.');st.stop()
-    key_sync_controls()
     redeem_rows=[r for r in rows('licenses') if r['route']=='ACCOUNT_REDEEM']
     redeem_accounts={r['id']:r['email'] for r in rows('accounts')}
     metrics=st.columns(4)
@@ -1028,8 +1001,10 @@ elif page=='Đồng bộ Google Sheet':
         st.info('Chế độ minh họa chỉ dùng dữ liệu giả và không đọc hoặc ghi Google Sheet dùng chung.')
     else:
         st.caption('Đích đồng bộ: '+target)
-        if st.button('Đồng bộ báo cáo Key (Kho / Redeem)',type='primary'):
-            sync_key_report(immediate=True)
-        if st.button('Đồng bộ báo cáo lên Google Sheet'):
-            sync_key_report(keys_only=False,immediate=True)
+        if st.button('Đồng bộ báo cáo lên Google Sheet',type='primary'):
+            try:
+                count=sync_with_service(build_sheets_service(st.secrets),target,snapshot)
+                st.success(f'Đã đồng bộ {count} bản ghi. Xem thời điểm tại tab 15_DONG_BO_APP.')
+            except DomainError as err:st.error(str(err))
+            except Exception:st.error('Chưa đồng bộ được. Kiểm tra Google Sheets API, danh tính chạy app và quyền Người chỉnh sửa trên đúng file Sheet. Dữ liệu app vẫn đã lưu; có thể đồng bộ lại.')
 
