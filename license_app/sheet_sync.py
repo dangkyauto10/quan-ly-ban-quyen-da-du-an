@@ -340,14 +340,25 @@ def plan_sync(snapshot, properties, live_values, tables):
                 requests.append({'updateTable':{'table':{'tableId':table['tableId'],'range':rng},'fields':'range'}})
     return requests
 
-def sync_with_service(service, spreadsheet_id, snapshot):
+def sync_with_service(service, spreadsheet_id, snapshot, *, optional_tabs=()):
     api=service.spreadsheets()
     book=api.get(spreadsheetId=spreadsheet_id,fields='spreadsheetId,sheets(properties,tables)').execute()
     props=[s['properties'] for s in book['sheets']]
     tables={s['properties']['title']:s.get('tables',[]) for s in book['sheets']}
-    ranges=["'"+n+"'!A1:"+chr(64+len(h))+str(next(p for p in props if p['title']==n)['gridProperties']['rowCount']) for n,h in HEADERS.items()]
+    names=list(snapshot['tables'])
+    prop_by_name={p['title']:p for p in props}
+    missing=[n for n in names if n not in prop_by_name]
+    required_missing=[n for n in missing if n not in optional_tabs]
+    if required_missing: raise DomainError('Thiếu tab báo cáo: '+', '.join(required_missing)+'. Chưa ghi dữ liệu lên Sheet.')
+    if missing:
+        snapshot['tables']={n:r for n,r in snapshot['tables'].items() if n not in missing}
+        snapshot['skipped_tabs']=missing
+        names=list(snapshot['tables'])
+    if any(n not in HEADERS for n in names): raise DomainError('Tab báo cáo không hợp lệ.')
+    ranges=["'"+n+"'!A1:"+chr(64+len(HEADERS[n]))+str(prop_by_name[n]['gridProperties']['rowCount']) for n in names]
     values=api.values().batchGet(spreadsheetId=spreadsheet_id,ranges=ranges,valueRenderOption='UNFORMATTED_VALUE').execute()['valueRanges']
-    live={n:v.get('values',[]) for n,v in zip(HEADERS,values)}
+    if len(values)!=len(names): raise DomainError('Google Sheet trả thiếu vùng dữ liệu. Chưa ghi báo cáo.')
+    live={n:v.get('values',[]) for n,v in zip(names,values)}
     requests=plan_sync(snapshot,props,live,tables)
     status=next((p for p in props if p['title']==SYNC_TAB),None)
     if status:
@@ -366,8 +377,8 @@ def sync_with_service(service, spreadsheet_id, snapshot):
 def status_request(snapshot, sheet_id):
     count=sum(len(r) for r in snapshot['tables'].values())
     values=['SYNC-'+snapshot['created_at'],snapshot['created_at'],
-        'MINH_HỌA' if snapshot['demo'] else 'THỰC_TẾ', 'V2-20261027-C',str(count),'Đã ghi từ app',
-        'Một chiều app → Sheet. Các dòng APP- thuộc app; giữ nguyên dòng mẫu và dữ liệu nhập tay.']
+        'MINH_HỌA' if snapshot['demo'] else 'THỰC_TẾ', 'V4.2-KHO-KEY' if len(snapshot['tables'])<len(HEADERS) else 'V4.2-TOAN-BO',str(count),'Đã ghi từ app',
+        'Một chiều app → Sheet. Các dòng APP- thuộc app; giữ nguyên dòng mẫu và dữ liệu nhập tay.'+('; thiếu tab: '+', '.join(snapshot['skipped_tabs']) if snapshot.get('skipped_tabs') else '')]
     return {'appendCells':{'sheetId':sheet_id,'rows':[{'values':[{'userEnteredValue':{'stringValue':x},
         'userEnteredFormat':{'wrapStrategy':'WRAP','textFormat':{'fontFamily':'Arial','fontSize':11,'bold':False}}}
         for x in values]}],'fields':'userEnteredValue,userEnteredFormat'}}
