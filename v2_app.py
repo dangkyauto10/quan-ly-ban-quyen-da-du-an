@@ -497,6 +497,9 @@ else:
 st.sidebar.divider()
 st.sidebar.caption('V2 · Kho Key / Redeem độc lập · 26/11/2026')
 st.subheader(page)
+key_sync_notice=st.session_state.pop('activated-key-sync-notice',None)
+if key_sync_notice and key_sync_notice[0]==actor and not (os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'} or activation_demo):
+    getattr(st,key_sync_notice[1])(key_sync_notice[2])
 flow_phases=[('01','Chuẩn bị'),('02','Redeem & giao việc'),('03','Kích hoạt & in QR'),('04','Đối chiếu tem · chốt QC')]
 flow_stage={'Đơn vị & tài khoản':0,'Kế hoạch PC theo điểm':0,'Kho key':0,'Redeem Office':1,'Thiết bị':1,'Phân bổ':1,'Kích hoạt':2,'Việc của tôi':2,'Tem của tôi':2,'In tem PC và vỏ hộp':2,'Hàng đợi in':2,'Đối chiếu tem và kiểm tra':3}
 if page in flow_stage and page!='Đối chiếu tem và kiểm tra':
@@ -534,11 +537,27 @@ def table(data):
 def pick(label,data,fmt):
     if not data:st.info('Chưa có lựa chọn phù hợp.');return None
     return st.selectbox(label,data,format_func=fmt)
+def sync_activated_report(immediate=False):
+    demo=os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'} or activation_demo
+    if demo:
+        return
+    try:
+        from license_app.activated_key_sync import publish
+        result=publish(ledger,actor,st.secrets,demo=False)
+    except Exception:
+        result=('warning','Đã lưu trong APP. Chưa đồng bộ danh sách Key lên Sheet; không cần kích hoạt lại.')
+    if result:
+        st.session_state['activated-key-sync-notice']=(actor,*result)
+        if immediate:
+            getattr(st,result[0])(result[1])
+
 def run(name,fn,confirmation=None,next_page=None,select_record=None):
     token=st.session_state.setdefault('op-'+name,str(uuid.uuid4()))
     try:
         fn(token)
         st.session_state.pop('op-'+name,None)
+        if name in {'report','warranty','reactivate'}:
+            sync_activated_report()
         if confirmation:st.session_state['report-confirmation']=(actor,confirmation)
         if next_page:st.session_state['post-action-page']=next_page
         if select_record:st.session_state['last-activated-device-'+actor]=select_record
@@ -950,6 +969,11 @@ elif page in ['Kích hoạt','Việc của tôi']:
 elif page=='Danh sách Key đã kích hoạt':
     if role!='ADMIN':
         st.stop()
+    if not (os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'} or activation_demo):
+        a,b=st.columns(2)
+        if a.button('Đồng bộ lại danh sách Key',key='activated-sync-retry'):
+            sync_activated_report(immediate=True)
+        b.link_button('Mở danh sách trên Google Sheet','https://docs.google.com/spreadsheets/d/1Qdftk3jOKZMSbRzX-JCtXm_AJv87CUcwYHu-0EpcyRM/edit?gid=1900261126#gid=1900261126')
     from sqlalchemy import select
     from license_app.core import devices, jobs, licenses
     st.caption('Một dòng cho mỗi PC. Tên PC là serial mainboard. Chỉ hiển thị bản quyền đang ở trạng thái kích hoạt thành công; Key được che để bảo mật.')
