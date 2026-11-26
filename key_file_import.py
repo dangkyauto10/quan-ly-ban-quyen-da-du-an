@@ -191,7 +191,7 @@ def preview(ledger, actor, entries, product):
     return ready, report
 
 
-def render_import(st, ledger, actor):
+def render_import(st, ledger, actor, on_saved=None):
     """Extra UI only; existing manual workflow is intentionally untouched."""
     with st.expander('📥 Nhập danh sách key từ Excel / Word', expanded=False):
         st.caption('Mỗi file/lần nhập chỉ dùng cho một lô, cùng phần mềm, SKU, kênh và luồng. Không tự xác nhận chứng từ hoặc Redeem.')
@@ -242,6 +242,7 @@ def render_import(st, ledger, actor):
             try:
                 result=ledger.import_keys(actor,batch,product,sku,channel,route,ready,expires,op)
                 st.success(f'Đã nhập {result} key vào kho. Chuyển sang xác nhận kiểm tra chứng từ theo quy trình cũ.')
+                if on_saved is not None: on_saved()
             except DomainError as err:
                 st.error(str(err)+' Không ghi đè key cũ. Kiểm tra lại danh sách trước khi nhập.')
             except Exception:

@@ -398,20 +398,39 @@ extra_guides={
     'Hàng đợi in':['Mở Hàng đợi in tại trạm in USB.','Chọn đúng lô tem theo đơn vị và KTV, kiểm tra trước khi in.','Đối chiếu tem in ra với thông tin lô.'],
     'Đối chiếu tem và kiểm tra':['Mở Đối chiếu tem và kiểm tra sau khi bên thứ ba kiểm tra, đóng gói.','Quét tem vỏ hộp trước, rồi quét tem thân máy.','Đối chiếu serial thực và ghi nhận kết quả theo biểu mẫu.','Chỉ xác nhận hoàn tất khi đúng cặp tem và đủ điều kiện QC.'],
     'Người dùng':['Vào Quản trị → Người dùng.','Nhập Email Google đã xác minh của thành viên; chọn Quyền Admin (quản trị) nếu được chủ hệ thống cho phép.','Bấm Cấp quyền. Thành viên đăng nhập bằng đúng email đó.','Để đổi hoặc thu hồi quyền, chọn Thành viên cần cập nhật, chọn vai trò và trạng thái Được phép sử dụng app, rồi bấm Lưu quyền thành viên.'],
-    'Đồng bộ Google Sheet':['Vào Quản trị → Đồng bộ Google Sheet.','Bấm Mở Google Sheet để kiểm tra bảng tính cấu hình.','Chỉ bấm Đồng bộ báo cáo lên Google Sheet khi thực sự muốn xuất dữ liệu và đang ở môi trường thật. Key đầy đủ không được xuất.'],
+    'Đồng bộ Google Sheet':['Vào Quản trị → Đồng bộ Google Sheet.','Bấm Mở Google Sheet để kiểm tra bảng tính cấu hình.','V4.2 tự đồng bộ nhóm báo cáo Key sau khi Admin lưu nhập kho, kiểm tra hoặc Redeem ở môi trường thật. Nếu lỗi, bấm Đồng bộ lại báo cáo Key; không nhập/Redeem lại. Key đầy đủ không được xuất.'],
 }
 
+# V4.1: shared, role-aware instructions for the two updated workflows.
 if role=='ADMIN':
     extra_guides['Kho key']=[
-        'Mở Kho key → Nhập danh sách key từ Excel / Word. Nhập mã lô, phần mềm, SKU, kênh và luồng xử lý.',
-        'Chọn file .xlsx hoặc .docx; Excel chọn trang tính và cột key. Mỗi lô chỉ chứa key cùng thông tin nghiệp vụ.',
-        'Xem bảng kiểm tra đã che key, xác nhận chỉ nhập các key đủ điều kiện sơ bộ; key trùng và sai định dạng không được nhập.',
-        'Có thể nhập thủ công bằng biểu mẫu cũ. Sau khi nhập, kiểm tra chứng từ và xác nhận từng hồ sơ theo quy trình hiện hành.']
+        'Vào Nhóm công việc → 01 · Chuẩn bị & bản quyền → Kho key. Có thể nhập kho trước khi khai báo PC hoặc giao KTV.',
+        'Chuẩn bị file: mỗi lần nhập chỉ gồm một mã lô, cùng phần mềm, phiên bản/SKU, kênh cấp phép và luồng xử lý. Nếu có nhiều loại, tách thành từng lô. File tối đa 10 MB và 10.000 dòng dữ liệu.',
+        'Excel (.xlsx): định dạng cột chứa key là Văn bản (Text), mỗi ô một key; không dùng công thức. Có thể có dòng tiêu đề. Word (.docx): mỗi dòng hoặc ô bảng chỉ chứa một key, không kèm STT, nhãn hoặc nội dung khác. File .xls/.doc cần lưu lại thành .xlsx/.docx; ảnh chụp không được đọc tự động.',
+        'Mở “📥 Nhập danh sách key từ Excel / Word”. Nhập Mã lô, chọn Phần mềm, điền Phiên bản / SKU, chọn Kênh cấp phép và Luồng xử lý. Ngày hết hạn nếu có nhập YYYY-MM-DD, ví dụ 2027-12-31.',
+        'Chọn “Redeem Office Retail” chỉ với Office Retail phù hợp; các key theo luồng trực tiếp chọn “Kích hoạt theo nhà cung cấp” theo đúng điều kiện cấp phép. Không tự suy đoán luồng dựa vào hình thức key.',
+        'Bấm “Chọn danh sách Excel hoặc Word (tối đa 10 MB)” và chọn file. Với Excel, chọn Trang tính, nhập Cột chứa key (A, B, C...) và tích “Bỏ dòng tiêu đề (ô có nội dung đầu tiên của cột)” nếu có tiêu đề. Với Word, tích “Bỏ dòng đầu tiên có nội dung” chỉ khi đó là tiêu đề.',
+        'Xem ba số liệu Đọc được / Có thể nhập / Loại khỏi lô và bảng kiểm tra. Đối chiếu số lượng, vị trí dòng và 5 ký tự cuối. Trùng trong file, Đã có trong kho hoặc Sai định dạng / không phải văn bản sẽ không được nhập. Nếu không đúng, sửa file hoặc lựa chọn rồi xem lại.',
+        'Tích ô “Tôi xác nhận thông tin lô và chỉ nhập … key được đánh dấu Có thể nhập.” rồi bấm “Nhập … key vào kho”. Kiểm tra thông báo “Đã nhập … key vào kho” và danh sách bên dưới; nếu chưa rõ kết quả, kiểm tra lại kho trước khi gửi lại.',
+        'Nếu nhập thủ công, dùng biểu mẫu cũ bên dưới: nhập thông tin lô, dán mỗi dòng một key và bấm “Nhập kho”. Không phải nhập lại danh sách vừa nhập từ file.',
+        'Key mới ở trạng thái Mới nhận. Chọn từng “Hồ sơ chờ kiểm tra”, điền “Căn cứ: chứng từ, phiên bản và điều kiện sử dụng” rồi bấm “Xác nhận đã kiểm tra”. Việc đọc file/chống trùng không xác nhận key thật hoặc còn hiệu lực.',
+        'Sau kiểm tra, key luồng Redeem chuyển sang Redeem Office; key luồng trực tiếp đủ điều kiện có thể chuyển sang Phân bổ. Chưa cần phân bổ nếu chỉ muốn quản lý kho.',
+        'Trong môi trường mô phỏng, chỉ nhập key giả; không sử dụng key thật, mật khẩu hoặc mã MFA. Không gửi file key cho người không có thẩm quyền.']
     extra_guides['Redeem Office']=[
-        'Mở Redeem Office; xem thống kê, mở Lọc và tra cứu Redeem nếu cần lọc lô hoặc tìm key.',
-        'Chọn key đã kiểm tra thuộc luồng Office Retail, hiện key cho tác vụ và thực hiện redeem trên Microsoft bằng đúng tài khoản.',
-        'Chỉ ghi nhận thành công sau khi đã thấy đúng sản phẩm trong tài khoản Microsoft. Không dùng key giả trên Microsoft.',
-        'Key đã redeem tiếp tục sử dụng trong Phân bổ theo điều kiện nghiệp vụ hiện tại.']
+        'Vào Nhóm công việc → 01 · Chuẩn bị & bản quyền → Redeem Office bằng vai trò Admin. Không cần tạo PC trước khi Redeem; cần có key Office thuộc luồng Redeem đã kiểm tra và tài khoản Microsoft đúng đơn vị.',
+        'Nếu chưa có tài khoản nhận sản phẩm, trong môi trường thật Admin nạp kế hoạch tại tab 16_KE_HOACH_CAP_PC và danh sách email ở tab 17_TAI_KHOAN_MS qua Đơn vị & tài khoản. Trong môi trường mô phỏng dùng tài khoản mẫu; không đọc/ghi Sheet thật.',
+        'Xem bốn ô: Tổng key luồng Redeem, Chờ kiểm tra, Sẵn sàng Redeem, Đã Redeem (gồm đã giao). Các số liệu là trạng thái trong APP, không phải kết quả truy vấn trực tiếp Microsoft.',
+        'Mở “Lọc và tra cứu Redeem” nếu cần. Chọn Mã lô, nhập từ khóa SKU/mã lô/5 ký tự cuối/email Microsoft; có thể chọn Trạng thái tra cứu. Mã lô và từ khóa cũng lọc danh sách key sẵn sàng, còn trạng thái chỉ lọc bảng tra cứu. Xóa bộ lọc nếu không thấy hồ sơ cần tìm.',
+        'Ở “Key đã kiểm tra”, chọn đúng key. Trong môi trường thật, bấm “Hiện key cho tác vụ này”, rồi “Mở Microsoft để redeem”. Đăng nhập đúng tài khoản và kiểm tra sản phẩm tại Microsoft; không nhập mật khẩu hoặc MFA vào APP.',
+        'Quay lại APP, chọn “Tài khoản nhận sản phẩm” đúng email; nhập “Sản phẩm Microsoft xác nhận / mã tham chiếu”. Chỉ tích “Đã thấy sản phẩm trong đúng tài khoản Microsoft” khi đã kiểm tra thành công, rồi bấm “Ghi nhận redeem thành công”. Nếu chưa thành công, không xác nhận.',
+        'Kiểm tra bảng key đã Redeem và nhật ký. Nếu cần phân bổ sau này, giao tài khoản đã Redeem cho KTV tại Đơn vị & tài khoản, chọn PC đúng đơn vị và cùng KTV tại Phân bổ. Không cần thực hiện bước này nếu chưa triển khai PC.',
+        'Nếu đang thử nghiệm, bỏ qua thao tác trên Microsoft: chọn key và tài khoản mẫu, điền tham chiếu giả (ví dụ TEST-MO-PHONG), xác nhận kết quả mô phỏng trong APP. Không đem key giả hoặc tài khoản mẫu lên Microsoft.']
+elif role=='OPERATOR':
+    extra_guides['Kho key']=[
+        'Vào Nhóm công việc → 01 · Chuẩn bị & bản quyền → Kho key để xem kho và kiểm tra hồ sơ được phép.',
+        'Chọn từng “Hồ sơ chờ kiểm tra”, ghi “Căn cứ: chứng từ, phiên bản và điều kiện sử dụng”, rồi bấm “Xác nhận đã kiểm tra”.',
+        'Nhập kho từ Excel/Word, nhập thủ công, xem key gốc và Redeem Office hiện chỉ dành cho Admin. Không dùng dữ liệu thật trong môi trường mô phỏng.']
+
 
 def render_guide():
     st.markdown('## Hướng dẫn sử dụng KEY BẢN QUYỀN')
@@ -475,7 +494,7 @@ else:
         st.button('📷 Mở đối chiếu tem',key='open-pair-check',on_click=open_pair_check,use_container_width=True,type='primary')
     with st.sidebar:open_guide_window_button()
 st.sidebar.divider()
-st.sidebar.caption('V2 · Nhập kho Excel/Word v4 · 26/11/2026')
+st.sidebar.caption('V2 · Tự đồng bộ Key v4.2 · 26/11/2026')
 st.subheader(page)
 flow_phases=[('01','Chuẩn bị'),('02','Redeem & giao việc'),('03','Kích hoạt & in QR'),('04','Đối chiếu tem · chốt QC')]
 flow_stage={'Đơn vị & tài khoản':0,'Kế hoạch PC theo điểm':0,'Kho key':0,'Redeem Office':1,'Thiết bị':1,'Phân bổ':1,'Kích hoạt':2,'Việc của tôi':2,'Tem của tôi':2,'In tem PC và vỏ hộp':2,'Hàng đợi in':2,'Đối chiếu tem và kiểm tra':3}
@@ -503,6 +522,8 @@ if page=='Người dùng':
     if notice and notice[0]==actor:st.success(notice[1])
 if page in PAGE_GUIDES and page!='Đối chiếu tem và kiểm tra':
     title, steps=PAGE_GUIDES[page]
+    if page in {'Kho key','Redeem Office'} and page in extra_guides:
+        title, steps=page,extra_guides[page]
     with st.expander('Cách thực hiện: '+title):
         for index,step in enumerate(steps,1):st.write(f'{index}. {step}')
 def rows(name):return ledger.rows(actor,name)
@@ -512,11 +533,36 @@ def table(data):
 def pick(label,data,fmt):
     if not data:st.info('Chưa có lựa chọn phù hợp.');return None
     return st.selectbox(label,data,format_func=fmt)
+def sync_key_report(keys_only=True, immediate=False):
+    from license_app.key_sheet_sync import publish
+    demo=os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'} or activation_demo
+    # The ledger write has already committed. A Sheets error must not be reported as a failed import/redeem.
+    with st.spinner('Đang cập nhật báo cáo Google Sheet...'):
+        try:
+            level,msg=publish(ledger,actor,st.secrets,demo=demo,keys_only=keys_only)
+        except Exception:
+            level,msg='warning','Đã lưu APP. Chưa đồng bộ được Google Sheet; Admin có thể đồng bộ lại.'
+    st.session_state['key-sync-notice']=(actor,bool(demo),level,msg)
+    if immediate: getattr(st,level)(msg)
+
+def key_sync_controls():
+    demo=os.getenv('APP_MODE') in {'demo','shared_test','team_test','activation_demo'} or activation_demo
+    notice=st.session_state.get('key-sync-notice')
+    if notice and notice[:2]==(actor,bool(demo)):
+        getattr(st,notice[2])(notice[3])
+    if role=='ADMIN' and not demo:
+        st.caption('Nhập kho, xác nhận kiểm tra và Redeem sẽ tự cập nhật báo cáo Key sau khi lưu APP.')
+        left,right=st.columns(2)
+        if left.button('Đồng bộ lại báo cáo Key',key='key-sync-retry-'+page):sync_key_report(immediate=True)
+        from license_app.sheet_sync import configured_spreadsheet_id
+        right.link_button('Mở Google Sheet', 'https://docs.google.com/spreadsheets/d/'+configured_spreadsheet_id(st.secrets)+'/edit')
+
 def run(name,fn,confirmation=None,next_page=None,select_record=None):
     token=st.session_state.setdefault('op-'+name,str(uuid.uuid4()))
     try:
         fn(token)
         st.session_state.pop('op-'+name,None)
+        if name in {'import','verify','redeem'}:sync_key_report()
         if confirmation:st.session_state['report-confirmation']=(actor,confirmation)
         if next_page:st.session_state['post-action-page']=next_page
         if select_record:st.session_state['last-activated-device-'+actor]=select_record
@@ -778,9 +824,10 @@ elif page=='Tiếp nhận NCC':
                     hide_index=True,width='stretch')
                 st.caption('Nếu mã trên thùng và PC khác nhau, Admin xác minh ý nghĩa mã với NCC rồi cập nhật kết luận tại tab 18. Hồ sơ này chưa tự liên kết với PC nội bộ hoặc tự chặn phân bổ.')
 elif page=='Kho key':
+    key_sync_controls()
     if role=='ADMIN':
         from key_file_import import render_import
-        render_import(st,ledger,actor)
+        render_import(st,ledger,actor,on_saved=lambda:sync_key_report(immediate=True))
         with st.form('import',clear_on_submit=True):
             batch=st.text_input('Mã lô');product=st.selectbox('Phần mềm',['Office','Windows','Antivirus'])
             sku=st.text_input('Phiên bản / SKU');channel=st.selectbox('Kênh cấp phép',['Retail','OEM','Volume','Vendor'])
@@ -794,6 +841,7 @@ elif page=='Kho key':
         if st.form_submit_button('Xác nhận đã kiểm tra') and lic:run('verify',lambda t:ledger.verify(actor,lic['id'],ref,t))
 elif page=='Redeem Office':
     if role!='ADMIN':st.error('Chỉ Admin thực hiện redeem và xem key gốc.');st.stop()
+    key_sync_controls()
     redeem_rows=[r for r in rows('licenses') if r['route']=='ACCOUNT_REDEEM']
     redeem_accounts={r['id']:r['email'] for r in rows('accounts')}
     metrics=st.columns(4)
@@ -980,10 +1028,8 @@ elif page=='Đồng bộ Google Sheet':
         st.info('Chế độ minh họa chỉ dùng dữ liệu giả và không đọc hoặc ghi Google Sheet dùng chung.')
     else:
         st.caption('Đích đồng bộ: '+target)
-        if st.button('Đồng bộ báo cáo lên Google Sheet',type='primary'):
-            try:
-                count=sync_with_service(build_sheets_service(st.secrets),target,snapshot)
-                st.success(f'Đã đồng bộ {count} bản ghi. Xem thời điểm tại tab 15_DONG_BO_APP.')
-            except DomainError as err:st.error(str(err))
-            except Exception:st.error('Chưa đồng bộ được. Kiểm tra Google Sheets API, danh tính chạy app và quyền Người chỉnh sửa trên đúng file Sheet. Dữ liệu app vẫn đã lưu; có thể đồng bộ lại.')
+        if st.button('Đồng bộ báo cáo Key (Kho / Redeem)',type='primary'):
+            sync_key_report(immediate=True)
+        if st.button('Đồng bộ báo cáo lên Google Sheet'):
+            sync_key_report(keys_only=False,immediate=True)
 
