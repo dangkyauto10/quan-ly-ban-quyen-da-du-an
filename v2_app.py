@@ -335,7 +335,7 @@ def open_pair_check():
     st.session_state['focus-pair-scan']=True
 
 menus=['Việc của tôi','Tem của tôi','Đối chiếu tem và kiểm tra'] if role=='KTV' else ['Hàng đợi in'] if role=='PRINT' else ['Tổng quan','Đơn vị & tài khoản','Kho key','Redeem Office','Thiết bị','Phân bổ','Kích hoạt','Bảo hành','Nhật ký']
-if role=='ADMIN':menus.extend(['Người dùng','Đồng bộ Google Sheet','Tiếp nhận NCC'])
+if role=='ADMIN':menus.extend(['Người dùng','Đồng bộ Google Sheet','Tiếp nhận NCC','Danh sách Key đã kích hoạt'])
 if role=='QC':menus=['Đối chiếu tem và kiểm tra']
 elif role=='ADMIN':menus.extend(['Kế hoạch PC theo điểm','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra','Hàng đợi in'])
 if role=='OPERATOR':menus=[name for name in menus if name!='Redeem Office']
@@ -345,7 +345,7 @@ groups={
     '01 · Chuẩn bị & bản quyền':['Tiếp nhận NCC','Đơn vị & tài khoản','Kế hoạch PC theo điểm','Kho key','Redeem Office'],
     '02 · Giao việc & kích hoạt':['Thiết bị','Phân bổ','Kích hoạt','Việc của tôi'],
     '03 · Tem QR & kiểm tra':['Tem của tôi','In tem PC và vỏ hộp','Đối chiếu tem và kiểm tra','Hàng đợi in'],
-    '04 · Bảo hành & lịch sử':['Bảo hành','Nhật ký'],
+    '04 · Bảo hành & lịch sử':['Danh sách Key đã kích hoạt','Bảo hành','Nhật ký'],
     'Quản trị':['Người dùng','Đồng bộ Google Sheet'],
     'Hướng dẫn':['Hướng dẫn theo vai trò'],
 }
@@ -397,6 +397,7 @@ extra_guides={
     'Tem của tôi':['Kiểm tra PC đã kích hoạt thành công.','Mở Tem của tôi và gửi lô tem đến trạm in USB.','Đối chiếu cặp tem với đúng PC trước khi chuyển QC.'],
     'Hàng đợi in':['Mở Hàng đợi in tại trạm in USB.','Chọn đúng lô tem theo đơn vị và KTV, kiểm tra trước khi in.','Đối chiếu tem in ra với thông tin lô.'],
     'Đối chiếu tem và kiểm tra':['Mở Đối chiếu tem và kiểm tra sau khi bên thứ ba kiểm tra, đóng gói.','Quét tem vỏ hộp trước, rồi quét tem thân máy.','Đối chiếu serial thực và ghi nhận kết quả theo biểu mẫu.','Chỉ xác nhận hoàn tất khi đúng cặp tem và đủ điều kiện QC.'],
+    'Danh sách Key đã kích hoạt':['Mở nhóm Bảo hành & lịch sử → Danh sách Key đã kích hoạt.','Tra theo serial mainboard. Mỗi dòng gồm các Key Office, Windows, Antivirus đã kích hoạt thành công.','Admin có thể chọn một Key để xem đầy đủ; APP ghi nhật ký xem Key.'],
     'Người dùng':['Vào Quản trị → Người dùng.','Nhập Email Google đã xác minh của thành viên; chọn Quyền Admin (quản trị) nếu được chủ hệ thống cho phép.','Bấm Cấp quyền. Thành viên đăng nhập bằng đúng email đó.','Để đổi hoặc thu hồi quyền, chọn Thành viên cần cập nhật, chọn vai trò và trạng thái Được phép sử dụng app, rồi bấm Lưu quyền thành viên.'],
     'Đồng bộ Google Sheet':['Vào Quản trị → Đồng bộ Google Sheet.','Bấm Mở Google Sheet để kiểm tra bảng tính cấu hình.','Admin chủ động bấm Đồng bộ báo cáo lên Google Sheet hoặc tải bản dữ liệu JSON để đối chiếu. Nhập kho và Redeem lưu trực tiếp trong APP, độc lập với kết nối Sheet. Key đầy đủ không được xuất.'],
 }
@@ -544,6 +545,21 @@ def run(name,fn,confirmation=None,next_page=None,select_record=None):
         st.rerun()
     except DomainError as e:st.error(str(e))
     except Exception:st.error('Chưa xác nhận lưu thành công. Hãy kiểm tra kết nối và tải lại hồ sơ.')
+def activated_pc_report(records):
+    grouped = {}
+    columns = {'Office': 'Key Office', 'Windows': 'Key Windows', 'Antivirus': 'Key Antivirus'}
+    for r in records:
+        column = columns.get(r['product'])
+        if not column or r['job_state'] != 'SUCCESS' or r['license_state'] != 'ACTIVATED':
+            continue
+        pc = grouped.setdefault(r['device_id'], {
+            'Tên PC (serial mainboard)': r['board_serial'] or 'Chưa ghi nhận serial',
+            'Key Office': [], 'Key Windows': [], 'Key Antivirus': []})
+        item = '…' + r['tail']
+        pc[column].append(item)
+    return [{name: ('; '.join(value) if isinstance(value, list) else value)
+             for name, value in pc.items()} for pc in grouped.values()]
+
 def label(r):return f"{r['product']} · {r['sku']} · …{r['tail']} · {LABELS[r['state']]}"
 def serial_usb_archive():
     bundle=io.BytesIO()
@@ -931,6 +947,37 @@ elif page in ['Kích hoạt','Việc của tôi']:
                     select_record=job['device_id'] if role=='KTV' and success else None)
       if role=='KTV':
         st.caption('Sau khi hoàn tất các PC của đơn vị, ghi serial lên vỏ hộp và gửi thành một lô tại “Tem của tôi”.')
+elif page=='Danh sách Key đã kích hoạt':
+    if role!='ADMIN':
+        st.stop()
+    from sqlalchemy import select
+    from license_app.core import devices, jobs, licenses
+    st.caption('Một dòng cho mỗi PC. Tên PC là serial mainboard. Chỉ hiển thị bản quyền đang ở trạng thái kích hoạt thành công; Key được che để bảo mật.')
+    with ledger.engine.connect() as c:
+        ledger._auth(c,actor,{'ADMIN'})
+        stmt=select(devices.c.id.label('device_id'),devices.c.board_serial,
+            licenses.c.id.label('license_id'),licenses.c.product,licenses.c.tail,
+            licenses.c.sku,jobs.c.state.label('job_state'),licenses.c.state.label('license_state')).select_from(
+            devices.join(jobs,jobs.c.device_id==devices.c.id).join(licenses,jobs.c.license_id==licenses.c.id)
+            ).where(jobs.c.state=='SUCCESS',licenses.c.state=='ACTIVATED').order_by(
+            devices.c.board_serial,devices.c.id,licenses.c.product,licenses.c.tail,licenses.c.id)
+        records=[dict(r) for r in c.execute(stmt).mappings()]
+    needle=st.text_input('Tìm theo serial mainboard',key='activated-pc-serial-search').strip().casefold()
+    visible=[r for r in records if not needle or needle in (r['board_serial'] or '').casefold()]
+    report=activated_pc_report(visible)
+    st.write('Số PC có Key đã kích hoạt:',len(report))
+    if report:
+        st.dataframe(report,hide_index=True,width='stretch')
+        choices={r['license_id']:r for r in visible}
+        with st.expander('Xem một Key đầy đủ (chỉ Admin)'):
+            selected=st.selectbox('Chọn Key',list(choices),format_func=lambda x:
+                f"{choices[x]['board_serial']} · {choices[x]['product']} · {choices[x]['sku']} · …{choices[x]['tail']}",
+                index=None,key='activated-pc-key-choice')
+            if st.button('Hiện Key đã chọn',disabled=selected is None,key='activated-pc-reveal') and selected in choices:
+                try:st.code(ledger.reveal(actor,selected),language=None)
+                except DomainError as e:st.error(str(e))
+    else:
+        st.info('Chưa có PC có Key kích hoạt thành công phù hợp.')
 elif page=='Bảo hành':
     st.caption('Tra lịch sử theo mã dự án, đơn vị, mã PC, serial máy hoặc serial mainboard hiện tại/cũ.')
     search=st.text_input('Từ khóa tra hồ sơ bảo hành')
