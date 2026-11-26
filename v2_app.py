@@ -401,6 +401,18 @@ extra_guides={
     'Đồng bộ Google Sheet':['Vào Quản trị → Đồng bộ Google Sheet.','Bấm Mở Google Sheet để kiểm tra bảng tính cấu hình.','Chỉ bấm Đồng bộ báo cáo lên Google Sheet khi thực sự muốn xuất dữ liệu và đang ở môi trường thật. Key đầy đủ không được xuất.'],
 }
 
+if role=='ADMIN':
+    extra_guides['Kho key']=[
+        'Mở Kho key → Nhập danh sách key từ Excel / Word. Nhập mã lô, phần mềm, SKU, kênh và luồng xử lý.',
+        'Chọn file .xlsx hoặc .docx; Excel chọn trang tính và cột key. Mỗi lô chỉ chứa key cùng thông tin nghiệp vụ.',
+        'Xem bảng kiểm tra đã che key, xác nhận chỉ nhập các key đủ điều kiện sơ bộ; key trùng và sai định dạng không được nhập.',
+        'Có thể nhập thủ công bằng biểu mẫu cũ. Sau khi nhập, kiểm tra chứng từ và xác nhận từng hồ sơ theo quy trình hiện hành.']
+    extra_guides['Redeem Office']=[
+        'Mở Redeem Office; xem thống kê, mở Lọc và tra cứu Redeem nếu cần lọc lô hoặc tìm key.',
+        'Chọn key đã kiểm tra thuộc luồng Office Retail, hiện key cho tác vụ và thực hiện redeem trên Microsoft bằng đúng tài khoản.',
+        'Chỉ ghi nhận thành công sau khi đã thấy đúng sản phẩm trong tài khoản Microsoft. Không dùng key giả trên Microsoft.',
+        'Key đã redeem tiếp tục sử dụng trong Phân bổ theo điều kiện nghiệp vụ hiện tại.']
+
 def render_guide():
     st.markdown('## Hướng dẫn sử dụng KEY BẢN QUYỀN')
     st.caption('Vai trò: '+ROLE_NAMES[role]+' · Bấm tiêu đề để mở; bấm mục khác hoặc bấm lại để thu gọn.')
@@ -463,7 +475,7 @@ else:
         st.button('📷 Mở đối chiếu tem',key='open-pair-check',on_click=open_pair_check,use_container_width=True,type='primary')
     with st.sidebar:open_guide_window_button()
 st.sidebar.divider()
-st.sidebar.caption('V2 · HDSD cửa sổ riêng v3 · 25/11/2026')
+st.sidebar.caption('V2 · Nhập kho Excel/Word v4 · 26/11/2026')
 st.subheader(page)
 flow_phases=[('01','Chuẩn bị'),('02','Redeem & giao việc'),('03','Kích hoạt & in QR'),('04','Đối chiếu tem · chốt QC')]
 flow_stage={'Đơn vị & tài khoản':0,'Kế hoạch PC theo điểm':0,'Kho key':0,'Redeem Office':1,'Thiết bị':1,'Phân bổ':1,'Kích hoạt':2,'Việc của tôi':2,'Tem của tôi':2,'In tem PC và vỏ hộp':2,'Hàng đợi in':2,'Đối chiếu tem và kiểm tra':3}
@@ -767,6 +779,8 @@ elif page=='Tiếp nhận NCC':
                 st.caption('Nếu mã trên thùng và PC khác nhau, Admin xác minh ý nghĩa mã với NCC rồi cập nhật kết luận tại tab 18. Hồ sơ này chưa tự liên kết với PC nội bộ hoặc tự chặn phân bổ.')
 elif page=='Kho key':
     if role=='ADMIN':
+        from key_file_import import render_import
+        render_import(st,ledger,actor)
         with st.form('import',clear_on_submit=True):
             batch=st.text_input('Mã lô');product=st.selectbox('Phần mềm',['Office','Windows','Antivirus'])
             sku=st.text_input('Phiên bản / SKU');channel=st.selectbox('Kênh cấp phép',['Retail','OEM','Volume','Vendor'])
@@ -780,7 +794,21 @@ elif page=='Kho key':
         if st.form_submit_button('Xác nhận đã kiểm tra') and lic:run('verify',lambda t:ledger.verify(actor,lic['id'],ref,t))
 elif page=='Redeem Office':
     if role!='ADMIN':st.error('Chỉ Admin thực hiện redeem và xem key gốc.');st.stop()
-    lic=pick('Key đã kiểm tra',[r for r in rows('licenses') if r['route']=='ACCOUNT_REDEEM' and r['state']=='VERIFIED'],label)
+    redeem_rows=[r for r in rows('licenses') if r['route']=='ACCOUNT_REDEEM']
+    redeem_accounts={r['id']:r['email'] for r in rows('accounts')}
+    metrics=st.columns(4)
+    for col,title,count in zip(metrics,['Tổng key luồng Redeem','Chờ kiểm tra','Sẵn sàng Redeem','Đã Redeem (gồm đã giao)'],[len(redeem_rows),sum(r['state']=='RECEIVED' for r in redeem_rows),sum(r['state']=='VERIFIED' for r in redeem_rows),sum(bool(r.get('account_id')) and r['state'] in {'REDEEMED','ASSIGNED','ACTIVATED','WARRANTY_REVIEW'} for r in redeem_rows)]):
+        col.metric(title,count)
+    with st.expander('Lọc và tra cứu Redeem',expanded=False):
+        batch_options=sorted({r['batch'] for r in redeem_rows})
+        selected_batches=st.multiselect('Mã lô',batch_options,key='redeem-filter-batch')
+        search_redeem=st.text_input('Tìm theo SKU, mã lô, 5 ký tự cuối hoặc email Microsoft',key='redeem-filter-search').strip().casefold()
+        states=st.multiselect('Trạng thái tra cứu',sorted({r['state'] for r in redeem_rows}),format_func=lambda x:LABELS.get(x,x),key='redeem-filter-state')
+        def redeem_match(r):
+            return (not selected_batches or r['batch'] in selected_batches) and (not search_redeem or search_redeem in ' '.join(str(x or '') for x in [r['sku'],r['batch'],r['tail'],redeem_accounts.get(r.get('account_id'),'')]).casefold())
+        st.caption('Trạng thái tra cứu chỉ lọc bảng bên dưới; mã lô và từ khóa cũng lọc danh sách key sẵn sàng Redeem.')
+        table([r for r in redeem_rows if redeem_match(r) and (not states or r['state'] in states)])
+    lic=pick('Key đã kiểm tra',[r for r in redeem_rows if r['state']=='VERIFIED' and redeem_match(r)],label)
     if lic:
         if st.button('Hiện key cho tác vụ này'):st.code(ledger.reveal(actor,lic['id']),language=None)
         st.link_button('Mở Microsoft để redeem','https://microsoft365.com/setup')
