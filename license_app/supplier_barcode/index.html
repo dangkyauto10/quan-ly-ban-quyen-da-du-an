@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:8px;font:15px system-ui,-apple-system,Segoe UI,sans-serif;color:#19314a;background:#f7faff}
+.card{max-width:720px;margin:auto;padding:14px;border:1px solid #d7e3ef;border-radius:14px;background:#fff;box-shadow:0 4px 12px #19314a12}
+.title{font-weight:750;font-size:17px}.status{margin:7px 0;color:#52677d;line-height:1.45;min-height:24px}
+video{display:none;width:100%;max-height:340px;object-fit:cover;border-radius:10px;background:#0b1724}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+button{min-height:44px;border:0;border-radius:9px;padding:10px 15px;background:#12375a;color:white;font-weight:700;font-size:15px}
+button.secondary{background:#e8eef5;color:#18324d}
+.hint{font-size:13px;color:#62758b;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="title" id="title">Quét mã vạch NCC</div>
+  <div class="status" id="status">Camera sẽ ưu tiên camera sau. Đưa toàn bộ mã vạch vào khung hình.</div>
+  <video id="video" autoplay muted playsinline></video>
+  <div class="row">
+    <button id="start" type="button">Mở camera sau và quét</button>
+    <button id="torch" class="secondary" type="button" style="display:none">Bật đèn</button>
+    <button id="stop" class="secondary" type="button" style="display:none">Dừng camera</button>
+  </div>
+  <div class="hint">Đọc mã vạch ngay trên điện thoại; ảnh/video không tải lên app và không lưu. Nếu mã nhỏ, giữ máy ổn định và lấy nét gần hơn.</div>
+</div>
+<script>
+(function(){
+  const video=document.getElementById('video');
+  const title=document.getElementById('title');
+  const status=document.getElementById('status');
+  const start=document.getElementById('start');
+  const stop=document.getElementById('stop');
+  const torch=document.getElementById('torch');
+  let args={},controls=null,stream=null,opening=false,stopped=true,autoStartConsumed=false,torchOn=false,scanId='';
+  function send(type,extra){window.parent.postMessage(Object.assign({isStreamlitMessage:true,type},extra||{}),'*')}
+  function setHeight(){send('streamlit:setFrameHeight',{height:document.body.scrollHeight+4})}
+  function scrollIntoView(){try{window.frameElement&&window.frameElement.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){}}
+  function setTorch(enabled){
+    const track=stream&&stream.getVideoTracks?stream.getVideoTracks()[0]:null;
+    if(!track||!track.applyConstraints)return;
+    track.applyConstraints({advanced:[{torch:enabled}]}).then(()=>{torchOn=enabled;torch.textContent=enabled?'Tắt đèn':'Bật đèn';}).catch(()=>{status.textContent='Điện thoại/trình duyệt không hỗ trợ đèn camera.'});
+  }
+  function stopCamera(){
+    stopped=true;
+    if(controls){try{controls.stop()}catch(e){}controls=null}
+    if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+    if(video.srcObject){try{video.srcObject.getTracks().forEach(t=>t.stop())}catch(e){}}
+    video.srcObject=null;video.style.display='none';torchOn=false;
+    start.style.display='inline-block';stop.style.display='none';torch.style.display='none';
+    setHeight();
+  }
+  async function startCamera(){
+    if(opening||!stopped)return;
+    opening=true;start.disabled=true;
+    status.textContent='Đang mở camera…';
+    try{
+      if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('Camera cần mở app bằng HTTPS trên Safari hoặc Chrome bản mới.');
+      if(!window.ZXingBrowser||!ZXingBrowser.BrowserMultiFormatReader)throw new Error('Chưa tải được bộ đọc mã vạch. Kiểm tra kết nối Internet rồi thử lại.');
+      const supported=ZXingBrowser.BarcodeFormat||{};
+      const names=['CODE_128','CODE_39','CODE_93','CODABAR','ITF','EAN_13','EAN_8','UPC_A','UPC_E','QR_CODE'];
+      const formats=names.map(n=>supported[n]).filter(v=>v!==undefined);
+      const hints=new Map();
+      if(formats.length&&ZXingBrowser.DecodeHintType&&ZXingBrowser.DecodeHintType.POSSIBLE_FORMATS)
+        hints.set(ZXingBrowser.DecodeHintType.POSSIBLE_FORMATS,formats);
+      if(ZXingBrowser.DecodeHintType&&ZXingBrowser.DecodeHintType.TRY_HARDER)
+        hints.set(ZXingBrowser.DecodeHintType.TRY_HARDER,true);
+      const reader=new ZXingBrowser.BrowserMultiFormatReader(hints, {delayBetweenScanAttempts:120});
+      stopped=false;
+      video.style.display='block';
+      scrollIntoView();
+      controls=await reader.decodeFromConstraints(
+        {audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}},
+        video,
+        (result,error)=>{
+          if(result&&result.getText){
+            const text=String(result.getText()||'').trim();
+            if(text){
+              status.textContent='Đã đọc được mã. Đang điền vào ô đã chọn…';
+              const id=scanId;
+              stopCamera();
+              send('streamlit:setComponentValue',{value:{scan_id:id,text}});
+            }
+          }else if(error&&error.name&& !/NotFoundException|ChecksumException|FormatException/.test(error.name)){
+            status.textContent='Đang nhận diện mã vạch…';
+          }
+        }
+      );
+      stream=video.srcObject;
+      status.textContent='Đang dùng camera sau. Đưa mã vạch vào giữa khung hình, giữ máy ổn định.';
+      start.style.display='none';stop.style.display='inline-block';torch.style.display='inline-block';
+      opening=false;start.disabled=false;setHeight();
+    }catch(e){
+      opening=false;stopped=true;start.disabled=false;
+      stopCamera();
+      status.textContent=e&&e.message?e.message:'Không mở được camera. Kiểm tra quyền camera của trình duyệt.';
+      setHeight();
+    }
+  }
+  function render(event){
+    const d=event.data||event.detail||{};args=d.args||{};
+    const nextId=String(args.scan_id||'');
+    if(nextId!==scanId){stopCamera();scanId=nextId}
+    title.textContent='Quét mã vạch · '+String(args.label||'NCC');
+    if(args.auto_start===true&&!autoStartConsumed){autoStartConsumed=true;startCamera()}
+    else if(args.auto_start!==true)autoStartConsumed=false;
+    setHeight();
+  }
+  start.addEventListener('click',startCamera);
+  stop.addEventListener('click',()=>{stopCamera();status.textContent='Camera đã dừng.'});
+  torch.addEventListener('click',()=>setTorch(!torchOn));
+  window.addEventListener('message',event=>{if(event.data&&event.data.type==='streamlit:render')render(event)});
+  window.addEventListener('pagehide',stopCamera);
+  send('streamlit:componentReady',{apiVersion:1});
+  setHeight();
+})();
+</script>
+</body>
+</html>
